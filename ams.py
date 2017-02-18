@@ -8,6 +8,8 @@ class ArgoMessagingService:
         self.endpoint = endpoint
         self.token = token
         self.project = project
+        self.pullopts = {"maxMessages": "1",
+                         "returnImmediately": "False"}
 
         # Create route list
         self.routes = {"topic_list": ["get", "https://{0}/v1/projects/{2}/topics?key={1}"],
@@ -15,7 +17,7 @@ class ArgoMessagingService:
                        "topic_publish": ["post", "https://{0}/v1/projects/{2}/topics/{3}:publish?key={1}"],
                        "sub_list": ["get", "https://{0}/v1/projects/{2}/subscriptions?key={1}"],
                        "sub_get": ["get", "https://{0}/v1/projects/{2}/subscriptions/{4}?key={1}"],
-                       "sub_pull": ["get", "https://{0}/v1/projects/{2}/subscriptions/{4}:pull?key={1}"],
+                       "sub_pull": ["post", "https://{0}/v1/projects/{2}/subscriptions/{4}:pull?key={1}"],
                        "sub_ack": ["get", "https://{0}/v1/projects/{2}/subscriptions/{4}:acknowledge?key={1}"]}
 
     def list_topics(self):
@@ -36,14 +38,14 @@ class ArgoMessagingService:
         url = route[1].format(self.endpoint, self.token, self.project, topic)
         return do_get(url,"topic_get")
 
-    def publish(self, topic, msgs):
+    def publish(self, topic, msg):
         """Publish a message to a selected topic
         Keyword arguments:
         @param: topic Topic Name
         @param: msg the message to send
         @param: attributes key pair values list of user defined attributes
         """
-        msg_body = json.dumps({"messages": msgs})
+        msg_body = json.dumps({"messages": msg})
 
         route = self.routes["topic_publish"]
         # Compose url
@@ -62,6 +64,16 @@ class ArgoMessagingService:
         url = route[1].format(self.endpoint, self.token, self.project, "", sub)
         return do_get(url,"sub_get")
 
+    def pull_sub(self, sub):
+        msg_body = json.dumps(self.pullopts)
+
+        route = self.routes["sub_pull"]
+        # Compose url
+        url = route[1].format(self.endpoint, self.token, self.project, "", sub)
+        return do_post(url, msg_body, "sub_pull")
+
+    def set_pullopt(self, key, value):
+        self.pullopts.update({key: str(value)})
 
 def do_get(url,routeName):
     r = requests.get(url)
