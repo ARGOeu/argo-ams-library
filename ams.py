@@ -2,6 +2,7 @@ import requests
 import json
 import base64
 from amsexceptions import AmsHandleExceptions
+from amsmsg import AmsMessage
 
 class ArgoMessagingService:
     def __init__(self, endpoint, token="", project=""):
@@ -70,7 +71,9 @@ class ArgoMessagingService:
         route = self.routes["sub_pull"]
         # Compose url
         url = route[1].format(self.endpoint, self.token, self.project, "", sub)
-        return do_post(url, msg_body, "sub_pull")
+        r = do_post(url, msg_body, "sub_pull")
+        msgs = r['receivedMessages']
+        return map(lambda m: (m['ackId'], AmsMessage(b64enc=False, **m['message'])), msgs)
 
     def set_pullopt(self, key, value):
         self.pullopts.update({key: str(value)})
