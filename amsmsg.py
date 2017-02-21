@@ -2,8 +2,8 @@ import json
 from base64 import b64encode, b64decode
 
 class AmsMessage(object):
-    def __init__(self, b64enc=True, attributes='', data='',
-                 messageId='', publishTime=''):
+    def __init__(self, b64enc=True, attributes=None, data=None,
+                 messageId=None, publishTime=None):
         self.attributes = attributes
         self.data = b64encode(data) if b64enc else data
         self.messageId = messageId
@@ -26,5 +26,11 @@ class AmsMessage(object):
     def get_data(self):
         return b64decode(self.data)
 
+    def get_msgid(self):
+        return self.messageId
+
     def json(self):
         return json.dumps(self.dict())
+
+    def __str__(self):
+        return str(self.dict())

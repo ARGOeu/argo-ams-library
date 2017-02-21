@@ -19,7 +19,7 @@ class ArgoMessagingService:
                        "sub_list": ["get", "https://{0}/v1/projects/{2}/subscriptions?key={1}"],
                        "sub_get": ["get", "https://{0}/v1/projects/{2}/subscriptions/{4}?key={1}"],
                        "sub_pull": ["post", "https://{0}/v1/projects/{2}/subscriptions/{4}:pull?key={1}"],
-                       "sub_ack": ["get", "https://{0}/v1/projects/{2}/subscriptions/{4}:acknowledge?key={1}"]}
+                       "sub_ack": ["post", "https://{0}/v1/projects/{2}/subscriptions/{4}:acknowledge?key={1}"]}
 
     def list_topics(self):
         """List the topics of a selected project"""
@@ -65,7 +65,10 @@ class ArgoMessagingService:
         url = route[1].format(self.endpoint, self.token, self.project, "", sub)
         return do_get(url,"sub_get")
 
-    def pull_sub(self, sub):
+    def pull_sub(self, sub, num=1):
+        wasmax = self.get_pullopt('maxMessages')
+
+        self.set_pullopt('maxMessages', num)
         msg_body = json.dumps(self.pullopts)
 
         route = self.routes["sub_pull"]
@@ -73,10 +76,24 @@ class ArgoMessagingService:
         url = route[1].format(self.endpoint, self.token, self.project, "", sub)
         r = do_post(url, msg_body, "sub_pull")
         msgs = r['receivedMessages']
+
+        self.set_pullopt('maxMessages', wasmax)
+
         return map(lambda m: (m['ackId'], AmsMessage(b64enc=False, **m['message'])), msgs)
+
+    def ack_sub(self, sub, ids):
+        msg_body = json.dumps({"ackIds": ids})
+
+        route = self.routes["sub_ack"]
+        # Compose url
+        url = route[1].format(self.endpoint, self.token, self.project, "", sub)
+        return do_post(url, msg_body, "sub_ack")
 
     def set_pullopt(self, key, value):
         self.pullopts.update({key: str(value)})
+
+    def get_pullopt(self, key):
+        return self.pullopts[key]
 
 def do_get(url,routeName):
     r = requests.get(url)
