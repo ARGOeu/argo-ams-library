@@ -1,8 +1,10 @@
 import requests
 import json
 import base64
-from amsexceptions import AmsHandleExceptions
+from amsexceptions import AmsServiceException, AmsConnectionException
 from amsmsg import AmsMessage
+
+defaulttimeout = 180
 
 class ArgoMessagingService:
     def __init__(self, endpoint, token="", project=""):
@@ -37,6 +39,7 @@ class ArgoMessagingService:
         route = self.routes["topic_get"]
         # Compose url
         url = route[1].format(self.endpoint, self.token, self.project, topic)
+
         return do_get(url,"topic_get")
 
     def publish(self, topic, msg):
@@ -51,18 +54,21 @@ class ArgoMessagingService:
         route = self.routes["topic_publish"]
         # Compose url
         url = route[1].format(self.endpoint, self.token, self.project, topic)
+
         return do_post(url, msg_body,"topic_publish")
 
     def list_subs(self):
         route = self.routes["sub_list"]
         # Compose url
         url = route[1].format(self.endpoint, self.token, self.project)
+
         return do_get(url, "sub_list")
 
     def get_sub(self, sub):
         route = self.routes["sub_get"]
         # Compose url
         url = route[1].format(self.endpoint, self.token, self.project, "", sub)
+
         return do_get(url,"sub_get")
 
     def pull_sub(self, sub, num=1):
@@ -87,6 +93,7 @@ class ArgoMessagingService:
         route = self.routes["sub_ack"]
         # Compose url
         url = route[1].format(self.endpoint, self.token, self.project, "", sub)
+
         return do_post(url, msg_body, "sub_ack")
 
     def set_pullopt(self, key, value):
@@ -96,21 +103,32 @@ class ArgoMessagingService:
         return self.pullopts[key]
 
 def do_get(url,routeName):
-    r = requests.get(url)
-    decoded = json.loads(r.content)
+    try:
+        r = requests.get(url, timeout=defaulttimeout)
+        decoded = json.loads(r.content)
 
-    if 'error' in decoded:
-       raise AmsHandleExceptions(json=decoded,request=routeName)
-    return r.json()
+        if 'error' in decoded:
+            raise AmsServiceException(json=decoded, request=routeName)
+
+    except requests.exceptions.RequestException as e:
+        raise e
+
+    else:
+        return r.json()
 
 def do_post(url, body, routeName):
-    r = requests.post(url, data=body)
-    decoded = json.loads(r.content)
+    try:
+        r = requests.post(url, data=body, timeout=defaulttimeout)
+        decoded = json.loads(r.content)
 
-    if 'error' in decoded:
-       raise AmsHandleExceptions(json=decoded,request=routeName)
+        if 'error' in decoded:
+            raise AmsServiceException(json=decoded, request=routeName)
 
-    return r.json()
+    except requests.exceptions.RequestException as e:
+        raise AmsConnectionException(e, routeName)
+
+    else:
+        return r.json()
 
 if __name__ == "__main__":
     test = ArgoMessagingService(endpoint="messaging-devel.argo.grnet.gr", token="4affb0cbb75032261bcfb3e6a959fa9ba495ff", project="ARGO");
