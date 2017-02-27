@@ -100,7 +100,7 @@ class ArgoMessagingService:
     def get_pullopt(self, key):
         return self.pullopts[key]
 
-def do_get(url,routeName, **reqkwargs):
+def do_get(url, routeName, **reqkwargs):
     try:
         r = requests.get(url, **reqkwargs)
         decoded = json.loads(r.content)
@@ -108,7 +108,7 @@ def do_get(url,routeName, **reqkwargs):
         if 'error' in decoded:
             raise AmsServiceException(json=decoded, request=routeName)
 
-    except requests.exceptions.RequestException as e:
+    except (requests.exceptions.ConnectionError, requests.exceptions.Timeout) as e:
         raise AmsConnectionException(e, routeName)
 
     else:
@@ -122,7 +122,7 @@ def do_post(url, body, routeName, **reqkwargs):
         if 'error' in decoded:
             raise AmsServiceException(json=decoded, request=routeName)
 
-    except requests.exceptions.RequestException as e:
+    except (requests.exceptions.ConnectionError, requests.exceptions.Timeout) as e:
         raise AmsConnectionException(e, routeName)
 
     else:
