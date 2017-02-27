@@ -16,6 +16,7 @@ class ArgoMessagingService:
         self.routes = {"topic_list": ["get", "https://{0}/v1/projects/{2}/topics?key={1}"],
                        "topic_get": ["get", "https://{0}/v1/projects/{2}/topics/{3}?key={1}"],
                        "topic_publish": ["post", "https://{0}/v1/projects/{2}/topics/{3}:publish?key={1}"],
+                       "sub_create": ["put", "https://{0}/v1/projects/{2}/subscriptions/{4}?key={1}"],
                        "sub_list": ["get", "https://{0}/v1/projects/{2}/subscriptions?key={1}"],
                        "sub_get": ["get", "https://{0}/v1/projects/{2}/subscriptions/{4}?key={1}"],
                        "sub_pull": ["post", "https://{0}/v1/projects/{2}/subscriptions/{4}:pull?key={1}"],
@@ -100,9 +101,32 @@ class ArgoMessagingService:
     def get_pullopt(self, key):
         return self.pullopts[key]
 
+    def create_sub(self, sub, topic, ackdeadline=10, **reqkwargs):
+        msg_body = json.dumps({"topic": self.get_topic(topic)['name'].strip('/'),
+                               "ackDeadlineSeconds": ackdeadline})
+        route = self.routes["sub_create"]
+        # Compose url
+        url = route[1].format(self.endpoint, self.token, self.project, "", sub)
+
+        return do_put(url, msg_body, "sub_create", **reqkwargs)
+
 def do_get(url, routeName, **reqkwargs):
     try:
         r = requests.get(url, **reqkwargs)
+        decoded = json.loads(r.content)
+
+        if 'error' in decoded:
+            raise AmsServiceException(json=decoded, request=routeName)
+
+    except (requests.exceptions.ConnectionError, requests.exceptions.Timeout) as e:
+        raise AmsConnectionException(e, routeName)
+
+    else:
+        return r.json()
+
+def do_put(url, body, routeName, **reqkwargs):
+    try:
+        r = requests.put(url, data=body, **reqkwargs)
         decoded = json.loads(r.content)
 
         if 'error' in decoded:
