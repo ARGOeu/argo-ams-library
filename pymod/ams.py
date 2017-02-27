@@ -109,7 +109,7 @@ def do_get(url,routeName, **reqkwargs):
             raise AmsServiceException(json=decoded, request=routeName)
 
     except requests.exceptions.RequestException as e:
-        raise e
+        raise AmsConnectionException(e, routeName)
 
     else:
         return r.json()
