@@ -27,8 +27,9 @@ class ArgoMessagingService:
         route = self.routes["topic_list"]
         # Compose url
         url = route[1].format(self.endpoint, self.token, self.project)
+        method = eval('do_{0}'.format(route[0]))
 
-        return do_get(url, "topic_list", **reqkwargs)
+        return method(url, "topic_list", **reqkwargs)
 
     def get_topic(self, topic, **reqkwargs):
         """Get the details of a selected topic
@@ -38,8 +39,9 @@ class ArgoMessagingService:
         route = self.routes["topic_get"]
         # Compose url
         url = route[1].format(self.endpoint, self.token, self.project, topic)
+        method = eval('do_{0}'.format(route[0]))
 
-        return do_get(url, "topic_get", **reqkwargs)
+        return method(url, "topic_get", **reqkwargs)
 
     def publish(self, topic, msg, **reqkwargs):
         """Publish a message to a selected topic
@@ -53,22 +55,25 @@ class ArgoMessagingService:
         route = self.routes["topic_publish"]
         # Compose url
         url = route[1].format(self.endpoint, self.token, self.project, topic)
+        method = eval('do_{0}'.format(route[0]))
 
-        return do_post(url, msg_body, "topic_publish", **reqkwargs)
+        return method(url, msg_body, "topic_publish", **reqkwargs)
 
     def list_subs(self, **reqkwargs):
         route = self.routes["sub_list"]
         # Compose url
         url = route[1].format(self.endpoint, self.token, self.project)
+        method = eval('do_{0}'.format(route[0]))
 
-        return do_get(url, "sub_list", **reqkwargs)
+        return method(url, "sub_list", **reqkwargs)
 
     def get_sub(self, sub, **reqkwargs):
         route = self.routes["sub_get"]
         # Compose url
         url = route[1].format(self.endpoint, self.token, self.project, "", sub)
+        method = eval('do_{0}'.format(route[0]))
 
-        return do_get(url, "sub_get", **reqkwargs)
+        return method(url, "sub_get", **reqkwargs)
 
     def pull_sub(self, sub, num=1, **reqkwargs):
         wasmax = self.get_pullopt('maxMessages')
@@ -79,7 +84,8 @@ class ArgoMessagingService:
         route = self.routes["sub_pull"]
         # Compose url
         url = route[1].format(self.endpoint, self.token, self.project, "", sub)
-        r = do_post(url, msg_body, "sub_pull", **reqkwargs)
+        method = eval('do_{0}'.format(route[0]))
+        r = method(url, msg_body, "sub_pull", **reqkwargs)
         msgs = r['receivedMessages']
 
         self.set_pullopt('maxMessages', wasmax)
@@ -92,8 +98,9 @@ class ArgoMessagingService:
         route = self.routes["sub_ack"]
         # Compose url
         url = route[1].format(self.endpoint, self.token, self.project, "", sub)
+        method = eval('do_{0}'.format(route[0]))
 
-        return do_post(url, msg_body, "sub_ack", **reqkwargs)
+        return method(url, msg_body, "sub_ack", **reqkwargs)
 
     def set_pullopt(self, key, value):
         self.pullopts.update({key: str(value)})
@@ -107,8 +114,9 @@ class ArgoMessagingService:
         route = self.routes["sub_create"]
         # Compose url
         url = route[1].format(self.endpoint, self.token, self.project, "", sub)
+        method = eval('do_{0}'.format(route[0]))
 
-        return do_put(url, msg_body, "sub_create", **reqkwargs)
+        return method(url, msg_body, "sub_create", **reqkwargs)
 
 def do_get(url, routeName, **reqkwargs):
     try:
