@@ -16,6 +16,8 @@ class ArgoMessagingService:
         self.routes = {"topic_list": ["get", "https://{0}/v1/projects/{2}/topics?key={1}"],
                        "topic_get": ["get", "https://{0}/v1/projects/{2}/topics/{3}?key={1}"],
                        "topic_publish": ["post", "https://{0}/v1/projects/{2}/topics/{3}:publish?key={1}"],
+                       "topic_create": ["put", "https://{0}/v1/projects/{2}/topics/{3}?key={1}"],
+                       "topic_delete": ["delete", "https://{0}/v1/projects/{2}/topics/{3}?key={1}"],
                        "sub_create": ["put", "https://{0}/v1/projects/{2}/subscriptions/{4}?key={1}"],
                        "sub_delete": ["delete", "https://{0}/v1/projects/{2}/subscriptions/{4}?key={1}"],
                        "sub_list": ["get", "https://{0}/v1/projects/{2}/subscriptions?key={1}"],
@@ -65,8 +67,11 @@ class ArgoMessagingService:
         # Compose url
         url = route[1].format(self.endpoint, self.token, self.project)
         method = eval('do_{0}'.format(route[0]))
-
-        return method(url, "sub_list", **reqkwargs)
+        r = method(url, "sub_list", **reqkwargs)
+        if r:
+            return r['subscriptions']
+        else:
+            return []
 
     def get_sub(self, sub, **reqkwargs):
         route = self.routes["sub_get"]
@@ -127,6 +132,22 @@ class ArgoMessagingService:
 
         return method(url, "sub_delete", **reqkwargs)
 
+    def create_topic(self, topic, **reqkwargs):
+        route = self.routes["topic_create"]
+        # Compose url
+        url = route[1].format(self.endpoint, self.token, self.project, topic)
+        method = eval('do_{0}'.format(route[0]))
+
+        return method(url, '', "topic_create", **reqkwargs)
+
+    def delete_topic(self, topic, **reqkwargs):
+        route = self.routes["topic_delete"]
+        # Compose url
+        url = route[1].format(self.endpoint, self.token, self.project, topic)
+        method = eval('do_{0}'.format(route[0]))
+
+        return method(url, "topic_delete", **reqkwargs)
+
 def do_get(url, routeName, **reqkwargs):
     try:
         r = requests.get(url, **reqkwargs)
@@ -144,6 +165,7 @@ def do_get(url, routeName, **reqkwargs):
 def do_put(url, body, routeName, **reqkwargs):
     try:
         r = requests.put(url, data=body, **reqkwargs)
+
         decoded = json.loads(r.content)
 
         if 'error' in decoded:
