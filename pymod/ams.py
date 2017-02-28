@@ -17,6 +17,7 @@ class ArgoMessagingService:
                        "topic_get": ["get", "https://{0}/v1/projects/{2}/topics/{3}?key={1}"],
                        "topic_publish": ["post", "https://{0}/v1/projects/{2}/topics/{3}:publish?key={1}"],
                        "sub_create": ["put", "https://{0}/v1/projects/{2}/subscriptions/{4}?key={1}"],
+                       "sub_delete": ["delete", "https://{0}/v1/projects/{2}/subscriptions/{4}?key={1}"],
                        "sub_list": ["get", "https://{0}/v1/projects/{2}/subscriptions?key={1}"],
                        "sub_get": ["get", "https://{0}/v1/projects/{2}/subscriptions/{4}?key={1}"],
                        "sub_pull": ["post", "https://{0}/v1/projects/{2}/subscriptions/{4}:pull?key={1}"],
@@ -118,6 +119,14 @@ class ArgoMessagingService:
 
         return method(url, msg_body, "sub_create", **reqkwargs)
 
+    def delete_sub(self, sub, **reqkwargs):
+        route = self.routes["sub_delete"]
+        # Compose url
+        url = route[1].format(self.endpoint, self.token, self.project, "", sub)
+        method = eval('do_{0}'.format(route[0]))
+
+        return method(url, "sub_delete", **reqkwargs)
+
 def do_get(url, routeName, **reqkwargs):
     try:
         r = requests.get(url, **reqkwargs)
@@ -159,6 +168,19 @@ def do_post(url, body, routeName, **reqkwargs):
 
     else:
         return r.json()
+
+def do_delete(url, routeName, **reqkwargs):
+    try:
+        r = requests.delete(url, **reqkwargs)
+
+        if r.status_code != 200:
+            decoded = json.loads(r.content)
+
+            if 'error' in decoded:
+                raise AmsServiceException(json=decoded, request=routeName)
+
+    except (requests.exceptions.ConnectionError, requests.exceptions.Timeout) as e:
+        raise AmsConnectionException(e, routeName)
 
 if __name__ == "__main__":
     test = ArgoMessagingService(endpoint="messaging-devel.argo.grnet.gr", token="4affb0cbb75032261bcfb3e6a959fa9ba495ff", project="ARGO");
