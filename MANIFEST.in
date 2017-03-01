@@ -1,0 +1,5 @@
+include pymod/*
+include helpers/*
+include argo-ams-library.spec
+
+recursive-exclude pymod *.pyc *.pyo
