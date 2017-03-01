@@ -16,12 +16,12 @@ def get_ver():
 setup(
     name = NAME,
     version = get_ver(),
-    author = 'SRCE',
-    author_email = 'dvrcic@srce.hr',
+    author = 'SRCE, GRNET',
+    author_email = 'dvrcic@srce.hr, kaggis@gmail.com, themiszamani@gmail.com',
     license = 'ASL 2.0',
     description = 'A simple python library for interacting with the ARGO Messaging Service',
     long_description = 'A simple python library for interacting with the ARGO Messaging Service',
-    url = 'https://github.com/ARGOeu/argo-nagios-ams-publisher',
+    url = 'https://github.com/ARGOeu/argo-ams-library',
     package_dir = {'argo_ams_library': 'pymod/'},
     packages = ['argo_ams_library'],
     )
