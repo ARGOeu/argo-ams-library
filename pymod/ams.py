@@ -63,6 +63,7 @@ class ArgoMessagingService:
         return method(url, msg_body, "topic_publish", **reqkwargs)
 
     def list_subs(self, **reqkwargs):
+        """Lists all subscriptions in a project with a GET request"""
         route = self.routes["sub_list"]
         # Compose url
         url = route[1].format(self.endpoint, self.token, self.project)
@@ -74,6 +75,9 @@ class ArgoMessagingService:
             return []
 
     def get_sub(self, sub, **reqkwargs):
+        """Get the details of a subscription.
+        @param: sub the Subscription name
+        """
         route = self.routes["sub_get"]
         # Compose url
         url = route[1].format(self.endpoint, self.token, self.project, "", sub)
@@ -82,6 +86,11 @@ class ArgoMessagingService:
         return method(url, "sub_get", **reqkwargs)
 
     def pull_sub(self, sub, num=1, **reqkwargs):
+        """This function consumes messages from a subscription in a project with a POST request.
+        @param: sub the Subscription name.
+        @num: the number of messages to pull. 
+        """
+
         wasmax = self.get_pullopt('maxMessages')
 
         self.set_pullopt('maxMessages', num)
@@ -115,6 +124,11 @@ class ArgoMessagingService:
         return self.pullopts[key]
 
     def create_sub(self, sub, topic, ackdeadline=10, **reqkwargs):
+        """ This function creates a new subscription in a project with a PUT request
+        @param: sub the Subscription name
+        @param: topic the Topics name
+        @param: ackdeadline is the ackDeadlineSeconds. It is a custom "ack" deadline in the subscription. if your code doesn't acknowledge the message in this time, the message is sent again. If you don't specify the deadline, the default is 10 seconds.
+        """
         msg_body = json.dumps({"topic": self.get_topic(topic)['name'].strip('/'),
                                "ackDeadlineSeconds": ackdeadline})
         route = self.routes["sub_create"]
@@ -125,6 +139,9 @@ class ArgoMessagingService:
         return method(url, msg_body, "sub_create", **reqkwargs)
 
     def delete_sub(self, sub, **reqkwargs):
+        """ This function deletes a selected subscription in a project 
+        @param: sub the Subscription name
+        """
         route = self.routes["sub_delete"]
         # Compose url
         url = route[1].format(self.endpoint, self.token, self.project, "", sub)
@@ -133,6 +150,9 @@ class ArgoMessagingService:
         return method(url, "sub_delete", **reqkwargs)
 
     def create_topic(self, topic, **reqkwargs):
+        """ This function creates a topic in a project 
+        @param: topic the Topics name
+        """
         route = self.routes["topic_create"]
         # Compose url
         url = route[1].format(self.endpoint, self.token, self.project, topic)
@@ -141,6 +161,9 @@ class ArgoMessagingService:
         return method(url, '', "topic_create", **reqkwargs)
 
     def delete_topic(self, topic, **reqkwargs):
+        """ This function deletes a topic in a project 
+        @param: topic the Topics name
+        """
         route = self.routes["topic_delete"]
         # Compose url
         url = route[1].format(self.endpoint, self.token, self.project, topic)
@@ -192,6 +215,7 @@ def do_post(url, body, routeName, **reqkwargs):
         return r.json()
 
 def do_delete(url, routeName, **reqkwargs):
+    
     try:
         r = requests.delete(url, **reqkwargs)
 
@@ -205,5 +229,5 @@ def do_delete(url, routeName, **reqkwargs):
         raise AmsConnectionException(e, routeName)
 
 if __name__ == "__main__":
-    test = ArgoMessagingService(endpoint="messaging-devel.argo.grnet.gr", token="4affb0cbb75032261bcfb3e6a959fa9ba495ff", project="ARGO");
+    test = ArgoMessagingService(endpoint="messaging-devel.argo.grnet.gr", token="YOUR_TOKEN", project="ARGO");
     allprojects = test.list_topics()
