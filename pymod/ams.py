@@ -47,12 +47,14 @@ class ArgoMessagingService:
         return method(url, "topic_get", **reqkwargs)
 
     def publish(self, topic, msg, **reqkwargs):
-        """Publish a message to a selected topic
+        """Publish a message or list of messages to a selected topic
         Keyword arguments:
         @param: topic Topic Name
-        @param: msg the message to send
-        @param: attributes key pair values list of user defined attributes
+        @param: msg the message or list of messages to send. Each message is
+        represented as python dictionary with mandatory data and optional attributes keys.
         """
+        if not isinstance(msg, list):
+            msg = [msg]
         msg_body = json.dumps({"messages": msg})
 
         route = self.routes["topic_publish"]
@@ -86,9 +88,10 @@ class ArgoMessagingService:
         return method(url, "sub_get", **reqkwargs)
 
     def pull_sub(self, sub, num=1, **reqkwargs):
-        """This function consumes messages from a subscription in a project with a POST request.
+        """This function consumes messages from a subscription in a project
+        with a POST request.
         @param: sub the Subscription name.
-        @num: the number of messages to pull. 
+        @num: the number of messages to pull.
         """
 
         wasmax = self.get_pullopt('maxMessages')
@@ -108,9 +111,12 @@ class ArgoMessagingService:
         return map(lambda m: (m['ackId'], AmsMessage(b64enc=False, **m['message'])), msgs)
 
     def ack_sub(self, sub, ids, **reqkwargs):
-        """Messages retrieved from a pull subscription can be acknowledged by sending message with an array of ackIDs. The service will retrieve the ackID corresponding to the highest message offset and will consider that message and all previous messages as acknowledged by the consumer.
+        """Messages retrieved from a pull subscription can be acknowledged by
+        sending message with an array of ackIDs. The service will retrieve the
+        ackID corresponding to the highest message offset and will consider
+        that message and all previous messages as acknowledged by the consumer.
         @param: sub The subscription name to consume messages
-        @param: ids The ids of the messages to acknowledge 
+        @param: ids The ids of the messages to acknowledge
         """
         msg_body = json.dumps({"ackIds": ids})
 
@@ -123,16 +129,18 @@ class ArgoMessagingService:
 
     def set_pullopt(self, key, value):
         """Function for setting pull options
-        @param: key the name of the pull option (ex. maxMessages, returnImmediately).Messaging specific names are allowed.
-        @param: value of the pull option 
+        @param: key the name of the pull option (ex. maxMessages,
+                returnImmediately).Messaging specific names are allowed.
+        @param: value of the pull option
         """
-     
+
         self.pullopts.update({key: str(value)})
 
     def get_pullopt(self, key):
         """Function for getting pull options
-        @param: key the name of the pull option (ex. maxMessages, returnImmediately). Messaging specific names are allowed.
-        @param: value of the pull option 
+        @param: key the name of the pull option (ex. maxMessages,
+                returnImmediately). Messaging specific names are allowed.
+        @param: value of the pull option
         """
         return self.pullopts[key]
 
@@ -140,7 +148,10 @@ class ArgoMessagingService:
         """ This function creates a new subscription in a project with a PUT request
         @param: sub the Subscription name
         @param: topic the Topics name
-        @param: ackdeadline is the ackDeadlineSeconds. It is a custom "ack" deadline in the subscription. if your code doesn't acknowledge the message in this time, the message is sent again. If you don't specify the deadline, the default is 10 seconds.
+        @param: ackdeadline is the ackDeadlineSeconds. It is a custom "ack"
+                deadline in the subscription. if your code doesn't acknowledge the
+                message in this time, the message is sent again. If you don't specify
+                the deadline, the default is 10 seconds.
         """
         msg_body = json.dumps({"topic": self.get_topic(topic)['name'].strip('/'),
                                "ackDeadlineSeconds": ackdeadline})
@@ -152,7 +163,7 @@ class ArgoMessagingService:
         return method(url, msg_body, "sub_create", **reqkwargs)
 
     def delete_sub(self, sub, **reqkwargs):
-        """ This function deletes a selected subscription in a project 
+        """ This function deletes a selected subscription in a project
         @param: sub the Subscription name
         """
         route = self.routes["sub_delete"]
@@ -163,7 +174,7 @@ class ArgoMessagingService:
         return method(url, "sub_delete", **reqkwargs)
 
     def create_topic(self, topic, **reqkwargs):
-        """ This function creates a topic in a project 
+        """ This function creates a topic in a project
         @param: topic the Topics name
         """
         route = self.routes["topic_create"]
@@ -174,7 +185,7 @@ class ArgoMessagingService:
         return method(url, '', "topic_create", **reqkwargs)
 
     def delete_topic(self, topic, **reqkwargs):
-        """ This function deletes a topic in a project 
+        """ This function deletes a topic in a project
         @param: topic the Topics name
         """
         route = self.routes["topic_delete"]
@@ -185,17 +196,19 @@ class ArgoMessagingService:
         return method(url, "topic_delete", **reqkwargs)
 
 def do_get(url, routeName, **reqkwargs):
-    """ This global function supports all the GET requests. Used for (topics, subscriptions, messages). The requests library is used for the final GET request. 
-    @param: url the final messaging endpoint. 
+    """This global function supports all the GET requests. Used for (topics,
+    subscriptions, messages). The requests library is used for the final GET
+    request.
+    @param: url the final messaging endpoint.
     @param: routeName the name of the route to follow selected from the route list
     """
-    #try to send a GET request to the messaging service. 
-    #if a connection problem araises a Connection error exception is raised.
+    # try to send a GET request to the messaging service.
+    # if a connection problem araises a Connection error exception is raised.
     try:
-        #the get request based on requests.
+        # the get request based on requests.
         r = requests.get(url, **reqkwargs)
         decoded = json.loads(r.content)
-        #if the result returns an error code an exception is raised.
+        # if the result returns an error code an exception is raised.
         if 'error' in decoded:
             raise AmsServiceException(json=decoded, request=routeName)
 
@@ -206,19 +219,22 @@ def do_get(url, routeName, **reqkwargs):
         return r.json()
 
 def do_put(url, body, routeName, **reqkwargs):
-    """ This global function supports all the PUT requests. Used for (topics, subscriptions, messages). The requests library is used for the final PUT request. 
-    @param: body the post data to send based on the PUT request. The post data is always in json format.
-    @param: url the final messaging endpoint. 
+    """ This global function supports all the PUT requests. Used for (topics,
+    subscriptions, messages). The requests library is used for the final PUT
+    request.
+    @param: body the post data to send based on the PUT request. The post data
+            is always in json format.
+    @param: url the final messaging endpoint.
     @param: routeName the name of the route to follow selected from the route list
     """
-    #try to send a PUT request to the messaging service. 
-    #if a connection problem araises a Connection error exception is raised.
+    # try to send a PUT request to the messaging service.
+    # if a connection problem araises a Connection error exception is raised.
     try:
-        #the post request based on requests.
+        # the post request based on requests.
         r = requests.put(url, data=body, **reqkwargs)
         decoded = json.loads(r.content)
-        
-        #if the result returns an error code an exception is raised.
+
+        # if the result returns an error code an exception is raised.
         if 'error' in decoded:
             raise AmsServiceException(json=decoded, request=routeName)
 
@@ -229,22 +245,25 @@ def do_put(url, body, routeName, **reqkwargs):
         return r.json()
 
 def do_post(url, body, routeName, **reqkwargs):
-    """ This global function supports all the POST requests. Used for (topics, subscriptions, messages). The requests library is used for the final POST request. 
-    @param: url the final messaging endpoint. 
-    @param: body the post data to send based on the post request. The post data is always in json format.
+    """This global function supports all the POST requests. Used for (topics,
+       subscriptions, messages). The requests library is used for the final POST
+       request.
+    @param: url the final messaging endpoint.
+    @param: body the post data to send based on the post request. The post data
+            is always in json format.
     @param: routeName the name of the route to follow selected from the route list
     """
-    #try to send a Post request to the messaging service. 
-    #if a connection problem araises a Connection error exception is raised.
+    # try to send a Post request to the messaging service.
+    # if a connection problem araises a Connection error exception is raised.
     try:
-        #the post request based on requests. 
+        # the post request based on requests.
         r = requests.post(url, data=body, **reqkwargs)
         decoded = json.loads(r.content)
-        
-        #if the result returns an error code an exception is raised. 
+
+        # if the result returns an error code an exception is raised.
         if 'error' in decoded:
             raise AmsServiceException(json=decoded, request=routeName)
-        
+
     except (requests.exceptions.ConnectionError, requests.exceptions.Timeout) as e:
         raise AmsConnectionException(e, routeName)
 
@@ -254,19 +273,19 @@ def do_post(url, body, routeName, **reqkwargs):
 def do_delete(url, routeName, **reqkwargs):
     """A global delete function that is used to make the appropriate request.
     Used for (topics, subscriptions). The requests library is used for the final
-    delete request. 
-    @param: url the final messaging endpoint 
+    delete request.
+    @param: url the final messaging endpoint
     @param: routeName the name of the route to follow selected from the route list
     """
-    #try to send a delete request to the messaging service. 
-    #if a connection problem araises a Connection error exception is raised.
+    # try to send a delete request to the messaging service.
+    # if a connection problem araises a Connection error exception is raised.
     try:
-        #the delete request based on requests.
+        # the delete request based on requests.
         r = requests.delete(url, **reqkwargs)
 
         if r.status_code != 200:
             decoded = json.loads(r.content)
-            #if the result returns an error code an exception is raised.
+            # if the result returns an error code an exception is raised.
             if 'error' in decoded:
                 raise AmsServiceException(json=decoded, request=routeName)
 
