@@ -26,7 +26,10 @@ class ArgoMessagingService:
                        "sub_ack": ["post", "https://{0}/v1/projects/{2}/subscriptions/{4}:acknowledge?key={1}"]}
 
     def list_topics(self, **reqkwargs):
-        """List the topics of a selected project"""
+        """List the topics of a selected project
+        @param: reqkwargs keyword argument that will be passed to underlying
+                python-requests library call
+        """
         route = self.routes["topic_list"]
         # Compose url
         url = route[1].format(self.endpoint, self.token, self.project)
@@ -38,6 +41,8 @@ class ArgoMessagingService:
         """Get the details of a selected topic
         Keyword arguments:
         @param: topic Topic Name
+        @param: reqkwargs keyword argument that will be passed to underlying
+                python-requests library call
         """
         route = self.routes["topic_get"]
         # Compose url
@@ -51,7 +56,10 @@ class ArgoMessagingService:
         Keyword arguments:
         @param: topic Topic Name
         @param: msg the message or list of messages to send. Each message is
-        represented as python dictionary with mandatory data and optional attributes keys.
+                represented as python dictionary with mandatory data and
+                optional attributes keys.
+        @param: reqkwargs keyword argument that will be passed to underlying
+                python-requests library call
         """
         if not isinstance(msg, list):
             msg = [msg]
@@ -65,7 +73,10 @@ class ArgoMessagingService:
         return method(url, msg_body, "topic_publish", **reqkwargs)
 
     def list_subs(self, **reqkwargs):
-        """Lists all subscriptions in a project with a GET request"""
+        """Lists all subscriptions in a project with a GET request
+        @param: reqkwargs keyword argument that will be passed to underlying
+                python-requests library call
+        """
         route = self.routes["sub_list"]
         # Compose url
         url = route[1].format(self.endpoint, self.token, self.project)
@@ -79,6 +90,8 @@ class ArgoMessagingService:
     def get_sub(self, sub, **reqkwargs):
         """Get the details of a subscription.
         @param: sub the Subscription name
+        @param: reqkwargs keyword argument that will be passed to underlying
+                python-requests library call
         """
         route = self.routes["sub_get"]
         # Compose url
@@ -91,7 +104,9 @@ class ArgoMessagingService:
         """This function consumes messages from a subscription in a project
         with a POST request.
         @param: sub the Subscription name.
-        @num: the number of messages to pull.
+        @param: num the number of messages to pull.
+        @param: reqkwargs keyword argument that will be passed to underlying
+                python-requests library call
         """
 
         wasmax = self.get_pullopt('maxMessages')
@@ -117,6 +132,8 @@ class ArgoMessagingService:
         that message and all previous messages as acknowledged by the consumer.
         @param: sub The subscription name to consume messages
         @param: ids The ids of the messages to acknowledge
+        @param: reqkwargs keyword argument that will be passed to underlying
+                python-requests library call
         """
         msg_body = json.dumps({"ackIds": ids})
 
@@ -152,6 +169,8 @@ class ArgoMessagingService:
                 deadline in the subscription. if your code doesn't acknowledge the
                 message in this time, the message is sent again. If you don't specify
                 the deadline, the default is 10 seconds.
+        @param: reqkwargs keyword argument that will be passed to underlying
+                python-requests library call
         """
         msg_body = json.dumps({"topic": self.get_topic(topic)['name'].strip('/'),
                                "ackDeadlineSeconds": ackdeadline})
@@ -165,6 +184,8 @@ class ArgoMessagingService:
     def delete_sub(self, sub, **reqkwargs):
         """ This function deletes a selected subscription in a project
         @param: sub the Subscription name
+        @param: reqkwargs keyword argument that will be passed to underlying
+                python-requests library call
         """
         route = self.routes["sub_delete"]
         # Compose url
@@ -176,6 +197,8 @@ class ArgoMessagingService:
     def create_topic(self, topic, **reqkwargs):
         """ This function creates a topic in a project
         @param: topic the Topics name
+        @param: reqkwargs keyword argument that will be passed to underlying
+                python-requests library call
         """
         route = self.routes["topic_create"]
         # Compose url
@@ -187,6 +210,8 @@ class ArgoMessagingService:
     def delete_topic(self, topic, **reqkwargs):
         """ This function deletes a topic in a project
         @param: topic the Topics name
+        @param: reqkwargs keyword argument that will be passed to underlying
+                python-requests library call
         """
         route = self.routes["topic_delete"]
         # Compose url
@@ -201,6 +226,8 @@ def do_get(url, routeName, **reqkwargs):
     request.
     @param: url the final messaging endpoint.
     @param: routeName the name of the route to follow selected from the route list
+    @param: reqkwargs keyword argument that will be passed to underlying
+            python-requests library call
     """
     # try to send a GET request to the messaging service.
     # if a connection problem araises a Connection error exception is raised.
@@ -226,6 +253,8 @@ def do_put(url, body, routeName, **reqkwargs):
             is always in json format.
     @param: url the final messaging endpoint.
     @param: routeName the name of the route to follow selected from the route list
+    @param: reqkwargs keyword argument that will be passed to underlying
+            python-requests library call
     """
     # try to send a PUT request to the messaging service.
     # if a connection problem araises a Connection error exception is raised.
@@ -252,6 +281,8 @@ def do_post(url, body, routeName, **reqkwargs):
     @param: body the post data to send based on the post request. The post data
             is always in json format.
     @param: routeName the name of the route to follow selected from the route list
+    @param: reqkwargs keyword argument that will be passed to underlying
+            python-requests library call
     """
     # try to send a Post request to the messaging service.
     # if a connection problem araises a Connection error exception is raised.
@@ -276,6 +307,8 @@ def do_delete(url, routeName, **reqkwargs):
     delete request.
     @param: url the final messaging endpoint
     @param: routeName the name of the route to follow selected from the route list
+    @param: reqkwargs keyword argument that will be passed to underlying
+            python-requests library call
     """
     # try to send a delete request to the messaging service.
     # if a connection problem araises a Connection error exception is raised.
