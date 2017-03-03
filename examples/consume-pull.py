@@ -16,7 +16,9 @@ def main():
     # initialize service with given token and project
     ams = ArgoMessagingService(endpoint=args.host, token=args.token, project=args.project)
 
-    # ensure that subscription is created in first run
+    # ensure that subscription is created in first run. messages can be
+    # pulled from the subscription only when subscription already exists
+    # for given topic prior messages being published to topic
     try:
         ams.get_sub(args.subscription)
     except AmsException as e:
@@ -24,7 +26,7 @@ def main():
 
     # try to pull number of messages from subscription. method will
     # return (ackIds, AmsMessage) tuples from which ackIds and messages
-    # payload will be extracted
+    # payload will be extracted.
     ackids = list()
     for id, msg in ams.pull_sub(args.subscription, args.nummsgs):
         data = msg.get_data()
