@@ -31,6 +31,7 @@ rm -rf $RPM_BUILD_ROOT
 %{__python} setup.py install --skip-build --root $RPM_BUILD_ROOT --record=INSTALLED_FILES
 
 %files -f INSTALLED_FILES
+%doc examples/ README.md
 %defattr(-,root,root,-)
 %dir %{python_sitelib}/%{underscore %{name}}
 %{python_sitelib}/%{underscore %{name}}/*.py[co]
