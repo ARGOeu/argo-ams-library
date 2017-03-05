@@ -50,11 +50,11 @@ In the folder examples, you may find examples of using the library:
  You may find more information about [SUbscriptions in the ARGO Messaging Service documentation](http://argoeu.github.io/messaging/v1/api_subs/)
  
  ```
- consume-pull.py  --host=[the FQDN of AMS Service] 
- --token=[the user token] 
- --project=[the name of your project registered in AMS Service] 
- --topic=[the topic from where the messages are delivered ] 
- --subscription=[the subscription name to pull the messages] 
+ consume-pull.py  --host=[the FQDN of AMS Service] \
+ --token=[the user token] \
+ --project=[the name of your project registered in AMS Service] \ 
+ --topic=[the topic from where the messages are delivered ] \ 
+ --subscription=[the subscription name to pull the messages] \ 
  --nummsgs=[the num of messages to consume]
 
  ```
