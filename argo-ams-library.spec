@@ -4,7 +4,7 @@
 
 Name:           argo-ams-library
 Version:        0.1.0
-Release:        1%{?dist}
+Release:        2%{?dist}
 Summary:        A simple python library for interacting with the ARGO Messaging Service
 
 Group:          Development/Libraries
@@ -31,10 +31,13 @@ rm -rf $RPM_BUILD_ROOT
 %{__python} setup.py install --skip-build --root $RPM_BUILD_ROOT --record=INSTALLED_FILES
 
 %files -f INSTALLED_FILES
+%doc examples/ README.md
 %defattr(-,root,root,-)
 %dir %{python_sitelib}/%{underscore %{name}}
 %{python_sitelib}/%{underscore %{name}}/*.py[co]
 
 %changelog
+* Thu Mar 2 2017 Daniel Vrcic <dvrcic@srce.hr> - 0.1.0-2%{?dist}
+- ARGO-710 Provide examples of simple publishing and consuming
 * Fri Feb 24 2017 Daniel Vrcic <dvrcic@srce.hr> - 0.1.0-1%{?dist}
 - first version 
