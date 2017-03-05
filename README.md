@@ -39,7 +39,10 @@ In the folder examples, you may find examples of using the library:
  You may find more information about [Topics in the ARGO Messaging Service documentation](http://argoeu.github.io/messaging/v1/api_topics/)
  
  ```
- publisher.py  --host=[the FQDN of AMS Service] --token=[the user token] --project=[the name of your project registered in AMS Service] --topic=[the topic to publish your messages]
+ publisher.py  --host=[the FQDN of AMS Service] 
+ --token=[the user token] 
+ --project=[the name of your project registered in AMS Service] 
+ --topic=[the topic to publish your messages]
  ```
  
  
