@@ -29,8 +29,8 @@ http://rpm-repo.argo.grnet.gr/ARGO/prod/centos6/
 
 In the folder examples, you may find examples of using the library:
  
- - for publishing messages (examples/consume-pull.py)
- - for consuming messages in pull mode (examples/publisher.py)
+ - for publishing messages (examples/publish.py)
+ - for consuming messages in pull mode (examples/consume-pull.py)
  
  ### Publish messages
  
@@ -39,7 +39,7 @@ In the folder examples, you may find examples of using the library:
  You may find more information about [Topics in the ARGO Messaging Service documentation](http://argoeu.github.io/messaging/v1/api_topics/)
  
  ```
- publisher.py  --host=[the FQDN of AMS Service] 
+ publish.py  --host=[the FQDN of AMS Service] 
  --token=[the user token] 
  --project=[the name of your project registered in AMS Service] 
  --topic=[the topic to publish your messages]
@@ -50,7 +50,7 @@ In the folder examples, you may find examples of using the library:
  
  This example explains how to consume messages from a predefined subscription with the use of the library. A subscription is a named resource representing the stream of messages from a single, specific topic, to be delivered to the subscribing application. A subscription name  must be scoped to a project. In pull delivery, your subscriber application initiates requests to the Pub/Sub server to retrieve messages. When you create a subscription, the system establishes a sync point. That is, your subscriber is guaranteed to receive any message published after this point. Messages published before the sync point may not be delivered.
  
- You may find more information about [SUbscriptions in the ARGO Messaging Service documentation](http://argoeu.github.io/messaging/v1/api_subs/)
+ You may find more information about [Subscriptions in the ARGO Messaging Service documentation](http://argoeu.github.io/messaging/v1/api_subs/)
  
  ```
  consume-pull.py  --host=[the FQDN of AMS Service] 
