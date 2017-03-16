@@ -20,9 +20,11 @@ def main():
     # pulled from the subscription only when subscription already exists
     # for given topic prior messages being published to topic
     try:
-        ams.get_sub(args.subscription)
+        if not ams.has_sub(args.subscription):
+            ams.create_sub(args.subscription, args.topic)
     except AmsException as e:
-        ams.create_sub(args.subscription, args.topic)
+        print e
+        raise SystemExit(1)
 
     # try to pull number of messages from subscription. method will
     # return (ackIds, AmsMessage) tuples from which ackIds and messages

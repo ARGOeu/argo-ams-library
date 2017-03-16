@@ -120,6 +120,26 @@ class ArgoMessagingService:
 
         return method(url, "sub_get", **reqkwargs)
 
+
+    def has_sub(self, sub, **reqkwargs):
+        """Inspect if subscription already exists or not
+        @param: sub the Subscription name
+        @param: reqkwargs keyword argument that will be passed to underlying
+                python-requests library call
+        """
+        try:
+            self.get_sub(sub)
+            return True
+
+        except AmsServiceException as e:
+            if e.code == 404:
+                return False
+            else:
+                return True
+
+        except AmsConnectionException as e:
+            raise e
+
     def pull_sub(self, sub, num=1, **reqkwargs):
         """This function consumes messages from a subscription in a project
         with a POST request.
