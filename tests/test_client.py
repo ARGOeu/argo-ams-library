@@ -4,6 +4,13 @@ from pymod import ArgoMessagingService
 from pymod import AmsMessage
 import requests
 
+def example_401_response(url, response):
+    r = requests.Response()
+    print r
+    r.status_code = 401
+    r._content = b'Unauthorized'
+    return r
+
 class TestClient(unittest.TestCase):
 
 
@@ -11,6 +18,21 @@ class TestClient(unittest.TestCase):
         # Initialize ams in localhost with token s3cr3t and project TEST
         self.ams = ArgoMessagingService(endpoint="localhost", token="s3cr3t",
                                    project="TEST")
+
+    # Test create topic client request
+    def testCreateTopics(self):
+        # Mock response for PUT topic reqeuest
+        @urlmatch(netloc="localhost", path="/v1/projects/TEST/topics",
+                  method="PUT")
+        def create_topic_mock(url, request):
+            # Return two topics in json format
+            return response(200,'{"name":"/v1/projects/TEST/topics/topic1"}',None,None,5,request)
+        # Execute ams client with mocked response
+        with HTTMock(create_topic_mock):
+            resp= self.ams.create_topic("project1")
+            # Assert that ams client handled the json response correctly
+            name = resp["name"]
+            assert(name == "/v1/projects/TEST/topics/topic1")
 
     # Test List topics client request
     def testListTopics(self):
@@ -20,7 +42,7 @@ class TestClient(unittest.TestCase):
 
         def list_topics_mock(url, request):
             # Return two topics in json format
-            return response(200,'{"topics":[{"name":"projects/TEST/topic1"},{"name":"projects/TEST/topic2"}]}',None,None,5,request)
+            return response(200,'{"topics":[{"name":"/v1/projects/TEST/topic1"},{"name":"/v1/projects/TEST/topic2"}]}',None,None,5,request)
 
         # Execute ams client with mocked response
         with HTTMock(list_topics_mock):
@@ -28,9 +50,26 @@ class TestClient(unittest.TestCase):
             # Assert that ams client handled the json response correctly
             topics = resp["topics"]
             assert(len(topics)==2)
-            assert(topics[0]["name"] == "projects/TEST/topic1")
-            assert(topics[1]["name"] == "projects/TEST/topic2")
+            assert(topics[0]["name"] == "/v1/projects/TEST/topic1")
+            assert(topics[1]["name"] == "/v1/projects/TEST/topic2")
 
+    
+    # Test Get a topic client request
+    def testGetTopic(self):
+        # Mock response for GET topic request
+        @urlmatch(netloc="localhost", path="/v1/projects/TEST/topics/topic1",
+                  method="GET")
+
+        def get_topic_mock(url, request):
+            # Return the details of a topic in json format
+            return response(200,'{"name":"/v1/projects/TEST/topics/topic1"}',None,None,5,request)
+
+        # Execute ams client with mocked response
+        with HTTMock(get_topic_mock):
+            resp= self.ams.get_topic("topic1")
+            # Assert that ams client handled the json response correctly
+            name = resp["name"]
+            assert(name == "/v1/projects/TEST/topics/topic1")
 
 
     # Test Publish client request
