@@ -62,6 +62,3 @@ In the folder examples, you may find examples of using the library:
 
  ```
  
- 
- 
- 
