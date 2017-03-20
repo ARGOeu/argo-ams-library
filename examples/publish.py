@@ -16,9 +16,11 @@ def main():
 
     # ensure that topic is created in first run
     try:
-        ams.get_topic(args.topic)
+        if not ams.has_topic(args.topic):
+            ams.create_topic(args.topic)
     except AmsException as e:
-        ams.create_topic(args.topic)
+        print e
+        raise SystemExit(1)
 
     # publish one message to given topic. message is constructed with
     # help of AmsMessage which accepts data and attributes keys.

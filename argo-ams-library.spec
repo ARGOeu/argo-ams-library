@@ -3,8 +3,8 @@
 %define underscore() %(echo %1 | sed 's/-/_/g')
 
 Name:           argo-ams-library
-Version:        0.1.0
-Release:        2%{?dist}
+Version:        0.1.1
+Release:        1%{?dist}
 Summary:        A simple python library for interacting with the ARGO Messaging Service
 
 Group:          Development/Libraries
@@ -37,6 +37,9 @@ rm -rf $RPM_BUILD_ROOT
 %{python_sitelib}/%{underscore %{name}}/*.py[co]
 
 %changelog
+* Fri Mar 17 2017 Daniel Vrcic <dvrcic@srce.hr>, Themis Zamani <themiszamani@gmail.com>, Konstantinos Kagkelidis <kaggis@gmail.com> - 0.1.1-1%{?dist}
+- ARGO-760 Has topic and subscription methods
+- ARGO-770 AMS Library tests
 * Thu Mar 2 2017 Daniel Vrcic <dvrcic@srce.hr> - 0.1.0-2%{?dist}
 - ARGO-710 Provide examples of simple publishing and consuming
 * Fri Feb 24 2017 Daniel Vrcic <dvrcic@srce.hr> - 0.1.0-1%{?dist}

@@ -37,6 +37,26 @@ class ArgoMessagingService:
 
         return method(url, "topic_list", **reqkwargs)
 
+    def has_topic(self, topic, **reqkwargs):
+        """Inspect if topic already exists or not
+        Keyword arguments:
+        @param: topic Topic Name
+        @param: reqkwargs keyword argument that will be passed to underlying
+                python-requests library call
+        """
+        try:
+            self.get_topic(topic)
+            return True
+
+        except AmsServiceException as e:
+            if e.code == 404:
+                return False
+            else:
+                return True
+
+        except AmsConnectionException as e:
+            raise e
+
     def get_topic(self, topic, **reqkwargs):
         """Get the details of a selected topic
         Keyword arguments:
@@ -99,6 +119,26 @@ class ArgoMessagingService:
         method = eval('do_{0}'.format(route[0]))
 
         return method(url, "sub_get", **reqkwargs)
+
+
+    def has_sub(self, sub, **reqkwargs):
+        """Inspect if subscription already exists or not
+        @param: sub the Subscription name
+        @param: reqkwargs keyword argument that will be passed to underlying
+                python-requests library call
+        """
+        try:
+            self.get_sub(sub)
+            return True
+
+        except AmsServiceException as e:
+            if e.code == 404:
+                return False
+            else:
+                return True
+
+        except AmsConnectionException as e:
+            raise e
 
     def pull_sub(self, sub, num=1, **reqkwargs):
         """This function consumes messages from a subscription in a project
