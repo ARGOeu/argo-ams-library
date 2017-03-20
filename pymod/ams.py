@@ -102,8 +102,9 @@ class ArgoMessagingService:
         url = route[1].format(self.endpoint, self.token, self.project)
         method = eval('do_{0}'.format(route[0]))
         r = method(url, "sub_list", **reqkwargs)
+
         if r:
-            return r['subscriptions']
+            return r
         else:
             return []
 
@@ -214,6 +215,7 @@ class ArgoMessagingService:
         """
         msg_body = json.dumps({"topic": self.get_topic(topic)['name'].strip('/'),
                                "ackDeadlineSeconds": ackdeadline})
+
         route = self.routes["sub_create"]
         # Compose url
         url = route[1].format(self.endpoint, self.token, self.project, "", sub)
