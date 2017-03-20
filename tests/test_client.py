@@ -33,6 +33,8 @@ class TestClient(unittest.TestCase):
             # Assert that ams client handled the json response correctly
             name = resp["name"]
             assert(name == "/v1/projects/TEST/topics/topic1")
+            
+
 
     # Test List topics client request
     def testListTopics(self):
@@ -92,8 +94,44 @@ class TestClient(unittest.TestCase):
             # Assert that ams client handled the json response correctly
             assert(resp["msgIds"][0]=="1")
 
+   
+            
+    # Test List Subscriptions client request
+    def testListSubscriptions(self):
+        # Mock response for GET Subscriptions reqeuest
+        @urlmatch(netloc="localhost", path="/v1/projects/TEST/subscriptions",
+                  method="GET")
 
+        def list_subs_mock(url, request):
+            # Return two topics in json format
+            return response(200,'{"subscriptions":[{"name": "/projects/TEST/subscriptions/subscription1", "topic": "/projects/TEST/topics/topic1","pushConfig": {"pushEndpoint": "","retryPolicy": {}},"ackDeadlineSeconds": 10},{"name": "/projects/TEST/subscriptions/subscription2", "topic": "/projects/TEST/topics/topic1", "pushConfig": {"pushEndpoint": "","retryPolicy": {}},"ackDeadlineSeconds": 10}]}',None,None,5,request)
+        
+        # Execute ams client with mocked response
+        with HTTMock(list_subs_mock):
+            resp= self.ams.list_subs()
+            subscriptions = resp["subscriptions"]
+            # Assert that ams client handled the json response correctly
+            assert(len(subscriptions)==2)
+            assert(subscriptions[0]["name"] == "/projects/TEST/subscriptions/subscription1")
+            assert(subscriptions[1]["name"] == "/projects/TEST/subscriptions/subscription2")
 
+    
+    # Test Get a subscriptions client request
+    def testGetSubscription(self):
+        # Mock response for GET subscriptions request
+        @urlmatch(netloc="localhost", path="/v1/projects/TEST/subscriptions/subscription1",
+                  method="GET")
+
+        def get_sub_mock(url, request):
+            # Return the details of a subscription in json format
+            return response(200,'{"name":"/v1/projects/TEST/subscriptions/subscription1"}',None,None,5,request)
+
+        # Execute ams client with mocked response
+        with HTTMock(get_sub_mock):
+            resp= self.ams.get_sub("subscription1")
+            # Assert that ams client handled the json response correctly
+            name = resp["name"]
+            assert(name == "/v1/projects/TEST/subscriptions/subscription1")
 
 if __name__ == '__main__':
     unittest.main()
