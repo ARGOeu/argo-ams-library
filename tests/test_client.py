@@ -34,7 +34,32 @@ class TestClient(unittest.TestCase):
             name = resp["name"]
             assert(name == "/v1/projects/TEST/topics/topic1")
             
+            
+    # Test create subscription client request
+    def testCreateSubscription(self):
+        # Mock response for GET topic request
+        @urlmatch(netloc="localhost", path="/v1/projects/TEST/topics/topic1",
+                  method="GET")
+        def get_topic_mock(url, request):
+            # Return the details of a topic in json format
+            return response(200, '{"name":"/v1/projects/TEST/topics/topic1"}', None, None, 5, request)
 
+        # Mock response for PUT topic reqeuest
+        @urlmatch(netloc="localhost", path="/v1/projects/TEST/subscriptions",
+                  method="PUT")
+        def create_subscription_mock(url, request):
+            # Return two topics in json format
+            return response(200,
+                            '{"name": "/v1/projects/TEST/subscriptions/subscription1","topic":"/v1/projects/TEST/topics/topic1","pushConfig":{"pushEndpoint":"","retryPolicy":{}},"ackDeadlineSeconds": 10}',
+                            None, None, 5, request)
+
+        # Execute ams client with mocked response
+        with HTTMock(create_subscription_mock,get_topic_mock):
+            resp = self.ams.create_sub("subscription1", "topic1", 10)
+            # Assert that ams client handled the json response correctly
+            name = resp["name"]
+            assert (name == "/v1/projects/TEST/subscriptions/subscription1")
+            
 
     # Test List topics client request
     def testListTopics(self):
