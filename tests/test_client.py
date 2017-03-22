@@ -53,7 +53,7 @@ class TestClient(unittest.TestCase):
             assert(topics[0]["name"] == "/v1/projects/TEST/topic1")
             assert(topics[1]["name"] == "/v1/projects/TEST/topic2")
 
-    
+
     # Test Get a topic client request
     def testGetTopic(self):
         # Mock response for GET topic request
@@ -93,7 +93,27 @@ class TestClient(unittest.TestCase):
             assert(resp["msgIds"][0]=="1")
 
 
+    # Test has topic client
+    def testHasTopic(self):
+        # Mock response for GET topic request
+        @urlmatch(netloc="localhost", path="/v1/projects/TEST/topics/topic1", method="GET")
+        def has_topic_mock(url, request):
+            return response(200, '{"name": "/v1/projects/TEST/topics/topic1"}', None, None, 5, request)
 
+        with HTTMock(has_topic_mock):
+            self.assertTrue(self.ams.has_topic('topic1'))
+
+    # Test has subscription client
+    def testHasSub(self):
+        # Mock response for GET topic request
+        @urlmatch(netloc="localhost", path="/v1/projects/TEST/subscriptions/subscription1", method="GET")
+        def has_subscription_mock(url, request):
+            return response(200, '{"subscriptions":[{"name":"/v1/projects/TEST/subscriptions/subscription1",\
+                            "topic":"/v1/projects/TEST/topics/topic1",\
+                            "ackDeadlineSeconds":"10"}]}', None, None, 5, request)
+
+        with HTTMock(has_subscription_mock):
+            self.assertTrue(self.ams.has_sub('subscription1'))
 
 if __name__ == '__main__':
     unittest.main()
