@@ -33,8 +33,8 @@ class TestClient(unittest.TestCase):
             # Assert that ams client handled the json response correctly
             name = resp["name"]
             assert(name == "/v1/projects/TEST/topics/topic1")
-            
-            
+
+
     # Test create subscription client request
     def testCreateSubscription(self):
         # Mock response for GET topic request
@@ -59,7 +59,7 @@ class TestClient(unittest.TestCase):
             # Assert that ams client handled the json response correctly
             name = resp["name"]
             assert (name == "/v1/projects/TEST/subscriptions/subscription1")
-            
+
 
     # Test List topics client request
     def testListTopics(self):
@@ -80,7 +80,7 @@ class TestClient(unittest.TestCase):
             assert(topics[0]["name"] == "/v1/projects/TEST/topic1")
             assert(topics[1]["name"] == "/v1/projects/TEST/topic2")
 
-    
+
     # Test Get a topic client request
     def testGetTopic(self):
         # Mock response for GET topic request
@@ -119,8 +119,8 @@ class TestClient(unittest.TestCase):
             # Assert that ams client handled the json response correctly
             assert(resp["msgIds"][0]=="1")
 
-   
-            
+
+
     # Test List Subscriptions client request
     def testListSubscriptions(self):
         # Mock response for GET Subscriptions reqeuest
@@ -130,7 +130,7 @@ class TestClient(unittest.TestCase):
         def list_subs_mock(url, request):
             # Return two topics in json format
             return response(200,'{"subscriptions":[{"name": "/projects/TEST/subscriptions/subscription1", "topic": "/projects/TEST/topics/topic1","pushConfig": {"pushEndpoint": "","retryPolicy": {}},"ackDeadlineSeconds": 10},{"name": "/projects/TEST/subscriptions/subscription2", "topic": "/projects/TEST/topics/topic1", "pushConfig": {"pushEndpoint": "","retryPolicy": {}},"ackDeadlineSeconds": 10}]}',None,None,5,request)
-        
+
         # Execute ams client with mocked response
         with HTTMock(list_subs_mock):
             resp= self.ams.list_subs()
@@ -140,7 +140,7 @@ class TestClient(unittest.TestCase):
             assert(subscriptions[0]["name"] == "/projects/TEST/subscriptions/subscription1")
             assert(subscriptions[1]["name"] == "/projects/TEST/subscriptions/subscription2")
 
-    
+
     # Test Get a subscriptions client request
     def testGetSubscription(self):
         # Mock response for GET subscriptions request
@@ -157,6 +157,28 @@ class TestClient(unittest.TestCase):
             # Assert that ams client handled the json response correctly
             name = resp["name"]
             assert(name == "/v1/projects/TEST/subscriptions/subscription1")
+
+    # Test has topic client
+    def testHasTopic(self):
+        # Mock response for GET topic request
+        @urlmatch(netloc="localhost", path="/v1/projects/TEST/topics/topic1", method="GET")
+        def has_topic_mock(url, request):
+            return response(200, '{"name": "/v1/projects/TEST/topics/topic1"}', None, None, 5, request)
+
+        with HTTMock(has_topic_mock):
+            self.assertTrue(self.ams.has_topic('topic1'))
+
+    # Test has subscription client
+    def testHasSub(self):
+        # Mock response for GET topic request
+        @urlmatch(netloc="localhost", path="/v1/projects/TEST/subscriptions/subscription1", method="GET")
+        def has_subscription_mock(url, request):
+            return response(200, '{"subscriptions":[{"name":"/v1/projects/TEST/subscriptions/subscription1",\
+                            "topic":"/v1/projects/TEST/topics/topic1",\
+                            "ackDeadlineSeconds":"10"}]}', None, None, 5, request)
+
+        with HTTMock(has_subscription_mock):
+            self.assertTrue(self.ams.has_sub('subscription1'))
 
 if __name__ == '__main__':
     unittest.main()

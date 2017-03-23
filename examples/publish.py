@@ -33,10 +33,12 @@ def main():
     except AmsException as e:
         print e
 
-    # publish a list of two messages to given topic. publish() method
-    # accepts either one messages or list of messages
-    msglist = [AmsMessage(data='foo2', attributes={'bar2': 'baz2'}).dict(),
-               AmsMessage(data='foo3', attributes={'bar3': 'baz3'}).dict()]
+    # publish a list of two messages to given topic. AmsMessage can also be
+    # used as a callable. publish() method accepts either one messages or
+    # list of messages
+    msg = AmsMessage()
+    msglist = [msg(data='foo2', attributes={'bar2': 'baz2'}),
+               msg(data='foo3', attributes={'bar3': 'baz3'})]
     try:
         ret = ams.publish(args.topic, msglist)
         print ret
