@@ -70,17 +70,6 @@ class TestClient(unittest.TestCase):
                     "message":{"messageId":"1221","attributes":{"foo":"bar"},"data":"YmFzZTY0ZW5jb2RlZA==",\
                     "publishTime":"2016-02-24T11:55:09.786127994Z"}}]}'
 
-        @urlmatch(netloc="localhost", path="/v1/projects/TEST/subscriptions/subscription1:acknowledge",
-                  method="POST")
-        def ack_mock(url, request):
-            assert url.path == "/v1/projects/TEST/subscriptions/subscription1:acknowledge"
-            # Error: library returns json in the form {"ackIds": 1221}
-            assert request.body == '{"ackIds": ["1221"]}'
-            # Check request produced by ams client
-            return '{}'
-
-        # Execute ams client with mocked response
-        with HTTMock(pull_mock, ack_mock, get_sub_mock):
 
             # msg = AmsMessage(data='foo1', attributes={'bar1': 'baz1'}).dict()
             resp_pull = self.ams.pull_sub("subscription1", 1)
