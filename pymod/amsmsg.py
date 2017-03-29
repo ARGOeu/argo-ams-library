@@ -1,13 +1,18 @@
 import json
 from base64 import b64encode, b64decode
+from collections import Callable
 
-class AmsMessage(object):
+class AmsMessage(Callable):
     def __init__(self, b64enc=True, attributes=None, data=None,
                  messageId=None, publishTime=None):
         self.attributes = attributes
-        self.data = b64encode(data) if b64enc else data
+        self.data = b64encode(data) if b64enc and data else data
         self.messageId = messageId
         self.publishTime = publishTime
+
+    def __call__(self, **kwargs):
+        self.__init__(b64enc=True, **kwargs)
+        return self.dict()
 
     def set_attr(self, key, value):
         self.attributes.update({key: value})
