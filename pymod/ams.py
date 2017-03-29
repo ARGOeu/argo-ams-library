@@ -53,7 +53,7 @@ class ArgoMessagingService:
             if e.code == 404:
                 return False
             else:
-                return True
+                raise e
 
         except AmsConnectionException as e:
             raise e
@@ -137,7 +137,7 @@ class ArgoMessagingService:
             if e.code == 404:
                 return False
             else:
-                return True
+                raise e
 
         except AmsConnectionException as e:
             raise e
