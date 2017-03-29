@@ -5,16 +5,15 @@ from collections import Callable
 from amsexceptions import AmsMessageException
 
 class AmsMessage(Callable):
-    def __init__(self, callable=False, b64enc=True, attributes=None, data=None,
+    def __init__(self, b64enc=True, attributes=None, data=None,
                  messageId=None, publishTime=None):
         self._attributes = attributes
         self._messageId = messageId
         self._publishTime = publishTime
-        self._callable = callable
         self.set_data(data, b64enc)
 
     def __call__(self, **kwargs):
-        self.__init__(callable=True, b64enc=True, **kwargs)
+        self.__init__(b64enc=True, **kwargs)
 
         return self.dict()
 
