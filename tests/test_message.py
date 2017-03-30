@@ -8,7 +8,6 @@ class TestMessage(unittest.TestCase):
     def setUp(self):
         m = AmsMessage()
         self.message_callable = m(attributes={'foo': 'bar'}, data='baz')
-        self.message_callable_nodata = m(attributes={'foo': 'bar'})
         self.message_send = AmsMessage(attributes={'foo': 'bar'}, data='baz')
         self.message_send_no_data = AmsMessage(attributes={'foo': 'bar'})
 
