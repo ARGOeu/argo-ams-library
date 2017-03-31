@@ -4,7 +4,6 @@ from amsexceptions import AmsServiceException, AmsConnectionException
 from amsmsg import AmsMessage
 from amstopic import AmsTopic
 
-
 class ArgoMessagingService(object):
     def __init__(self, endpoint, token="", project=""):
         self.endpoint = endpoint
@@ -24,19 +23,15 @@ class ArgoMessagingService(object):
                        "sub_get": ["get", "https://{0}/v1/projects/{2}/subscriptions/{4}?key={1}"],
                        "sub_pull": ["post", "https://{0}/v1/projects/{2}/subscriptions/{4}:pull?key={1}"],
                        "sub_ack": ["post", "https://{0}/v1/projects/{2}/subscriptions/{4}:acknowledge?key={1}"]}
-        self.topics = list()
-        self.topicobjs = list()
-        self._seentopics = set()
+        self.topics = dict()
 
     def _create_topic_obj(self, t):
-        self._seentopics.add(t['name'])
-        self.topics.append(t)
-        self.topicobjs.append(AmsTopic(t['name'], init=self))
+        self.topics.update({t['name']: AmsTopic(t['name'], init=self)})
 
     def iter_topics(self):
         self.list_topics()
 
-        for t in self.topicobjs:
+        for t in self.topics.itervalues():
             yield t
 
     def list_topics(self, **reqkwargs):
@@ -51,13 +46,14 @@ class ArgoMessagingService(object):
         url = route[1].format(self.endpoint, self.token, self.project)
         method = eval('do_{0}'.format(route[0]))
 
-        ret = method(url, "topic_list", **reqkwargs)
+        r = method(url, "topic_list", **reqkwargs)
 
-        for t in ret['topics']:
-            if t['name'] not in self._seentopics:
+        for t in r['topics']:
+            if t['name'] not in self.topics:
                 self._create_topic_obj(t)
 
-        return ret
+        if r:
+            return r
 
     def has_topic(self, topic):
         """Inspect if topic already exists or not
