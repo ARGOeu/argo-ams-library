@@ -36,11 +36,14 @@ class ArgoMessagingService(object):
     def _create_topic_obj(self, t):
         self.topics.update({t['name']: AmsTopic(t['name'], init=self)})
 
-    def iter_subs(self):
+    def iter_subs(self, topic=None):
         self.list_subs()
 
         for s in self.subs.itervalues():
-            yield s
+            if topic and topic == s.topic.name:
+                yield s
+            elif not topic:
+                yield s
 
     def iter_topics(self):
         self.list_topics()
