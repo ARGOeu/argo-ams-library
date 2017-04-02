@@ -36,6 +36,9 @@ class ArgoMessagingService(object):
     def _create_topic_obj(self, t):
         self.topics.update({t['name']: AmsTopic(t['name'], init=self)})
 
+    def _delete_topic_obj(self, t):
+        del self.topics[t['name']]
+
     def iter_subs(self, topic=None):
         self.list_subs()
 
@@ -105,7 +108,12 @@ class ArgoMessagingService(object):
         url = route[1].format(self.endpoint, self.token, self.project, topic)
         method = eval('do_{0}'.format(route[0]))
 
-        return method(url, "topic_get", **reqkwargs)
+        r = method(url, "topic_get", **reqkwargs)
+
+        if r['name'] not in self.topics:
+            self._create_topic_obj(r)
+
+        return r
 
     def publish(self, topic, msg, **reqkwargs):
         """Publish a message or list of messages to a selected topic.
@@ -301,7 +309,12 @@ class ArgoMessagingService(object):
         url = route[1].format(self.endpoint, self.token, self.project, topic)
         method = eval('do_{0}'.format(route[0]))
 
-        return method(url, '', "topic_create", **reqkwargs)
+        r = method(url, '', "topic_create", **reqkwargs)
+
+        if r['name'] not in self.topics:
+            self._create_topic_obj(r)
+
+        return r
 
     def delete_topic(self, topic, **reqkwargs):
         """ This function deletes a topic in a project
@@ -315,7 +328,16 @@ class ArgoMessagingService(object):
         url = route[1].format(self.endpoint, self.token, self.project, topic)
         method = eval('do_{0}'.format(route[0]))
 
-        return method(url, "topic_delete", **reqkwargs)
+        r = method(url, "topic_delete", **reqkwargs)
+
+        topic_fullname = "/project/{0}/topics/{1}".format(self.project, topic)
+        topic_fullname2 = "/projects/{0}/topics/{1}".format(self.project, topic)
+        if topic_fullname in self.topics:
+            self._delete_topic_obj({'name': topic_fullname})
+        elif topic_fullname2 in self.topics:
+            self._delete_topic_obj({'name': topic_fullname2})
+
+        return r
 
 
 def do_get(url, route_name, **reqkwargs):
