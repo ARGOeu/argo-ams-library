@@ -111,8 +111,8 @@ class TestClient(unittest.TestCase):
         def list_topics_mock(url, request):
             assert url.path == "/v1/projects/TEST/topics"
             # Return two topics in json format
-            return response(200, '{"topics":[{"name":"/v1/projects/TEST/topic1"},\
-                                  {"name":"/v1/projects/TEST/topic2"}]}', None, None, 5, request)
+            return response(200, '{"topics":[{"name":"/project/TEST/topics/topic1"},\
+                                  {"name":"/project/TEST/topics/topic2"}]}', None, None, 5, request)
 
         # Execute ams client with mocked response
         with HTTMock(list_topics_mock):
@@ -120,8 +120,8 @@ class TestClient(unittest.TestCase):
             # Assert that ams client handled the json response correctly
             topics = resp["topics"]
             assert len(topics) == 2
-            assert topics[0]["name"] == "/v1/projects/TEST/topic1"
-            assert topics[1]["name"] == "/v1/projects/TEST/topic2"
+            assert topics[0]["name"] == "/project/TEST/topics/topic1"
+            assert topics[1]["name"] == "/project/TEST/topics/topic2"
 
     # Test Get a topic client request
     def testGetTopic(self):
