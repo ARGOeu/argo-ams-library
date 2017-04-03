@@ -197,7 +197,10 @@ class TestClient(unittest.TestCase):
         def get_sub_mock(url, request):
             assert url.path == "/v1/projects/TEST/subscriptions/subscription1"
             # Return the details of a subscription in json format
-            return response(200, '{"name":"/projects/TEST/subscriptions/subscription1"}', None, None, 5, request)
+            return response(200, '{"name":"/projects/TEST/subscriptions/subscription1",\
+                            "topic":"/projects/TEST/topics/topic1",\
+                            "pushConfig": {"pushEndpoint": "","retryPolicy": {}},\
+                            "ackDeadlineSeconds":"10"}', None, None, 5, request)
 
         # Execute ams client with mocked response
         with HTTMock(get_sub_mock):
@@ -211,7 +214,7 @@ class TestClient(unittest.TestCase):
         # Mock response for GET topic request
         @urlmatch(netloc="localhost", path="/v1/projects/TEST/topics/topic1", method="GET")
         def has_topic_mock(url, request):
-            return response(200, '{"name": "/v1/projects/TEST/topics/topic1"}', None, None, 5, request)
+            return response(200, '{"name": "/projects/TEST/topics/topic1"}', None, None, 5, request)
 
         with HTTMock(has_topic_mock):
             self.assertTrue(self.ams.has_topic('topic1'))
@@ -221,9 +224,10 @@ class TestClient(unittest.TestCase):
         # Mock response for GET topic request
         @urlmatch(netloc="localhost", path="/v1/projects/TEST/subscriptions/subscription1", method="GET")
         def has_subscription_mock(url, request):
-            return response(200, '{"subscriptions":[{"name":"/v1/projects/TEST/subscriptions/subscription1",\
-                            "topic":"/v1/projects/TEST/topics/topic1",\
-                            "ackDeadlineSeconds":"10"}]}', None, None, 5, request)
+            return response(200, '{"name":"/projects/TEST/subscriptions/subscription1",\
+                            "topic":"/projects/TEST/topics/topic1",\
+                            "pushConfig": {"pushEndpoint": "","retryPolicy": {}},\
+                            "ackDeadlineSeconds":"10"}', None, None, 5, request)
 
         with HTTMock(has_subscription_mock):
             self.assertTrue(self.ams.has_sub('subscription1'))
