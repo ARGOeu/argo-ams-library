@@ -330,12 +330,9 @@ class ArgoMessagingService(object):
 
         r = method(url, "topic_delete", **reqkwargs)
 
-        topic_fullname = "/project/{0}/topics/{1}".format(self.project, topic)
-        topic_fullname2 = "/projects/{0}/topics/{1}".format(self.project, topic)
+        topic_fullname = "/projects/{0}/topics/{1}".format(self.project, topic)
         if topic_fullname in self.topics:
             self._delete_topic_obj({'name': topic_fullname})
-        elif topic_fullname2 in self.topics:
-            self._delete_topic_obj({'name': topic_fullname2})
 
         return r
 
