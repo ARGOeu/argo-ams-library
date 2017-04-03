@@ -8,5 +8,5 @@ except ImportError:
 logging.getLogger(__name__).addHandler(NullHandler())
 
 from .ams import ArgoMessagingService
-from .amsexceptions import (AmsServiceException, AmsConnectionException, AmsException)
+from .amsexceptions import (AmsServiceException, AmsConnectionException, AmsMessageException, AmsException)
 from .amsmsg import AmsMessage

@@ -15,3 +15,8 @@ class AmsConnectionException(AmsException):
     def __init__(self, exp, request):
         self.msg = "While trying the [{0}]: {1}".format(request, repr(exp))
         super(AmsConnectionException, self).__init__(self.msg)
+
+class AmsMessageException(AmsException):
+    def __init__(self, msg):
+        self.msg = msg
+        super(AmsMessageException, self).__init__(self.msg)
