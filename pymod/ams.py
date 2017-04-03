@@ -33,6 +33,9 @@ class ArgoMessagingService(object):
                                                      s['ackDeadlineSeconds'],
                                                      init=self)})
 
+    def _delete_sub_obj(self, s):
+        del self.subs[s['name']]
+
     def _create_topic_obj(self, t):
         self.topics.update({t['name']: AmsTopic(t['name'], init=self)})
 
@@ -171,7 +174,14 @@ class ArgoMessagingService(object):
         url = route[1].format(self.endpoint, self.token, self.project, "", sub)
         method = eval('do_{0}'.format(route[0]))
 
-        return method(url, "sub_get", **reqkwargs)
+        r = method(url, "sub_get", **reqkwargs)
+
+        if r['topic'] not in self.topics:
+            self._create_topic_obj({'name': r['topic']})
+        if r['name'] not in self.subs:
+            self._create_sub_obj(r)
+
+        return r
 
     def has_sub(self, sub):
         """Inspect if subscription already exists or not
@@ -281,7 +291,12 @@ class ArgoMessagingService(object):
         url = route[1].format(self.endpoint, self.token, self.project, "", sub)
         method = eval('do_{0}'.format(route[0]))
 
-        return method(url, msg_body, "sub_create", **reqkwargs)
+        r = method(url, msg_body, "sub_create", **reqkwargs)
+
+        if r['name'] not in self.subs:
+            self._create_sub_obj(r)
+
+        return r
 
     def delete_sub(self, sub, **reqkwargs):
         """This function deletes a selected subscription in a project
@@ -295,7 +310,13 @@ class ArgoMessagingService(object):
         url = route[1].format(self.endpoint, self.token, self.project, "", sub)
         method = eval('do_{0}'.format(route[0]))
 
-        return method(url, "sub_delete", **reqkwargs)
+        r = method(url, "sub_delete", **reqkwargs)
+
+        sub_fullname = "/projects/{0}/subscriptions/{1}".format(self.project, sub)
+        if sub_fullname in self.subs:
+            self._delete_sub_obj(r)
+
+        return r
 
     def create_topic(self, topic, **reqkwargs):
         """This function creates a topic in a project
