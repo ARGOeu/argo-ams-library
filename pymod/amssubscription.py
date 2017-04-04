@@ -9,3 +9,6 @@ class AmsSubscription(object):
         self.pushconfig = pushconfig
         self.ackdeadline = ackdeadline
         self.name = self._build_name(self.fullname)
+
+    def delete(self):
+        self.init.delete_sub(self.name)

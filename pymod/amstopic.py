@@ -6,3 +6,6 @@ class AmsTopic(object):
         self.init = init
         self.fullname = fullname
         self.name = self._build_name(self.fullname)
+
+    def delete(self):
+        self.init.delete_topic(self.name)

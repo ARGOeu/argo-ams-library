@@ -50,7 +50,7 @@ class ArgoMessagingService(object):
         """
         self.list_subs()
 
-        for s in self.subs.itervalues():
+        for s in self.subs.copy().itervalues():
             if topic and topic == s.topic.name:
                 yield s
             elif not topic:
@@ -61,7 +61,7 @@ class ArgoMessagingService(object):
 
         self.list_topics()
 
-        for t in self.topics.itervalues():
+        for t in self.topics.copy().itervalues():
             yield t
 
     def list_topics(self, **reqkwargs):
@@ -321,7 +321,7 @@ class ArgoMessagingService(object):
 
         sub_fullname = "/projects/{0}/subscriptions/{1}".format(self.project, sub)
         if sub_fullname in self.subs:
-            self._delete_sub_obj(r)
+            self._delete_sub_obj({'name': sub_fullname})
 
         return r
 
