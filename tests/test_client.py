@@ -2,6 +2,8 @@ import unittest
 from httmock import urlmatch, HTTMock, response
 from pymod import ArgoMessagingService
 from pymod import AmsMessage
+from pymod import AmsTopic
+from pymod import AmsSubscription
 import json
 
 
@@ -123,6 +125,29 @@ class TestClient(unittest.TestCase):
             assert topics[0]["name"] == "/projects/TEST/topics/topic1"
             assert topics[1]["name"] == "/projects/TEST/topics/topic2"
 
+    def testIterTopics(self):
+        # Mock response for GET topics request
+        @urlmatch(netloc="localhost", path="/v1/projects/TEST/topics",
+                  method="GET")
+        def iter_topics_mock(url, request):
+            assert url.path == "/v1/projects/TEST/topics"
+            # Return two topics in json format
+            return response(200, '{"topics":[{"name":"/projects/TEST/topics/topic1"},\
+                                  {"name":"/projects/TEST/topics/topic2"}]}', None, None, 5, request)
+
+        # Execute ams client with mocked response
+        with HTTMock(iter_topics_mock):
+            resp = self.ams.iter_topics()
+            # Assert that ams client handled the json response correctly
+            obj1 = resp.next()
+            obj2 = resp.next()
+            assert isinstance(obj1, AmsTopic)
+            assert isinstance(obj2, AmsTopic)
+            self.assertRaises(StopIteration, resp.next)
+            self.assertEqual(obj1.name, 'topic1')
+            self.assertEqual(obj2.name, 'topic2')
+
+
     # Test Get a topic client request
     def testGetTopic(self):
         # Mock response for GET topic request
@@ -162,8 +187,6 @@ class TestClient(unittest.TestCase):
             assert resp["msgIds"][0] == "1"
 
     # Test List Subscriptions client request
-
-    # Test List Subscriptions client request
     def testListSubscriptions(self):
         # Mock response for GET Subscriptions request
         @urlmatch(netloc="localhost", path="/v1/projects/TEST/subscriptions",
@@ -187,6 +210,32 @@ class TestClient(unittest.TestCase):
             assert len(subscriptions) == 2
             assert subscriptions[0]["name"] == "/projects/TEST/subscriptions/subscription1"
             assert subscriptions[1]["name"] == "/projects/TEST/subscriptions/subscription2"
+
+    def testIterSubscriptions(self):
+        # Mock response for GET Subscriptions request
+        @urlmatch(netloc="localhost", path="/v1/projects/TEST/subscriptions",
+                  method="GET")
+        def iter_subs_mock(url, request):
+            assert url.path == "/v1/projects/TEST/subscriptions"
+            # Return two topics in json format
+            return response(200, '{"subscriptions":[{"name": "/projects/TEST/subscriptions/subscription1",\
+                                  "topic": "/projects/TEST/topics/topic1","pushConfig": \
+                                  {"pushEndpoint": "","retryPolicy": {}},"ackDeadlineSeconds": 10},\
+                                  {"name": "/projects/TEST/subscriptions/subscription2", \
+                                  "topic": "/projects/TEST/topics/topic1", \
+                                  "pushConfig": {"pushEndpoint": "","retryPolicy": {}},\
+                                  "ackDeadlineSeconds": 10}]}', None, None, 5, request)
+
+        # Execute ams client with mocked response
+        with HTTMock(iter_subs_mock):
+            resp = self.ams.iter_subs()
+            obj1 = resp.next()
+            obj2 = resp.next()
+            assert isinstance(obj1, AmsSubscription)
+            assert isinstance(obj2, AmsSubscription)
+            self.assertRaises(StopIteration, resp.next)
+            self.assertEqual(obj1.name, 'subscription1')
+            self.assertEqual(obj2.name, 'subscription2')
 
     # Test Get a subscriptions client request
     def testGetSubscription(self):
