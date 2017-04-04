@@ -75,6 +75,7 @@ class TestClient(unittest.TestCase):
             resp_ack = self.ams.ack_sub("subscription1", ["1221"])
             assert resp_ack == {}
 
+    # Test Create subscription client request
     def testCreateSubscription(self):
         # Mock response for GET topic request
         @urlmatch(netloc="localhost", path="/v1/projects/TEST/topics/topic1",
@@ -125,6 +126,7 @@ class TestClient(unittest.TestCase):
             assert topics[0]["name"] == "/projects/TEST/topics/topic1"
             assert topics[1]["name"] == "/projects/TEST/topics/topic2"
 
+    # Test Iteration over AmsTopic objects
     def testIterTopics(self):
         # Mock response for GET topics request
         @urlmatch(netloc="localhost", path="/v1/projects/TEST/topics",
@@ -211,6 +213,7 @@ class TestClient(unittest.TestCase):
             assert subscriptions[0]["name"] == "/projects/TEST/subscriptions/subscription1"
             assert subscriptions[1]["name"] == "/projects/TEST/subscriptions/subscription2"
 
+    # Test Iteration over AmsSubscription objects
     def testIterSubscriptions(self):
         # Mock response for GET Subscriptions request
         @urlmatch(netloc="localhost", path="/v1/projects/TEST/subscriptions",

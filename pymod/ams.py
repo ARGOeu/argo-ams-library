@@ -24,6 +24,7 @@ class ArgoMessagingService(object):
                        "sub_get": ["get", "https://{0}/v1/projects/{2}/subscriptions/{4}?key={1}"],
                        "sub_pull": ["post", "https://{0}/v1/projects/{2}/subscriptions/{4}:pull?key={1}"],
                        "sub_ack": ["post", "https://{0}/v1/projects/{2}/subscriptions/{4}:acknowledge?key={1}"]}
+        # Containers for topic and subscription objects
         self.topics = dict()
         self.subs = dict()
 
@@ -43,6 +44,10 @@ class ArgoMessagingService(object):
         del self.topics[t['name']]
 
     def iter_subs(self, topic=None):
+        """Iterate ove AmsSubscription objects
+        Args:
+            topic: Iterate over subscriptions only associated to this topic name
+        """
         self.list_subs()
 
         for s in self.subs.itervalues():
@@ -52,6 +57,8 @@ class ArgoMessagingService(object):
                 yield s
 
     def iter_topics(self):
+        """Iterate over AmsTopic objects"""
+
         self.list_topics()
 
         for t in self.topics.itervalues():
