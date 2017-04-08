@@ -106,11 +106,12 @@ class ArgoMessagingService(object):
         except AmsConnectionException as e:
             raise e
 
-    def get_topic(self, topic, **reqkwargs):
+    def get_topic(self, topic, retobj=False, **reqkwargs):
         """Get the details of a selected topic.
 
         Args:
             topic: str. Topic name.
+            retobj: Controls whether method should return AmsTopic object
             reqkwargs: keyword argument that will be passed to underlying python-requests library call.
         """
         route = self.routes["topic_get"]
@@ -123,7 +124,10 @@ class ArgoMessagingService(object):
         if r['name'] not in self.topics:
             self._create_topic_obj(r)
 
-        return r
+        if retobj:
+            return self.topics[r['name']]
+        else:
+            return r
 
     def publish(self, topic, msg, **reqkwargs):
         """Publish a message or list of messages to a selected topic.
@@ -169,11 +173,12 @@ class ArgoMessagingService(object):
         else:
             return []
 
-    def get_sub(self, sub, **reqkwargs):
+    def get_sub(self, sub, retobj=False, **reqkwargs):
         """Get the details of a subscription.
 
         Args:
             sub: str. The subscription name.
+            retobj: Controls whether method should return AmsSubscription object
             reqkwargs: keyword argument that will be passed to underlying python-requests library call.
         """
         route = self.routes["sub_get"]
@@ -188,7 +193,10 @@ class ArgoMessagingService(object):
         if r['name'] not in self.subs:
             self._create_sub_obj(r)
 
-        return r
+        if retobj:
+            return self.subs[r['name']]
+        else:
+            return r
 
     def has_sub(self, sub):
         """Inspect if subscription already exists or not
@@ -279,7 +287,7 @@ class ArgoMessagingService(object):
         """
         return self.pullopts[key]
 
-    def create_sub(self, sub, topic, ackdeadline=10, **reqkwargs):
+    def create_sub(self, sub, topic, ackdeadline=10, retobj=False, **reqkwargs):
         """This function creates a new subscription in a project with a PUT request
 
         Args:
@@ -288,6 +296,7 @@ class ArgoMessagingService(object):
             ackdeadline: int. It is a custom "ack" deadline (in seconds) in the subscription. If your code doesn't
                 acknowledge the message in this time, the message is sent again. If you don't specify the deadline, the
                 default is 10 seconds.
+            retobj: Controls whether method should return AmsSubscription object
             reqkwargs: keyword argument that will be passed to underlying python-requests library call.
         """
         msg_body = json.dumps({"topic": self.get_topic(topic)['name'].strip('/'),
@@ -303,7 +312,10 @@ class ArgoMessagingService(object):
         if r['name'] not in self.subs:
             self._create_sub_obj(r)
 
-        return r
+        if retobj:
+            return self.subs[r['name']]
+        else:
+            return r
 
     def delete_sub(self, sub, **reqkwargs):
         """This function deletes a selected subscription in a project
@@ -325,11 +337,12 @@ class ArgoMessagingService(object):
 
         return r
 
-    def create_topic(self, topic, **reqkwargs):
+    def create_topic(self, topic, retobj=False, **reqkwargs):
         """This function creates a topic in a project
 
         Args:
             topic: str. The topic name.
+            retobj: Controls whether method should return AmsTopic object
             reqkwargs: keyword argument that will be passed to underlying python-requests library call.
         """
         route = self.routes["topic_create"]
@@ -342,7 +355,10 @@ class ArgoMessagingService(object):
         if r['name'] not in self.topics:
             self._create_topic_obj(r)
 
-        return r
+        if retobj:
+            return self.topics[r['name']]
+        else:
+            return r
 
     def delete_topic(self, topic, **reqkwargs):
         """ This function deletes a topic in a project
