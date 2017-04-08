@@ -28,8 +28,8 @@ class ArgoMessagingService(object):
         self.topics = dict()
         self.subs = dict()
 
-    def _create_sub_obj(self, s):
-        self.subs.update({s['name']: AmsSubscription(s['name'], s['topic'],
+    def _create_sub_obj(self, s, topic):
+        self.subs.update({s['name']: AmsSubscription(s['name'], topic,
                                                      s['pushConfig'],
                                                      s['ackDeadlineSeconds'],
                                                      init=self)})
@@ -166,7 +166,7 @@ class ArgoMessagingService(object):
             if s['topic'] not in self.topics:
                 self._create_topic_obj({'name': s['topic']})
             if s['name'] not in self.subs:
-                self._create_sub_obj(s)
+                self._create_sub_obj(s, self.topics[s['topic']].fullname)
 
         if r:
             return r
@@ -191,7 +191,7 @@ class ArgoMessagingService(object):
         if r['topic'] not in self.topics:
             self._create_topic_obj({'name': r['topic']})
         if r['name'] not in self.subs:
-            self._create_sub_obj(r)
+            self._create_sub_obj(r, self.topics[r['topic']].fullname)
 
         if retobj:
             return self.subs[r['name']]
@@ -217,7 +217,7 @@ class ArgoMessagingService(object):
         except AmsConnectionException as e:
             raise e
 
-    def pull_sub(self, sub, num=1, **reqkwargs):
+    def pull_sub(self, sub, num=1, return_immediately=False, **reqkwargs):
         """This function consumes messages from a subscription in a project
         with a POST request.
 
@@ -228,8 +228,10 @@ class ArgoMessagingService(object):
         """
 
         wasmax = self.get_pullopt('maxMessages')
+        wasretim = self.get_pullopt('returnImmediately')
 
         self.set_pullopt('maxMessages', num)
+        self.set_pullopt('returnImmediately', str(return_immediately))
         msg_body = json.dumps(self.pullopts)
 
         route = self.routes["sub_pull"]
@@ -240,6 +242,7 @@ class ArgoMessagingService(object):
         msgs = r['receivedMessages']
 
         self.set_pullopt('maxMessages', wasmax)
+        self.set_pullopt('maxMessages', wasretim)
 
         return map(lambda m: (m['ackId'], AmsMessage(b64enc=False, **m['message'])), msgs)
 
@@ -299,7 +302,9 @@ class ArgoMessagingService(object):
             retobj: Controls whether method should return AmsSubscription object
             reqkwargs: keyword argument that will be passed to underlying python-requests library call.
         """
-        msg_body = json.dumps({"topic": self.get_topic(topic)['name'].strip('/'),
+        topic = self.get_topic(topic, retobj=True)
+
+        msg_body = json.dumps({"topic": topic.fullname.strip('/'),
                                "ackDeadlineSeconds": ackdeadline})
 
         route = self.routes["sub_create"]
@@ -310,7 +315,7 @@ class ArgoMessagingService(object):
         r = method(url, msg_body, "sub_create", **reqkwargs)
 
         if r['name'] not in self.subs:
-            self._create_sub_obj(r)
+            self._create_sub_obj(r, topic.fullname)
 
         if retobj:
             return self.subs[r['name']]

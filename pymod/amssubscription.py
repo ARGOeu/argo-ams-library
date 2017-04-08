@@ -12,3 +12,9 @@ class AmsSubscription(object):
 
     def delete(self):
         self.init.delete_sub(self.name)
+
+    def pull_sub(self, num=1, return_immediately=False, **reqkwargs):
+        return self.init.pull_sub(self.name, num, return_immediately, **reqkwargs)
+
+    def ack_sub(self, ids, **reqkwargs):
+        return self.init.ack_sub(self.name, ids, **reqkwargs)
