@@ -6,12 +6,21 @@ class AmsSubscription(object):
         self.init = init
         self.fullname = fullname
         self.topic = self.init.topics[topic]
-        self.pushconfig = pushconfig
+        self.push_endpoint = ''
+        self.retry_policy_type =  ''
+        self.retry_policy_period = ''
+        if pushconfig['pushEndpoint']:
+            self.push_endpoint = pushconfig['pushEndpoint']
+            self.retry_policy_type = pushconfig['retryPolicy']['type']
+            self.retry_policy_period = pushconfig['retryPolicy']['period']
         self.ackdeadline = ackdeadline
         self.name = self._build_name(self.fullname)
 
     def delete(self):
         self.init.delete_sub(self.name)
+
+    def pushconfig_sub(self, push_endpoint=None, retry_policy_type='linear', retry_policy_period=300, **reqkwargs):
+        return self.init.pushconfig_sub(self.name, push_endpoint, retry_policy_type, retry_policy_period, **reqkwargs)
 
     def pull_sub(self, num=1, return_immediately=False, **reqkwargs):
         return self.init.pull_sub(self.name, num, return_immediately, **reqkwargs)

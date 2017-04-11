@@ -23,7 +23,8 @@ class ArgoMessagingService(object):
                        "sub_list": ["get", "https://{0}/v1/projects/{2}/subscriptions?key={1}"],
                        "sub_get": ["get", "https://{0}/v1/projects/{2}/subscriptions/{4}?key={1}"],
                        "sub_pull": ["post", "https://{0}/v1/projects/{2}/subscriptions/{4}:pull?key={1}"],
-                       "sub_ack": ["post", "https://{0}/v1/projects/{2}/subscriptions/{4}:acknowledge?key={1}"]}
+                       "sub_ack": ["post", "https://{0}/v1/projects/{2}/subscriptions/{4}:acknowledge?key={1}"],
+                       "sub_pushconfig": ["post", "https://{0}/v1/projects/{2}/subscriptions/{4}:modifyPushConfig?key={1}"]}
         # Containers for topic and subscription objects
         self.topics = dict()
         self.subs = dict()
@@ -42,6 +43,29 @@ class ArgoMessagingService(object):
 
     def _delete_topic_obj(self, t):
         del self.topics[t['name']]
+
+    def pushconfig_sub(self, sub, push_endpoint=None, retry_policy_type='linear', retry_policy_period=300, **reqkwargs):
+        if push_endpoint:
+            push_dict = {"pushConfig": {"pushEndpoint": push_endpoint,
+                                        "retryPolicy": {"type": retry_policy_type,
+                                                        "period": retry_policy_period}}}
+        else:
+            push_dict = {"pushConfig": {}}
+
+        msg_body = json.dumps(push_dict)
+        route = self.routes["sub_pushconfig"]
+        # Compose url
+        url = route[1].format(self.endpoint, self.token, self.project, "", sub)
+        method = eval('do_{0}'.format(route[0]))
+        p = method(url, msg_body, "sub_pushconfig", **reqkwargs)
+
+        subobj = self.subs.get('/projects/{0}/subscriptions/{1}'.format(self.project, sub), False)
+        if subobj:
+            subobj.push_endpoint = push_endpoint
+            subobj.retry_policy_type = retry_policy_type
+            subobj.retry_policy_period = retry_policy_period
+
+        return p
 
     def iter_subs(self, topic=None):
         """Iterate ove AmsSubscription objects
@@ -290,7 +314,8 @@ class ArgoMessagingService(object):
         """
         return self.pullopts[key]
 
-    def create_sub(self, sub, topic, ackdeadline=10, retobj=False, **reqkwargs):
+    def create_sub(self, sub, topic, ackdeadline=10, push_endpoint=None,
+                   retry_policy_type='linear', retry_policy_period=300, retobj=False, **reqkwargs):
         """This function creates a new subscription in a project with a PUT request
 
         Args:
@@ -299,6 +324,9 @@ class ArgoMessagingService(object):
             ackdeadline: int. It is a custom "ack" deadline (in seconds) in the subscription. If your code doesn't
                 acknowledge the message in this time, the message is sent again. If you don't specify the deadline, the
                 default is 10 seconds.
+            push_endpoint: URL of remote endpoint that should receive messages in push subscription mode
+            retry_policy_type:
+            retry_policy_period:
             retobj: Controls whether method should return AmsSubscription object
             reqkwargs: keyword argument that will be passed to underlying python-requests library call.
         """
@@ -313,6 +341,12 @@ class ArgoMessagingService(object):
         method = eval('do_{0}'.format(route[0]))
 
         r = method(url, msg_body, "sub_create", **reqkwargs)
+
+        if push_endpoint:
+            ret = self.pushconfig_sub(sub, push_endpoint, retry_policy_type, retry_policy_period)
+            r['pushConfig'] = {"pushEndpoint": push_endpoint,
+                               "retryPolicy": {"type": retry_policy_type,
+                                               "period": retry_policy_period}}
 
         if r['name'] not in self.subs:
             self._create_sub_obj(r, topic.fullname)
@@ -458,7 +492,7 @@ def do_post(url, body, route_name, **reqkwargs):
     try:
         # the post request based on requests.
         r = requests.post(url, data=body, **reqkwargs)
-        decoded = json.loads(r.content)
+        decoded = json.loads(r.content) if r.content else ''
 
         # if the result returns an error code an exception is raised.
         if 'error' in decoded:
@@ -468,7 +502,7 @@ def do_post(url, body, route_name, **reqkwargs):
         raise AmsConnectionException(e, route_name)
 
     else:
-        return r.json()
+        return r.json() if decoded else ''
 
 
 def do_delete(url, route_name, **reqkwargs):
