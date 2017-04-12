@@ -68,7 +68,7 @@ class ArgoMessagingService(object):
         return p
 
     def iter_subs(self, topic=None):
-        """Iterate ove AmsSubscription objects
+        """Iterate over AmsSubscription objects
         Args:
             topic: Iterate over subscriptions only associated to this topic name
         """
@@ -463,7 +463,7 @@ def do_put(url, body, route_name, **reqkwargs):
     try:
         # the post request based on requests.
         r = requests.put(url, data=body, **reqkwargs)
-        decoded = json.loads(r.content)
+        decoded = json.loads(r.content) if r.content else {}
 
         # if the result returns an error code an exception is raised.
         if 'error' in decoded:
@@ -473,7 +473,7 @@ def do_put(url, body, route_name, **reqkwargs):
         raise AmsConnectionException(e, route_name)
 
     else:
-        return r.json()
+        return r.json() if decoded else {}
 
 
 def do_post(url, body, route_name, **reqkwargs):
@@ -492,7 +492,7 @@ def do_post(url, body, route_name, **reqkwargs):
     try:
         # the post request based on requests.
         r = requests.post(url, data=body, **reqkwargs)
-        decoded = json.loads(r.content) if r.content else ''
+        decoded = json.loads(r.content) if r.content else {}
 
         # if the result returns an error code an exception is raised.
         if 'error' in decoded:
@@ -502,7 +502,7 @@ def do_post(url, body, route_name, **reqkwargs):
         raise AmsConnectionException(e, route_name)
 
     else:
-        return r.json() if decoded else ''
+        return r.json() if decoded else {}
 
 
 def do_delete(url, route_name, **reqkwargs):
