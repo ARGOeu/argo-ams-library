@@ -2,16 +2,16 @@ import requests
 import json
 from amsexceptions import AmsServiceException, AmsConnectionException
 from amsmsg import AmsMessage
+from amstopic import AmsTopic
+from amssubscription import AmsSubscription
 
-
-class ArgoMessagingService:
+class ArgoMessagingService(object):
     def __init__(self, endpoint, token="", project=""):
         self.endpoint = endpoint
         self.token = token
         self.project = project
         self.pullopts = {"maxMessages": "1",
                          "returnImmediately": "False"}
-
         # Create route list
         self.routes = {"topic_list": ["get", "https://{0}/v1/projects/{2}/topics?key={1}"],
                        "topic_get": ["get", "https://{0}/v1/projects/{2}/topics/{3}?key={1}"],
@@ -24,6 +24,45 @@ class ArgoMessagingService:
                        "sub_get": ["get", "https://{0}/v1/projects/{2}/subscriptions/{4}?key={1}"],
                        "sub_pull": ["post", "https://{0}/v1/projects/{2}/subscriptions/{4}:pull?key={1}"],
                        "sub_ack": ["post", "https://{0}/v1/projects/{2}/subscriptions/{4}:acknowledge?key={1}"]}
+        # Containers for topic and subscription objects
+        self.topics = dict()
+        self.subs = dict()
+
+    def _create_sub_obj(self, s):
+        self.subs.update({s['name']: AmsSubscription(s['name'], s['topic'],
+                                                     s['pushConfig'],
+                                                     s['ackDeadlineSeconds'],
+                                                     init=self)})
+
+    def _delete_sub_obj(self, s):
+        del self.subs[s['name']]
+
+    def _create_topic_obj(self, t):
+        self.topics.update({t['name']: AmsTopic(t['name'], init=self)})
+
+    def _delete_topic_obj(self, t):
+        del self.topics[t['name']]
+
+    def iter_subs(self, topic=None):
+        """Iterate ove AmsSubscription objects
+        Args:
+            topic: Iterate over subscriptions only associated to this topic name
+        """
+        self.list_subs()
+
+        for s in self.subs.itervalues():
+            if topic and topic == s.topic.name:
+                yield s
+            elif not topic:
+                yield s
+
+    def iter_topics(self):
+        """Iterate over AmsTopic objects"""
+
+        self.list_topics()
+
+        for t in self.topics.itervalues():
+            yield t
 
     def list_topics(self, **reqkwargs):
         """List the topics of a selected project
@@ -37,7 +76,16 @@ class ArgoMessagingService:
         url = route[1].format(self.endpoint, self.token, self.project)
         method = eval('do_{0}'.format(route[0]))
 
-        return method(url, "topic_list", **reqkwargs)
+        r = method(url, "topic_list", **reqkwargs)
+
+        for t in r['topics']:
+            if t['name'] not in self.topics:
+                self._create_topic_obj(t)
+
+        if r:
+            return r
+        else:
+            return []
 
     def has_topic(self, topic):
         """Inspect if topic already exists or not
@@ -70,7 +118,12 @@ class ArgoMessagingService:
         url = route[1].format(self.endpoint, self.token, self.project, topic)
         method = eval('do_{0}'.format(route[0]))
 
-        return method(url, "topic_get", **reqkwargs)
+        r = method(url, "topic_get", **reqkwargs)
+
+        if r['name'] not in self.topics:
+            self._create_topic_obj(r)
+
+        return r
 
     def publish(self, topic, msg, **reqkwargs):
         """Publish a message or list of messages to a selected topic.
@@ -102,7 +155,14 @@ class ArgoMessagingService:
         # Compose url
         url = route[1].format(self.endpoint, self.token, self.project)
         method = eval('do_{0}'.format(route[0]))
+
         r = method(url, "sub_list", **reqkwargs)
+
+        for s in r['subscriptions']:
+            if s['topic'] not in self.topics:
+                self._create_topic_obj({'name': s['topic']})
+            if s['name'] not in self.subs:
+                self._create_sub_obj(s)
 
         if r:
             return r
@@ -121,7 +181,14 @@ class ArgoMessagingService:
         url = route[1].format(self.endpoint, self.token, self.project, "", sub)
         method = eval('do_{0}'.format(route[0]))
 
-        return method(url, "sub_get", **reqkwargs)
+        r = method(url, "sub_get", **reqkwargs)
+
+        if r['topic'] not in self.topics:
+            self._create_topic_obj({'name': r['topic']})
+        if r['name'] not in self.subs:
+            self._create_sub_obj(r)
+
+        return r
 
     def has_sub(self, sub):
         """Inspect if subscription already exists or not
@@ -231,7 +298,12 @@ class ArgoMessagingService:
         url = route[1].format(self.endpoint, self.token, self.project, "", sub)
         method = eval('do_{0}'.format(route[0]))
 
-        return method(url, msg_body, "sub_create", **reqkwargs)
+        r = method(url, msg_body, "sub_create", **reqkwargs)
+
+        if r['name'] not in self.subs:
+            self._create_sub_obj(r)
+
+        return r
 
     def delete_sub(self, sub, **reqkwargs):
         """This function deletes a selected subscription in a project
@@ -245,7 +317,13 @@ class ArgoMessagingService:
         url = route[1].format(self.endpoint, self.token, self.project, "", sub)
         method = eval('do_{0}'.format(route[0]))
 
-        return method(url, "sub_delete", **reqkwargs)
+        r = method(url, "sub_delete", **reqkwargs)
+
+        sub_fullname = "/projects/{0}/subscriptions/{1}".format(self.project, sub)
+        if sub_fullname in self.subs:
+            self._delete_sub_obj(r)
+
+        return r
 
     def create_topic(self, topic, **reqkwargs):
         """This function creates a topic in a project
@@ -259,7 +337,12 @@ class ArgoMessagingService:
         url = route[1].format(self.endpoint, self.token, self.project, topic)
         method = eval('do_{0}'.format(route[0]))
 
-        return method(url, '', "topic_create", **reqkwargs)
+        r = method(url, '', "topic_create", **reqkwargs)
+
+        if r['name'] not in self.topics:
+            self._create_topic_obj(r)
+
+        return r
 
     def delete_topic(self, topic, **reqkwargs):
         """ This function deletes a topic in a project
@@ -273,7 +356,13 @@ class ArgoMessagingService:
         url = route[1].format(self.endpoint, self.token, self.project, topic)
         method = eval('do_{0}'.format(route[0]))
 
-        return method(url, "topic_delete", **reqkwargs)
+        r = method(url, "topic_delete", **reqkwargs)
+
+        topic_fullname = "/projects/{0}/topics/{1}".format(self.project, topic)
+        if topic_fullname in self.topics:
+            self._delete_topic_obj({'name': topic_fullname})
+
+        return r
 
 
 def do_get(url, route_name, **reqkwargs):
