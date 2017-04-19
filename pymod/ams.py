@@ -376,6 +376,9 @@ class ArgoMessagingService(object):
 
         return r
 
+    def topic(self, topic, **reqkwargs):
+        return self.create_topic(topic, retobj=True, **reqkwargs)
+
     def create_topic(self, topic, retobj=False, **reqkwargs):
         """This function creates a topic in a project
 

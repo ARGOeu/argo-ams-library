@@ -20,10 +20,13 @@ class AmsSubscription(object):
         self.init.delete_sub(self.name)
 
     def pushconfig_sub(self, push_endpoint=None, retry_policy_type='linear', retry_policy_period=300, **reqkwargs):
-        return self.init.pushconfig_sub(self.name, push_endpoint, retry_policy_type, retry_policy_period, **reqkwargs)
+        return self.init.pushconfig_sub(self.name, push_endpoint=push_endpoint,
+                                        retry_policy_type=retry_policy_type,
+                                        retry_policy_period=retry_policy_period,
+                                        **reqkwargs)
 
     def pull_sub(self, num=1, return_immediately=False, **reqkwargs):
-        return self.init.pull_sub(self.name, num, return_immediately, **reqkwargs)
+        return self.init.pull_sub(self.name, num=num, return_immediately=return_immediately, **reqkwargs)
 
     def ack_sub(self, ids, **reqkwargs):
         return self.init.ack_sub(self.name, ids, **reqkwargs)
