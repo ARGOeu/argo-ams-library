@@ -6,3 +6,17 @@ class AmsTopic(object):
         self.init = init
         self.fullname = fullname
         self.name = self._build_name(self.fullname)
+
+    def delete(self):
+        self.init.delete_topic(self.name)
+
+    def create_sub(self, sub, ackdeadline=10, retobj=True, **reqkwargs):
+        self.init.create_sub(sub, self.name, ackdeadline, retobj, **reqkwargs)
+
+    def iter_subs(self):
+        for s in self.init.iter_subs(topic=self.name):
+            yield s
+
+    def publish(self, msg, **reqkwargs):
+        return self.init.publish(self.name, msg, **reqkwargs)
+
