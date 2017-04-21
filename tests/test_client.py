@@ -25,9 +25,12 @@ class TestClient(unittest.TestCase):
         # Execute ams client with mocked response
         with HTTMock(create_topic_mock):
             resp = self.ams.create_topic("topic1")
+            resp_obj = self.ams.create_topic("topic1", retobj=True)
             # Assert that ams client handled the json response correctly
             name = resp["name"]
             assert name == "/projects/TEST/topics/topic1"
+            assert isinstance(resp_obj, AmsTopic)
+            self.assertEqual(resp_obj.name, "topic1")
 
     # Test Pull client request
     def testPull(self):
@@ -122,9 +125,14 @@ class TestClient(unittest.TestCase):
             resp = self.ams.list_topics()
             # Assert that ams client handled the json response correctly
             topics = resp["topics"]
+            topic_objs = self.ams.topics.values()
             assert len(topics) == 2
             assert topics[0]["name"] == "/projects/TEST/topics/topic1"
             assert topics[1]["name"] == "/projects/TEST/topics/topic2"
+            assert isinstance(topic_objs[0], AmsTopic)
+            assert isinstance(topic_objs[1], AmsTopic)
+            self.assertEqual(topic_objs[0].fullname, "/projects/TEST/topics/topic1")
+            self.assertEqual(topic_objs[1].fullname, "/projects/TEST/topics/topic2")
 
     # Test Iteration over AmsTopic objects
     def testIterTopics(self):
@@ -163,9 +171,12 @@ class TestClient(unittest.TestCase):
         # Execute ams client with mocked response
         with HTTMock(get_topic_mock):
             resp = self.ams.get_topic("topic1")
+            resp_obj = self.ams.get_topic("topic1", retobj=True)
             # Assert that ams client handled the json response correctly
             name = resp["name"]
             assert(name == "/projects/TEST/topics/topic1")
+            assert isinstance(resp_obj, AmsTopic)
+            self.assertEqual(resp_obj.name, 'topic1')
 
     # Test Publish client request
     def testPublish(self):
@@ -208,10 +219,18 @@ class TestClient(unittest.TestCase):
         with HTTMock(list_subs_mock):
             resp = self.ams.list_subs()
             subscriptions = resp["subscriptions"]
+            subscription_objs = self.ams.subs.values()
+            topic_objs = self.ams.topics.values()
             # Assert that ams client handled the json response correctly
             assert len(subscriptions) == 2
             assert subscriptions[0]["name"] == "/projects/TEST/subscriptions/subscription1"
             assert subscriptions[1]["name"] == "/projects/TEST/subscriptions/subscription2"
+            assert isinstance(subscription_objs[0], AmsSubscription)
+            assert isinstance(subscription_objs[1], AmsSubscription)
+            self.assertEqual(subscription_objs[0].fullname, "/projects/TEST/subscriptions/subscription1")
+            self.assertEqual(subscription_objs[1].fullname, "/projects/TEST/subscriptions/subscription2")
+            assert isinstance(topic_objs[0], AmsTopic)
+            self.assertEqual(topic_objs[0].fullname, "/projects/TEST/topics/topic1")
 
     # Test Iteration over AmsSubscription objects
     def testIterSubscriptions(self):
@@ -257,9 +276,12 @@ class TestClient(unittest.TestCase):
         # Execute ams client with mocked response
         with HTTMock(get_sub_mock):
             resp = self.ams.get_sub("subscription1")
+            resp_obj = self.ams.get_sub("subscription1", retobj=True)
             # Assert that ams client handled the json response correctly
             name = resp["name"]
             assert name == "/projects/TEST/subscriptions/subscription1"
+            assert isinstance(resp_obj, AmsSubscription)
+            self.assertEqual(resp_obj.name, 'subscription1')
 
     # Test has topic client
     def testHasTopic(self):
