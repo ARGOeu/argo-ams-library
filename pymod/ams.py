@@ -45,6 +45,15 @@ class ArgoMessagingService(object):
         del self.topics[t['name']]
 
     def pushconfig_sub(self, sub, push_endpoint=None, retry_policy_type='linear', retry_policy_period=300, **reqkwargs):
+        """Modify push configuration of given subscription
+
+           Args:
+               sub: shortname of subscription
+               push_endpoint: URL of remote endpoint that should receive messages in push subscription mode
+               retry_policy_type:
+               retry_policy_period:
+               reqkwargs: keyword argument that will be passed to underlying python-requests library call.
+        """
         if push_endpoint:
             push_dict = {"pushConfig": {"pushEndpoint": push_endpoint,
                                         "retryPolicy": {"type": retry_policy_type,
@@ -69,6 +78,7 @@ class ArgoMessagingService(object):
 
     def iter_subs(self, topic=None):
         """Iterate over AmsSubscription objects
+
         Args:
             topic: Iterate over subscriptions only associated to this topic name
         """
