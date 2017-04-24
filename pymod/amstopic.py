@@ -11,7 +11,7 @@ class AmsTopic(object):
         self.init.delete_topic(self.name)
 
     def subscription(self, sub, ackdeadline=10, **reqkwargs):
-        return self.init.create_sub(sub, self.name, ackdeadline=ackdeadline, retobj=retobj, **reqkwargs)
+        return self.init.create_sub(sub, self.name, ackdeadline=ackdeadline, retobj=True, **reqkwargs)
 
     def iter_subs(self):
         for s in self.init.iter_subs(topic=self.name):
