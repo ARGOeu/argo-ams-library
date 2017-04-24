@@ -542,6 +542,8 @@ def do_delete(url, route_name, **reqkwargs):
             # if the result returns an error code an exception is raised.
             if 'error' in decoded:
                 raise AmsServiceException(json=decoded, request=route_name)
+        else:
+            return True
 
     except (requests.exceptions.ConnectionError, requests.exceptions.Timeout) as e:
         raise AmsConnectionException(e, route_name)

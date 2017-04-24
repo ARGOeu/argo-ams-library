@@ -17,7 +17,7 @@ class AmsSubscription(object):
         self.name = self._build_name(self.fullname)
 
     def delete(self):
-        self.init.delete_sub(self.name)
+        return self.init.delete_sub(self.name)
 
     def pushconfig(self, push_endpoint=None, retry_policy_type='linear', retry_policy_period=300, **reqkwargs):
         return self.init.pushconfig_sub(self.name, push_endpoint=push_endpoint,

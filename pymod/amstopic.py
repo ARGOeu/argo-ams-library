@@ -8,7 +8,7 @@ class AmsTopic(object):
         self.name = self._build_name(self.fullname)
 
     def delete(self):
-        self.init.delete_topic(self.name)
+        return self.init.delete_topic(self.name)
 
     def subscription(self, sub, ackdeadline=10, **reqkwargs):
         return self.init.create_sub(sub, self.name, ackdeadline=ackdeadline, retobj=True, **reqkwargs)
