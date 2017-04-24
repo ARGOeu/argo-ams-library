@@ -1,6 +1,6 @@
 import requests
 import json
-from amsexceptions import AmsServiceException, AmsConnectionException
+from amsexceptions import AmsServiceException, AmsConnectionException, AmsMessageException
 from amsmsg import AmsMessage
 from amstopic import AmsTopic
 from amssubscription import AmsSubscription
@@ -174,7 +174,10 @@ class ArgoMessagingService(object):
         """
         if not isinstance(msg, list):
             msg = [msg]
-        msg_body = json.dumps({"messages": msg})
+        try:
+            msg_body = json.dumps({"messages": msg})
+        except TypeError as e:
+            raise AmsMessageException(e)
 
         route = self.routes["topic_publish"]
         # Compose url
