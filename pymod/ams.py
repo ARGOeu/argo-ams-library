@@ -300,8 +300,9 @@ class ArgoMessagingService(object):
         # Compose url
         url = route[1].format(self.endpoint, self.token, self.project, "", sub)
         method = eval('do_{0}'.format(route[0]))
+        method(url, msg_body, "sub_ack", **reqkwargs)
 
-        return method(url, msg_body, "sub_ack", **reqkwargs)
+        return True
 
     def set_pullopt(self, key, value):
         """Function for setting pull options

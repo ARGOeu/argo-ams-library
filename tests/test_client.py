@@ -76,7 +76,7 @@ class TestClient(unittest.TestCase):
             assert msg.get_msgid() == "1221"
             # Note: Maybe ack_sub should return a boolean
             resp_ack = self.ams.ack_sub("subscription1", ["1221"])
-            assert resp_ack == {}
+            assert resp_ack == True
 
     # Test Create subscription client request
     def testCreateSubscription(self):
