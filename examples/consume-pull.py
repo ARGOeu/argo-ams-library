@@ -33,7 +33,8 @@ def main():
     for id, msg in ams.pull_sub(args.subscription, args.nummsgs):
         data = msg.get_data()
         msgid = msg.get_msgid()
-        print 'msgid={0}, data={1}'.format(msgid, data)
+        attr = msg.get_attr()
+        print 'msgid={0}, data={1}, attr={2}'.format(msgid, data, attr)
         ackids.append(id)
 
     # pass list of extracted ackIds to AMS Service so that
