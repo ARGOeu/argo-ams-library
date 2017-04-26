@@ -20,6 +20,8 @@ class AmsMessage(Callable):
         self.set_data(data, b64enc)
 
     def __call__(self, **kwargs):
+        if 'attributes' not in kwargs:
+            kwargs.update({'attributes': self._attributes})
         self.__init__(b64enc=True, **kwargs)
 
         return self.dict()
@@ -55,8 +57,6 @@ class AmsMessage(Callable):
             self._data = b64encode(data)
         elif data:
             self._data = data
-        else:
-            self._data = ''
 
     def dict(self):
         """Construct python dict from message"""
@@ -64,8 +64,8 @@ class AmsMessage(Callable):
         if self._has_dataattr():
             d = dict()
             for attr in ['attributes', 'data', 'messageId', 'publishTime']:
-                v = eval('self._{0}'.format(attr))
-                if v:
+                if getattr(self, '_{0}'.format(attr), False):
+                    v = eval('self._{0}'.format(attr))
                     d.update({attr: v})
             return d
 
@@ -80,6 +80,7 @@ class AmsMessage(Callable):
 
     def get_msgid(self):
         """Fetch the message id of the message"""
+
         return self._messageId
 
     def get_publishtime(self):
@@ -90,7 +91,8 @@ class AmsMessage(Callable):
     def get_attr(self):
         """Fetch all attributes of the message"""
 
-        return self._attributes
+        if self._has_dataattr():
+            return self._attributes
 
     def json(self):
         """Return JSON interpretation of the message"""
