@@ -30,7 +30,7 @@ class AmsSubscription(object):
 
     def pushconfig(self, push_endpoint=None, retry_policy_type='linear', retry_policy_period=300, **reqkwargs):
         """Configure Push mode parameters of subscription. When push_endpoint
-           is defined, subscription will automatically
+           is defined, subscription will automatically start to send messages to it.
 
            Kwargs:
                push_endpoint (str): URL of remote endpoint that will receive messages
@@ -56,6 +56,8 @@ class AmsSubscription(object):
                                              messages
                reqkwargs: keyword argument that will be passed to underlying
                           python-requests library call.
+           Return:
+               [(ackId, AmsMessage)]: List of tuples with ackId and AmsMessage instance
         """
 
         return self.init.pull_sub(self.name, num=num, return_immediately=return_immediately, **reqkwargs)
@@ -64,7 +66,7 @@ class AmsSubscription(object):
         """Acknowledge receive of messages
 
            Kwargs:
-               ids (list): A list of ids of the messages to acknowledge.
+               ids (list): A list of ackIds of the messages to acknowledge.
         """
 
         return self.init.ack_sub(self.name, ids, **reqkwargs)
