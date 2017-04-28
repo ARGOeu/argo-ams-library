@@ -9,8 +9,11 @@ class TestMessage(unittest.TestCase):
         m = AmsMessage()
         self.message_callable = m(attributes={'foo': 'bar'}, data='baz')
         self.message_callable_memoization = m(attributes={'foo1': 'bar1'})
+        self.message_callable_memoization_two = m(data='baz1')
         self.message_send = AmsMessage(attributes={'foo': 'bar'}, data='baz')
-        self.message_send_no_data = AmsMessage(attributes={'foo': 'bar'})
+        self.message_send_no_payload = AmsMessage()
+        self.message_send_onlyattr = AmsMessage(attributes={'foo': 'bar'})
+        self.message_send_onlydata = AmsMessage(data='baz')
 
         self.message_recv = AmsMessage(b64enc=False, attributes={'foo': 'bar'},
                                        data='YmF6', messageId='1',
@@ -27,6 +30,11 @@ class TestMessage(unittest.TestCase):
                                                  'data': 'YmF6'})
         self.assertEqual(self.message_callable_memoization, {'attributes': {'foo1': 'bar1'},
                                                  'data': 'YmF6'})
+        self.assertEqual(self.message_callable_memoization_two, {'attributes': {'foo1': 'bar1'},
+                                                 'data': 'YmF6MQ=='})
+        self.assertEqual(self.message_send_onlyattr.dict(), {'attributes': {'foo': 'bar'}})
+        self.assertEqual(self.message_send_onlydata.dict(), {'data': 'YmF6'})
+
         self.message_send.set_data('baz')
         self.assertEqual(self.message_send.get_data(), 'baz')
 
@@ -39,7 +47,8 @@ class TestMessage(unittest.TestCase):
 
     def test_MsgFaulty(self):
         self.assertRaises(AmsMessageException, self.message_recv_faulty.get_data)
-        self.assertRaises(AmsMessageException, self.message_send_no_data.get_data)
+        self.assertRaises(AmsMessageException, self.message_send_no_payload.get_data)
+        self.assertRaises(AmsMessageException, self.message_send_no_payload.get_attr)
 
 if __name__ == '__main__':
     unittest.main()

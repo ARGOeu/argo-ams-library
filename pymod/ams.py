@@ -1,6 +1,6 @@
 import requests
 import json
-from amsexceptions import AmsServiceException, AmsConnectionException
+from amsexceptions import AmsServiceException, AmsConnectionException, AmsMessageException
 from amsmsg import AmsMessage
 from amstopic import AmsTopic
 from amssubscription import AmsSubscription
@@ -45,6 +45,15 @@ class ArgoMessagingService(object):
         del self.topics[t['name']]
 
     def pushconfig_sub(self, sub, push_endpoint=None, retry_policy_type='linear', retry_policy_period=300, **reqkwargs):
+        """Modify push configuration of given subscription
+
+           Args:
+               sub: shortname of subscription
+               push_endpoint: URL of remote endpoint that should receive messages in push subscription mode
+               retry_policy_type:
+               retry_policy_period:
+               reqkwargs: keyword argument that will be passed to underlying python-requests library call.
+        """
         if push_endpoint:
             push_dict = {"pushConfig": {"pushEndpoint": push_endpoint,
                                         "retryPolicy": {"type": retry_policy_type,
@@ -69,6 +78,7 @@ class ArgoMessagingService(object):
 
     def iter_subs(self, topic=None):
         """Iterate over AmsSubscription objects
+
         Args:
             topic: Iterate over subscriptions only associated to this topic name
         """
@@ -164,7 +174,10 @@ class ArgoMessagingService(object):
         """
         if not isinstance(msg, list):
             msg = [msg]
-        msg_body = json.dumps({"messages": msg})
+        try:
+            msg_body = json.dumps({"messages": msg})
+        except TypeError as e:
+            raise AmsMessageException(e)
 
         route = self.routes["topic_publish"]
         # Compose url
@@ -287,8 +300,9 @@ class ArgoMessagingService(object):
         # Compose url
         url = route[1].format(self.endpoint, self.token, self.project, "", sub)
         method = eval('do_{0}'.format(route[0]))
+        method(url, msg_body, "sub_ack", **reqkwargs)
 
-        return method(url, msg_body, "sub_ack", **reqkwargs)
+        return True
 
     def set_pullopt(self, key, value):
         """Function for setting pull options
@@ -375,6 +389,9 @@ class ArgoMessagingService(object):
             self._delete_sub_obj({'name': sub_fullname})
 
         return r
+
+    def topic(self, topic, **reqkwargs):
+        return self.create_topic(topic, retobj=True, **reqkwargs)
 
     def create_topic(self, topic, retobj=False, **reqkwargs):
         """This function creates a topic in a project
@@ -526,6 +543,8 @@ def do_delete(url, route_name, **reqkwargs):
             # if the result returns an error code an exception is raised.
             if 'error' in decoded:
                 raise AmsServiceException(json=decoded, request=route_name)
+        else:
+            return True
 
     except (requests.exceptions.ConnectionError, requests.exceptions.Timeout) as e:
         raise AmsConnectionException(e, route_name)
