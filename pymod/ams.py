@@ -121,14 +121,14 @@ class ArgoMessagingService(object):
         else:
             return []
 
-    def has_topic(self, topic):
+    def has_topic(self, topic, **reqkwargs):
         """Inspect if topic already exists or not
 
         Args:
             topic: str. Topic name
         """
         try:
-            self.get_topic(topic)
+            self.get_topic(topic, **reqkwargs)
             return True
 
         except AmsServiceException as e:
@@ -235,14 +235,14 @@ class ArgoMessagingService(object):
         else:
             return r
 
-    def has_sub(self, sub):
+    def has_sub(self, sub, **reqkwargs):
         """Inspect if subscription already exists or not
 
         Args:
             sub: str. The subscription name.
         """
         try:
-            self.get_sub(sub)
+            self.get_sub(sub, **reqkwargs)
             return True
 
         except AmsServiceException as e:
