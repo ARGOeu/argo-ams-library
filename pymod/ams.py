@@ -1,6 +1,6 @@
 import requests
 import json
-from amsexceptions import AmsServiceException, AmsConnectionException, AmsMessageException
+from amsexceptions import AmsServiceException, AmsConnectionException, AmsMessageException, AmsException
 from amsmsg import AmsMessage
 from amstopic import AmsTopic
 from amssubscription import AmsSubscription
@@ -279,7 +279,7 @@ class ArgoMessagingService(object):
         msgs = r['receivedMessages']
 
         self.set_pullopt('maxMessages', wasmax)
-        self.set_pullopt('maxMessages', wasretim)
+        self.set_pullopt('returnImmediately', wasretim)
 
         return map(lambda m: (m['ackId'], AmsMessage(b64enc=False, **m['message'])), msgs)
 
@@ -336,8 +336,8 @@ class ArgoMessagingService(object):
             sub: str. The subscription name.
             topic: str. The topic name.
             ackdeadline: int. It is a custom "ack" deadline (in seconds) in the subscription. If your code doesn't
-                acknowledge the message in this time, the message is sent again. If you don't specify the deadline, the
-                default is 10 seconds.
+                              acknowledge the message in this time, the message is sent again. If you don't specify
+                              the deadline, the default is 10 seconds.
             push_endpoint: URL of remote endpoint that should receive messages in push subscription mode
             retry_policy_type:
             retry_policy_period:
@@ -391,7 +391,27 @@ class ArgoMessagingService(object):
         return r
 
     def topic(self, topic, **reqkwargs):
-        return self.create_topic(topic, retobj=True, **reqkwargs)
+        """Function create a topic in a project. It's wrapper around few
+           methods defined in client class. Method will ensure that AmsTopic
+           object is returned either by fetching existing one or creating
+           a new one in case it doesn't exist.
+
+           Args:
+               topic (str): The topic name
+           Kwargs:
+            reqkwargs: keyword argument that will be passed to underlying
+                       python-requests library call.
+           Return:
+               object (AmsTopic)
+        """
+        try:
+            if self.has_topic(topic, **reqkwargs):
+                return self.get_topic(topic, retobj=True, **reqkwargs)
+            else:
+                return self.create_topic(topic, retobj=True, **reqkwargs)
+
+        except AmsException as e:
+            raise e
 
     def create_topic(self, topic, retobj=False, **reqkwargs):
         """This function creates a topic in a project

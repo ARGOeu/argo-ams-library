@@ -15,11 +15,10 @@ class TestTopic(unittest.TestCase):
         self.msg = AmsMessage(attributes={'foo': 'bar'}, data='baz')
 
     def testPublish(self):
-        # Mock response for PUT topic request
-        @urlmatch(netloc="localhost", path="/v1/projects/TEST/topics/topic1",
-                  method="PUT")
-        def create_topic_mock(url, request):
-            return response(200, '{"name":"/projects/TEST/topics/topic1"}', None, None, 5, request)
+        # Mock response for GET topic request
+        @urlmatch(netloc="localhost", path="/v1/projects/TEST/topics/topic1", method="GET")
+        def has_topic_mock(url, request):
+            return response(200, '{"name": "/projects/TEST/topics/topic1"}', None, None, 5, request)
 
         # Mock response for POST publish to topic
         @urlmatch(netloc="localhost", path="/v1/projects/TEST/topics/topic1:publish",
@@ -32,7 +31,7 @@ class TestTopic(unittest.TestCase):
             return '{"msgIds":["1"]}'
 
         # Execute ams client with mocked response
-        with HTTMock(create_topic_mock, publish_mock):
+        with HTTMock(has_topic_mock, publish_mock):
             topic = self.ams.topic('topic1')
             resp = topic.publish(self.msg.dict())
             # Assert that ams client handled the json response correctly
@@ -41,6 +40,14 @@ class TestTopic(unittest.TestCase):
             self.assertEqual(topic.fullname, '/projects/TEST/topics/topic1')
 
     def testSubscription(self):
+        # Mock response for GET topic request
+        @urlmatch(netloc="localhost", path="/v1/projects/TEST/subscriptions/subscription1", method="GET")
+        def has_subscription_mock(url, request):
+            return response(200, '{"name":"/projects/TEST/subscriptions/subscription1",\
+                            "topic":"/projects/TEST/topics/topic1",\
+                            "pushConfig": {"pushEndpoint": "","retryPolicy": {}},\
+                            "ackDeadlineSeconds":"10"}', None, None, 5, request)
+
         # Mock response for GET topic request
         @urlmatch(netloc="localhost", path="/v1/projects/TEST/topics/topic1",
                   method="GET")
@@ -68,7 +75,7 @@ class TestTopic(unittest.TestCase):
                             None, None, 5, request)
 
         # Execute ams client with mocked response
-        with HTTMock(create_topic_mock, create_subscription_mock, get_topic_mock):
+        with HTTMock(create_topic_mock, create_subscription_mock, get_topic_mock, has_subscription_mock):
             topic = self.ams.topic('topic1')
             sub = topic.subscription('subscription1')
             # Assert that ams client handled the json response correctly
@@ -80,6 +87,11 @@ class TestTopic(unittest.TestCase):
             self.assertEqual(sub.fullname, '/projects/TEST/subscriptions/subscription1')
 
     def testIterSubscriptions(self):
+        # Mock response for GET topic request
+        @urlmatch(netloc="localhost", path="/v1/projects/TEST/topics/topic1", method="GET")
+        def has_topic_mock(url, request):
+            return response(200, '{"name": "/projects/TEST/topics/topic1"}', None, None, 5, request)
+
         # Mock response for PUT topic request
         @urlmatch(netloc="localhost", path="/v1/projects/TEST/topics/topic1",
                   method="PUT")
@@ -101,7 +113,7 @@ class TestTopic(unittest.TestCase):
                                   "ackDeadlineSeconds": 10}]}', None, None, 5, request)
 
         # Execute ams client with mocked response
-        with HTTMock(iter_subs_mock, create_topic_mock):
+        with HTTMock(iter_subs_mock, create_topic_mock, has_topic_mock):
             topic = self.ams.topic('topic1')
             resp = topic.iter_subs()
             obj1 = resp.next()
@@ -113,6 +125,11 @@ class TestTopic(unittest.TestCase):
             self.assertEqual(obj2.name, 'subscription2')
 
     def testDelete(self):
+        # Mock response for GET topic request
+        @urlmatch(netloc="localhost", path="/v1/projects/TEST/topics/topic1", method="GET")
+        def has_topic_mock(url, request):
+            return response(200, '{"name": "/projects/TEST/topics/topic1"}', None, None, 5, request)
+
         # Mock response for PUT topic request
         @urlmatch(netloc="localhost", path="/v1/projects/TEST/topics/topic1",
                   method="PUT")
@@ -126,7 +143,7 @@ class TestTopic(unittest.TestCase):
             return response(200, '{}', None, None, 5, request)
 
         # Execute ams client with mocked response
-        with HTTMock(delete_topic, create_topic_mock):
+        with HTTMock(delete_topic, create_topic_mock, has_topic_mock):
             topic = self.ams.topic('topic1')
             self.assertTrue(topic.delete())
 
