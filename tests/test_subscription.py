@@ -15,6 +15,14 @@ class TestSubscription(unittest.TestCase):
         self.msg = AmsMessage(attributes={'foo': 'bar'}, data='baz')
 
     def testPushConfig(self):
+        # Mock response for GET subscription request
+        @urlmatch(netloc="localhost", path="/v1/projects/TEST/subscriptions/subscription1", method="GET")
+        def has_subscription_mock(url, request):
+            return response(200, '{"name":"/projects/TEST/subscriptions/subscription1",\
+                            "topic":"/projects/TEST/topics/topic1",\
+                            "pushConfig": {"pushEndpoint": "","retryPolicy": {}},\
+                            "ackDeadlineSeconds": 10}', None, None, 5, request)
+
         # Mock response for GET topic request
         @urlmatch(netloc="localhost", path="/v1/projects/TEST/topics/topic1",
                   method="GET")
@@ -55,7 +63,7 @@ class TestSubscription(unittest.TestCase):
                             None, None, 5, request)
 
         # Execute ams client with mocked response
-        with HTTMock(create_topic_mock, create_subscription_mock, get_topic_mock, modify_pushconfig_mock):
+        with HTTMock(create_topic_mock, create_subscription_mock, get_topic_mock, modify_pushconfig_mock, has_subscription_mock):
             topic = self.ams.topic('topic1')
             sub = topic.subscription('subscription1')
             self.assertEqual(topic.name, 'topic1')
@@ -89,8 +97,11 @@ class TestSubscription(unittest.TestCase):
                   method="GET")
         def get_sub_mock(url, request):
             assert url.path == "/v1/projects/TEST/subscriptions/subscription1"
-            # Return the details of a topic in json format
-            return response(200, '{"name":"/v1/projects/TEST/subscriptions/subscription1"}', None, None, 5, request)
+            # Return the details of a subscription in json format
+            return response(200, '{"name":"/projects/TEST/subscriptions/subscription1",\
+                            "topic":"/projects/TEST/topics/topic1",\
+                            "pushConfig": {"pushEndpoint": "","retryPolicy": {}},\
+                            "ackDeadlineSeconds": 10}', None, None, 5, request)
 
         # Mock response for POST pull from subscription
         @urlmatch(netloc="localhost", path="/v1/projects/TEST/subscriptions/subscription1:pull",
@@ -147,6 +158,14 @@ class TestSubscription(unittest.TestCase):
             self.assertEqual(resp_ack, True)
 
     def testDelete(self):
+        # Mock response for GET subscription request
+        @urlmatch(netloc="localhost", path="/v1/projects/TEST/subscriptions/subscription1", method="GET")
+        def has_subscription_mock(url, request):
+            return response(200, '{"name":"/projects/TEST/subscriptions/subscription1",\
+                            "topic":"/projects/TEST/topics/topic1",\
+                            "pushConfig": {"pushEndpoint": "","retryPolicy": {}},\
+                            "ackDeadlineSeconds": 10}', None, None, 5, request)
+
         # Mock response for PUT topic request
         @urlmatch(netloc="localhost", path="/v1/projects/TEST/topics/topic1",
                   method="PUT")
@@ -179,7 +198,7 @@ class TestSubscription(unittest.TestCase):
                             None, None, 5, request)
 
         # Execute ams client with mocked response
-        with HTTMock(delete_subscription, create_topic_mock, create_subscription_mock, get_topic_mock):
+        with HTTMock(delete_subscription, create_topic_mock, create_subscription_mock, get_topic_mock, has_subscription_mock):
             topic = self.ams.topic('topic1')
             sub = topic.subscription('subscription1')
             self.assertTrue(sub.delete())

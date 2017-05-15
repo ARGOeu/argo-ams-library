@@ -1,8 +1,10 @@
+from amsexceptions import AmsException
+
 class AmsTopic(object):
     """Abstraction of AMS Topic
 
        Topic represents named bucket on AMS service that can hold messages.
-       Supported methods are wrappers around the same methods defined in client
+       Supported methods are wrappers around the methods defined in client
        class with preconfigured topic name.
     """
 
@@ -24,21 +26,34 @@ class AmsTopic(object):
         return self.init.delete_topic(self.name)
 
     def subscription(self, sub, ackdeadline=10, **reqkwargs):
-        """Create a subscription for the topic
+        """Create a subscription for the topic. It's wrapper around few
+           methods defined in client class. Method will ensure that AmsSubscription
+           object is returned either by fetching existing one or creating
+           a new one in case it doesn't exist.
 
            Args:
                sub (str): Name of the subscription
            Kwargs:
                ackdeadline (int): Time window in which the AMS service expects
                                   acknowledgement received for pulled messages
+               reqkwargs: Keyword arguments that will be passed to underlying
+                          python-requests library call.
            Return:
                object (AmsSubscription)
 
         """
-        return self.init.create_sub(sub, self.name, ackdeadline=ackdeadline, retobj=True, **reqkwargs)
+        try:
+            if self.init.has_sub(sub, **reqkwargs):
+                return self.init.get_sub(sub, retobj=True, **reqkwargs)
+            else:
+                return self.init.create_sub(sub, self.name, ackdeadline=ackdeadline, retobj=True, **reqkwargs)
+
+        except AmsException as e:
+            raise e
+
 
     def iter_subs(self):
-        """Generator method that can be used to iterate over subscription
+        """Generator method that can be used to iterate over subscriptions
            associated with the topic
         """
 

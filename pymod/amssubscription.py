@@ -3,7 +3,7 @@ class AmsSubscription(object):
 
        Subscription represents stream of messages that can be pulled from AMS
        service or pushed to some receiver. Supported methods are wrappers
-       around same methods defined in client class with preconfigured
+       around methods defined in client class with preconfigured
        subscription name.
     """
     def _build_name(self, fullname):
