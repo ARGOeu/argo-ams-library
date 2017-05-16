@@ -174,6 +174,8 @@ class ArgoMessagingService(object):
         """
         if not isinstance(msg, list):
             msg = [msg]
+        if all(isinstance(m, AmsMessage) for m in msg):
+            msg = [m.dict() for m in msg]
         try:
             msg_body = json.dumps({"messages": msg})
         except TypeError as e:
