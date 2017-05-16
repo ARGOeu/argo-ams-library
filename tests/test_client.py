@@ -195,9 +195,31 @@ class TestClient(unittest.TestCase):
         # Execute ams client with mocked response
         with HTTMock(publish_mock):
             msg = AmsMessage(data='foo1', attributes={'bar1': 'baz1'}).dict()
+            msg_bulk = [AmsMessage(data='foo1', attributes={'bar1': 'baz1'}), AmsMessage(data='foo2', attributes={'bar2': 'baz2'})]
             resp = self.ams.publish("topic1", msg)
-            # Assert that ams client handled the json response correctly
             assert resp["msgIds"][0] == "1"
+            resp_bulk = self.ams.publish("topic1", msg_bulk)
+            assert resp["msgIds"][0] == "1"
+
+        @urlmatch(netloc="localhost", path="/v1/projects/TEST/topics/topic1:publish",
+                  method="POST")
+        def publish_bulk_mock(url, request):
+            assert url.path == "/v1/projects/TEST/topics/topic1:publish"
+            # Check request produced by ams client
+            req_body = json.loads(request.body)
+            self.assertEqual(req_body["messages"][0]["data"], "Zm9vMQ==")
+            self.assertEqual(req_body["messages"][0]["attributes"]["bar1"], "baz1")
+            self.assertEqual(req_body["messages"][1]["data"], "Zm9vMg==")
+            self.assertEqual(req_body["messages"][1]["attributes"]["bar2"], "baz2")
+
+            return '{"msgIds":["1", "2"]}'
+
+        with HTTMock(publish_bulk_mock):
+            msg_bulk = [AmsMessage(data='foo1', attributes={'bar1': 'baz1'}), AmsMessage(data='foo2', attributes={'bar2': 'baz2'})]
+            resp_bulk = self.ams.publish("topic1", msg_bulk)
+            self.assertEqual(len(resp_bulk["msgIds"]), 2)
+            self.assertEqual(resp_bulk["msgIds"][0], "1")
+            self.assertEqual(resp_bulk["msgIds"][1], "2")
 
     # Test List Subscriptions client request
     def testListSubscriptions(self):
