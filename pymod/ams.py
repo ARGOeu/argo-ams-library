@@ -167,13 +167,20 @@ class ArgoMessagingService(object):
         """Publish a message or list of messages to a selected topic.
 
         Args:
-            topic: str. Topic name.
-            msg: list(AmsMessage). A list with one or more messages to send.
-                Each message is represented as python dictionary with mandatory data and optional attributes keys.
-            reqkwargs: keyword argument that will be passed to underlying python-requests library call.
+            topic (str): Topic name.
+            msg (list): A list with one or more messages to send.
+                        Each message is represented as AmsMessage object or python
+                        dictionary with at least data or one attribute key defined.
+        Kwargs:
+            reqkwargs: keyword argument that will be passed to underlying
+                       python-requests library call.
+        Return:
+            dict: Dictionary with messageIds of published messages
         """
         if not isinstance(msg, list):
             msg = [msg]
+        if all(isinstance(m, AmsMessage) for m in msg):
+            msg = [m.dict() for m in msg]
         try:
             msg_body = json.dumps({"messages": msg})
         except TypeError as e:

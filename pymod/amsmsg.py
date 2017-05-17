@@ -28,7 +28,7 @@ class AmsMessage(Callable):
 
     def _has_dataattr(self):
         if not getattr(self, '_data', False) and not self._attributes:
-            raise AmsMessageException('At least data field or one attributes need to be defined')
+            raise AmsMessageException('At least data field or one attribute needs to be defined')
 
         return True
 
