@@ -18,13 +18,17 @@ class ArgoMessagingService(object):
                        "topic_publish": ["post", "https://{0}/v1/projects/{2}/topics/{3}:publish?key={1}"],
                        "topic_create": ["put", "https://{0}/v1/projects/{2}/topics/{3}?key={1}"],
                        "topic_delete": ["delete", "https://{0}/v1/projects/{2}/topics/{3}?key={1}"],
+                       "topic_acl": ["get", "https://{0}/v1/projects/{2}/topics/{3}:acl?key={1}"],
+                       "topic_modifyacl": ["post", "https://{0}/v1/projects/{2}/topics/{3}:modifyAcl?key={1}"],
                        "sub_create": ["put", "https://{0}/v1/projects/{2}/subscriptions/{4}?key={1}"],
                        "sub_delete": ["delete", "https://{0}/v1/projects/{2}/subscriptions/{4}?key={1}"],
                        "sub_list": ["get", "https://{0}/v1/projects/{2}/subscriptions?key={1}"],
                        "sub_get": ["get", "https://{0}/v1/projects/{2}/subscriptions/{4}?key={1}"],
                        "sub_pull": ["post", "https://{0}/v1/projects/{2}/subscriptions/{4}:pull?key={1}"],
                        "sub_ack": ["post", "https://{0}/v1/projects/{2}/subscriptions/{4}:acknowledge?key={1}"],
-                       "sub_pushconfig": ["post", "https://{0}/v1/projects/{2}/subscriptions/{4}:modifyPushConfig?key={1}"]}
+                       "sub_pushconfig": ["post", "https://{0}/v1/projects/{2}/subscriptions/{4}:modifyPushConfig?key={1}"],
+                       "sub_acl": ["get", "https://{0}/v1/projects/{2}/subscriptions/{4}:acl?key={1}"],
+                       "sub_modifyacl": ["get", "https://{0}/v1/projects/{2}/subscriptions/{4}:modifyAcl?key={1}"]}
         # Containers for topic and subscription objects
         self.topics = dict()
         self.subs = dict()
@@ -43,6 +47,54 @@ class ArgoMessagingService(object):
 
     def _delete_topic_obj(self, t):
         del self.topics[t['name']]
+
+    def acl_topic(self, topic, **reqkwargs):
+        route = self.routes["topic_acl"]
+        # Compose url
+        url = route[1].format(self.endpoint, self.token, self.project, topic)
+        method = eval('do_{0}'.format(route[0]))
+
+        r = method(url, "topic_acl", **reqkwargs)
+
+        topic_fullname = "/projects/{0}/topics/{1}".format(self.project, topic)
+        if topic_fullname not in self.topics:
+            self._create_topic_obj({'name': topic_fullname})
+
+        if r:
+            self.topics[topic_fullname].acls = r['authorized_users']
+            return r['authorized_users']
+        else:
+            self.topics[topic_fullname].acls = []
+            return []
+
+
+    def modifyacl_topic(self, topic, *users, **reqkwargs):
+        route = self.routes["topic_modifyacl"]
+        # Compose url
+        url = route[1].format(self.endpoint, self.token, self.project, topic)
+        method = eval('do_{0}'.format(route[0]))
+
+        r = None
+        try:
+            msg_body = json.dumps({"authorized_users": list(users)})
+            r = method(url, msg_body, "topic_modifyacl", **reqkwargs)
+
+            topic_fullname = "/projects/{0}/topics/{1}".format(self.project, topic)
+            if topic_fullname not in self.topics:
+                self._create_topic_obj({'name': topic_fullname})
+
+            if r is not None:
+                self.topics[topic_fullname].acls = list(users)
+            else:
+                self.topics[topic_fullname].acls = []
+
+            return True
+
+        except AmsServiceException as e:
+            raise e
+
+        except TypeError as e:
+            raise AmsServiceException(e)
 
     def pushconfig_sub(self, sub, push_endpoint=None, retry_policy_type='linear', retry_policy_period=300, **reqkwargs):
         """Modify push configuration of given subscription

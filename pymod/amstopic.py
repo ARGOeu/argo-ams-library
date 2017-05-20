@@ -51,6 +51,11 @@ class AmsTopic(object):
         except AmsException as e:
             raise e
 
+    def acl(self, *users, **reqkwargs):
+        if not users:
+            return self.init.acl_topic(self.name, **reqkwargs)
+        else:
+            return self.init.modifyacl_topic(self.name, *users, **reqkwargs)
 
     def iter_subs(self):
         """Generator method that can be used to iterate over subscriptions
