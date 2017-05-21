@@ -62,6 +62,12 @@ class AmsSubscription(object):
 
         return self.init.pull_sub(self.name, num=num, return_immediately=return_immediately, **reqkwargs)
 
+    def acl(self, users=None, **reqkwargs):
+        if users is None:
+            return self.init.getacl_sub(self.name, **reqkwargs)
+        else:
+            return self.init.modifyacl_sub(self.name, users, **reqkwargs)
+
     def ack(self, ids, **reqkwargs):
         """Acknowledge receive of messages
 

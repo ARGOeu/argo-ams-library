@@ -18,7 +18,7 @@ class ArgoMessagingService(object):
                        "topic_publish": ["post", "https://{0}/v1/projects/{2}/topics/{3}:publish?key={1}"],
                        "topic_create": ["put", "https://{0}/v1/projects/{2}/topics/{3}?key={1}"],
                        "topic_delete": ["delete", "https://{0}/v1/projects/{2}/topics/{3}?key={1}"],
-                       "topic_acl": ["get", "https://{0}/v1/projects/{2}/topics/{3}:acl?key={1}"],
+                       "topic_getacl": ["get", "https://{0}/v1/projects/{2}/topics/{3}:acl?key={1}"],
                        "topic_modifyacl": ["post", "https://{0}/v1/projects/{2}/topics/{3}:modifyAcl?key={1}"],
                        "sub_create": ["put", "https://{0}/v1/projects/{2}/subscriptions/{4}?key={1}"],
                        "sub_delete": ["delete", "https://{0}/v1/projects/{2}/subscriptions/{4}?key={1}"],
@@ -27,8 +27,8 @@ class ArgoMessagingService(object):
                        "sub_pull": ["post", "https://{0}/v1/projects/{2}/subscriptions/{4}:pull?key={1}"],
                        "sub_ack": ["post", "https://{0}/v1/projects/{2}/subscriptions/{4}:acknowledge?key={1}"],
                        "sub_pushconfig": ["post", "https://{0}/v1/projects/{2}/subscriptions/{4}:modifyPushConfig?key={1}"],
-                       "sub_acl": ["get", "https://{0}/v1/projects/{2}/subscriptions/{4}:acl?key={1}"],
-                       "sub_modifyacl": ["get", "https://{0}/v1/projects/{2}/subscriptions/{4}:modifyAcl?key={1}"]}
+                       "sub_getacl": ["get", "https://{0}/v1/projects/{2}/subscriptions/{3}:acl?key={1}"],
+                       "sub_modifyacl": ["post", "https://{0}/v1/projects/{2}/subscriptions/{3}:modifyAcl?key={1}"]}
         # Containers for topic and subscription objects
         self.topics = dict()
         self.subs = dict()
@@ -48,13 +48,13 @@ class ArgoMessagingService(object):
     def _delete_topic_obj(self, t):
         del self.topics[t['name']]
 
-    def acl_topic(self, topic, **reqkwargs):
-        route = self.routes["topic_acl"]
+    def getacl_topic(self, topic, **reqkwargs):
+        route = self.routes["topic_getacl"]
         # Compose url
         url = route[1].format(self.endpoint, self.token, self.project, topic)
         method = eval('do_{0}'.format(route[0]))
 
-        r = method(url, "topic_acl", **reqkwargs)
+        r = method(url, "topic_getacl", **reqkwargs)
 
         topic_fullname = "/projects/{0}/topics/{1}".format(self.project, topic)
         if topic_fullname not in self.topics:
@@ -84,6 +84,51 @@ class ArgoMessagingService(object):
 
             if r is not None:
                 self.topics[topic_fullname].acls = users
+
+            return True
+
+        except AmsServiceException as e:
+            raise e
+
+        except TypeError as e:
+            raise AmsServiceException(e)
+
+    def getacl_sub(self, sub, **reqkwargs):
+        route = self.routes["sub_getacl"]
+        # Compose url
+        url = route[1].format(self.endpoint, self.token, self.project, sub)
+        method = eval('do_{0}'.format(route[0]))
+
+        r = method(url, "sub_getacl", **reqkwargs)
+
+        sub_fullname = "/projects/{0}/subscriptions/{1}".format(self.project, sub)
+        if sub_fullname not in self.subs:
+            self._create_sub_obj({'name': sub_fullname})
+
+        if r:
+            self.subs[sub_fullname].acls = r['authorized_users']
+            return r['authorized_users']
+        else:
+            self.subs[sub_fullname].acls = []
+            return []
+
+    def modifyacl_sub(self, sub, users, **reqkwargs):
+        route = self.routes["sub_modifyacl"]
+        # Compose url
+        url = route[1].format(self.endpoint, self.token, self.project, sub)
+        method = eval('do_{0}'.format(route[0]))
+
+        r = None
+        try:
+            msg_body = json.dumps({"authorized_users": users})
+            r = method(url, msg_body, "sub_modifyacl", **reqkwargs)
+
+            sub_fullname = "/projects/{0}/subscriptions/{1}".format(self.project, sub)
+            if sub_fullname not in self.subs:
+                self._create_sub_obj({'name': sub_fullname})
+
+            if r is not None:
+                self.topics[sub_fullname].acls = users
 
             return True
 

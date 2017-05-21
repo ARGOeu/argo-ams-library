@@ -53,7 +53,7 @@ class AmsTopic(object):
 
     def acl(self, users=None, **reqkwargs):
         if users is None:
-            return self.init.acl_topic(self.name, **reqkwargs)
+            return self.init.getacl_topic(self.name, **reqkwargs)
         else:
             return self.init.modifyacl_topic(self.name, users, **reqkwargs)
 
