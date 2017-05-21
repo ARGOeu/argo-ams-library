@@ -67,8 +67,7 @@ class ArgoMessagingService(object):
             self.topics[topic_fullname].acls = []
             return []
 
-
-    def modifyacl_topic(self, topic, *users, **reqkwargs):
+    def modifyacl_topic(self, topic, users, **reqkwargs):
         route = self.routes["topic_modifyacl"]
         # Compose url
         url = route[1].format(self.endpoint, self.token, self.project, topic)
@@ -76,7 +75,7 @@ class ArgoMessagingService(object):
 
         r = None
         try:
-            msg_body = json.dumps({"authorized_users": list(users)})
+            msg_body = json.dumps({"authorized_users": users})
             r = method(url, msg_body, "topic_modifyacl", **reqkwargs)
 
             topic_fullname = "/projects/{0}/topics/{1}".format(self.project, topic)
@@ -84,9 +83,7 @@ class ArgoMessagingService(object):
                 self._create_topic_obj({'name': topic_fullname})
 
             if r is not None:
-                self.topics[topic_fullname].acls = list(users)
-            else:
-                self.topics[topic_fullname].acls = []
+                self.topics[topic_fullname].acls = users
 
             return True
 
