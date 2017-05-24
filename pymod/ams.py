@@ -60,6 +60,8 @@ class ArgoMessagingService(object):
                           python-requests library call.
         """
 
+        topicobj = self.get_topic(topic, retobj=True)
+
         route = self.routes["topic_getacl"]
         # Compose url
         url = route[1].format(self.endpoint, self.token, self.project, topic)
@@ -67,15 +69,11 @@ class ArgoMessagingService(object):
 
         r = method(url, "topic_getacl", **reqkwargs)
 
-        topic_fullname = "/projects/{0}/topics/{1}".format(self.project, topic)
-        if topic_fullname not in self.topics:
-            self._create_topic_obj({'name': topic_fullname})
-
         if r:
-            self.topics[topic_fullname].acls = r['authorized_users']
-            return r['authorized_users']
+            self.topics[topicobj.fullname].acls = r['authorized_users']
+            return r
         else:
-            self.topics[topic_fullname].acls = []
+            self.topics[topicobj.fullname].acls = []
             return []
 
     def modifyacl_topic(self, topic, users, **reqkwargs):
@@ -92,6 +90,8 @@ class ArgoMessagingService(object):
                           python-requests library call.
         """
 
+        topicobj = self.get_topic(topic, retobj=True)
+
         route = self.routes["topic_modifyacl"]
         # Compose url
         url = route[1].format(self.endpoint, self.token, self.project, topic)
@@ -102,12 +102,8 @@ class ArgoMessagingService(object):
             msg_body = json.dumps({"authorized_users": users})
             r = method(url, msg_body, "topic_modifyacl", **reqkwargs)
 
-            topic_fullname = "/projects/{0}/topics/{1}".format(self.project, topic)
-            if topic_fullname not in self.topics:
-                self._create_topic_obj({'name': topic_fullname})
-
             if r is not None:
-                self.topics[topic_fullname].acls = users
+                self.topics[topicobj.fullname].acls = users
 
             return True
 
@@ -129,6 +125,8 @@ class ArgoMessagingService(object):
                           python-requests library call.
         """
 
+        subobj = self.get_sub(sub, retobj=True)
+
         route = self.routes["sub_getacl"]
         # Compose url
         url = route[1].format(self.endpoint, self.token, self.project, sub)
@@ -136,15 +134,11 @@ class ArgoMessagingService(object):
 
         r = method(url, "sub_getacl", **reqkwargs)
 
-        sub_fullname = "/projects/{0}/subscriptions/{1}".format(self.project, sub)
-        if sub_fullname not in self.subs:
-            self._create_sub_obj({'name': sub_fullname})
-
         if r:
-            self.subs[sub_fullname].acls = r['authorized_users']
-            return r['authorized_users']
+            self.subs[subobj.fullname].acls = r['authorized_users']
+            return r
         else:
-            self.subs[sub_fullname].acls = []
+            self.subs[subobj.fullname].acls = []
             return []
 
     def modifyacl_sub(self, sub, users, **reqkwargs):
@@ -160,6 +154,8 @@ class ArgoMessagingService(object):
                           python-requests library call.
         """
 
+        subobj = self.get_sub(sub, retobj=True)
+
         route = self.routes["sub_modifyacl"]
         # Compose url
         url = route[1].format(self.endpoint, self.token, self.project, sub)
@@ -170,12 +166,8 @@ class ArgoMessagingService(object):
             msg_body = json.dumps({"authorized_users": users})
             r = method(url, msg_body, "sub_modifyacl", **reqkwargs)
 
-            sub_fullname = "/projects/{0}/subscriptions/{1}".format(self.project, sub)
-            if sub_fullname not in self.subs:
-                self._create_sub_obj({'name': sub_fullname})
-
             if r is not None:
-                self.subs[sub_fullname].acls = users
+                self.subs[subobj.fullname].acls = users
 
             return True
 
