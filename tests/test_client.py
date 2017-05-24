@@ -157,6 +157,126 @@ class TestClient(unittest.TestCase):
             self.assertEqual(obj1.name, 'topic1')
             self.assertEqual(obj2.name, 'topic2')
 
+    # Test Get a subscription ACL client request
+    def testGetAclSubscription(self):
+        # Mock response for GET subscriptions request
+        @urlmatch(netloc="localhost", path="/v1/projects/TEST/subscriptions/subscription1",
+                  method="GET")
+        def get_sub_mock(url, request):
+            assert url.path == "/v1/projects/TEST/subscriptions/subscription1"
+            # Return the details of a subscription in json format
+            return response(200, '{"name":"/projects/TEST/subscriptions/subscription1",\
+                            "topic":"/projects/TEST/topics/topic1",\
+                            "pushConfig": {"pushEndpoint": "","retryPolicy": {}},\
+                            "ackDeadlineSeconds":"10"}', None, None, 5, request)
+
+        # Mock response for GET topic request
+        @urlmatch(netloc="localhost", path="/v1/projects/TEST/subscriptions/subscription1:acl",
+                  method="GET")
+        def getacl_subscription_mock(url, request):
+            assert url.path == "/v1/projects/TEST/subscriptions/subscription1:acl"
+            # Return the details of a topic in json format
+            return response(200, '{"authorized_users": []}', None, None, 5, request)
+
+        # Execute ams client with mocked response
+        with HTTMock(getacl_subscription_mock, get_sub_mock):
+            resp = self.ams.getacl_sub("subscription1")
+            users = resp['authorized_users']
+            self.assertEqual(users, [])
+
+    # Test Modify a topic ACL client request
+    def testModifyAclSubscription(self):
+        # Mock response for GET subscriptions request
+        @urlmatch(netloc="localhost", path="/v1/projects/TEST/subscriptions/subscription1",
+                  method="GET")
+        def get_sub_mock(url, request):
+            assert url.path == "/v1/projects/TEST/subscriptions/subscription1"
+            # Return the details of a subscription in json format
+            return response(200, '{"name":"/projects/TEST/subscriptions/subscription1",\
+                            "topic":"/projects/TEST/topics/topic1",\
+                            "pushConfig": {"pushEndpoint": "","retryPolicy": {}},\
+                            "ackDeadlineSeconds":"10"}', None, None, 5, request)
+
+        @urlmatch(netloc="localhost", path="/v1/projects/TEST/subscriptions/subscription1:acl",
+                  method="GET")
+        def getacl_subscription_mock(url, request):
+            assert url.path == "/v1/projects/TEST/subscriptions/subscription1:acl"
+            # Return the details of a topic in json format
+            return response(200, '{"authorized_users": ["user1", "user2"]}', None, None, 5, request)
+
+        # Mock response for GET topic request
+        @urlmatch(netloc="localhost", path="/v1/projects/TEST/subscriptions/subscription1:modifyAcl",
+                  method="POST")
+        def modifyacl_subscription_mock(url, request):
+            assert url.path == "/v1/projects/TEST/subscriptions/subscription1:modifyAcl"
+            # Return the details of a topic in json format
+            return response(200, '{}', None, None, 5, request)
+
+        # Execute ams client with mocked response
+        with HTTMock(modifyacl_subscription_mock, getacl_subscription_mock, get_sub_mock):
+            resp = self.ams.modifyacl_sub("subscription1", ["user1", "user2"])
+            self.assertTrue(resp)
+            resp_users = self.ams.getacl_sub("subscription1")
+            users = resp_users['authorized_users']
+            self.assertEqual(users, ["user1", "user2"])
+
+
+    # Test Get a topic ACL client request
+    def testGetAclTopic(self):
+        # Mock response for GET topic request
+        @urlmatch(netloc="localhost", path="/v1/projects/TEST/topics/topic1",
+                  method="GET")
+        def get_topic_mock(url, request):
+            assert url.path == "/v1/projects/TEST/topics/topic1"
+            # Return the details of a topic in json format
+            return response(200, '{"name":"/projects/TEST/topics/topic1"}', None, None, 5, request)
+
+        # Mock response for GET topic request
+        @urlmatch(netloc="localhost", path="/v1/projects/TEST/topics/topic1:acl",
+                  method="GET")
+        def getacl_topic_mock(url, request):
+            assert url.path == "/v1/projects/TEST/topics/topic1:acl"
+            # Return the details of a topic in json format
+            return response(200, '{"authorized_users": []}', None, None, 5, request)
+
+        # Execute ams client with mocked response
+        with HTTMock(getacl_topic_mock, get_topic_mock):
+            resp = self.ams.getacl_topic("topic1")
+            users = resp['authorized_users']
+            self.assertEqual(users, [])
+
+    # Test Modify a topic ACL client request
+    def testModifyAclTopic(self):
+        # Mock response for GET topic request
+        @urlmatch(netloc="localhost", path="/v1/projects/TEST/topics/topic1",
+                  method="GET")
+        def get_topic_mock(url, request):
+            assert url.path == "/v1/projects/TEST/topics/topic1"
+            # Return the details of a topic in json format
+            return response(200, '{"name":"/projects/TEST/topics/topic1"}', None, None, 5, request)
+
+        @urlmatch(netloc="localhost", path="/v1/projects/TEST/topics/topic1:acl",
+                  method="GET")
+        def getacl_topic_mock(url, request):
+            assert url.path == "/v1/projects/TEST/topics/topic1:acl"
+            # Return the details of a topic in json format
+            return response(200, '{"authorized_users": ["user1", "user2"]}', None, None, 5, request)
+
+        # Mock response for GET topic request
+        @urlmatch(netloc="localhost", path="/v1/projects/TEST/topics/topic1:modifyAcl",
+                  method="POST")
+        def modifyacl_topic_mock(url, request):
+            assert url.path == "/v1/projects/TEST/topics/topic1:modifyAcl"
+            # Return the details of a topic in json format
+            return response(200, '{}', None, None, 5, request)
+
+        # Execute ams client with mocked response
+        with HTTMock(modifyacl_topic_mock, getacl_topic_mock, get_topic_mock):
+            resp = self.ams.modifyacl_topic("topic1", ["user1", "user2"])
+            self.assertTrue(resp)
+            resp_users = self.ams.getacl_topic("topic1")
+            users = resp_users['authorized_users']
+            self.assertEqual(users, ["user1", "user2"])
 
     # Test Get a topic client request
     def testGetTopic(self):
