@@ -49,6 +49,17 @@ class ArgoMessagingService(object):
         del self.topics[t['name']]
 
     def getacl_topic(self, topic, **reqkwargs):
+        """
+           Get access control lists for topic
+
+           Args:
+               topic (str): The topic name.
+
+           Kwargs:
+               reqkwargs: keyword argument that will be passed to underlying
+                          python-requests library call.
+        """
+
         route = self.routes["topic_getacl"]
         # Compose url
         url = route[1].format(self.endpoint, self.token, self.project, topic)
@@ -68,6 +79,19 @@ class ArgoMessagingService(object):
             return []
 
     def modifyacl_topic(self, topic, users, **reqkwargs):
+        """
+           Modify access control lists for topic
+
+           Args:
+               topic (str): The topic name.
+               users (list): List of users that will have access to topic.
+                             Empty list of users will reset access control list.
+
+           Kwargs:
+               reqkwargs: keyword argument that will be passed to underlying
+                          python-requests library call.
+        """
+
         route = self.routes["topic_modifyacl"]
         # Compose url
         url = route[1].format(self.endpoint, self.token, self.project, topic)
@@ -94,6 +118,17 @@ class ArgoMessagingService(object):
             raise AmsServiceException(e)
 
     def getacl_sub(self, sub, **reqkwargs):
+        """
+           Get access control lists for subscription
+
+           Args:
+               sub (str): The subscription name.
+
+           Kwargs:
+               reqkwargs: keyword argument that will be passed to underlying
+                          python-requests library call.
+        """
+
         route = self.routes["sub_getacl"]
         # Compose url
         url = route[1].format(self.endpoint, self.token, self.project, sub)
@@ -113,6 +148,18 @@ class ArgoMessagingService(object):
             return []
 
     def modifyacl_sub(self, sub, users, **reqkwargs):
+        """
+           Modify access control lists for subscription
+
+           Args:
+               sub (str): The subscription name.
+               users (list): List of users that will have access to subscription.
+                             Empty list of users will reset access control list.
+           Kwargs:
+               reqkwargs: keyword argument that will be passed to underlying
+                          python-requests library call.
+        """
+
         route = self.routes["sub_modifyacl"]
         # Compose url
         url = route[1].format(self.endpoint, self.token, self.project, sub)
@@ -128,7 +175,7 @@ class ArgoMessagingService(object):
                 self._create_sub_obj({'name': sub_fullname})
 
             if r is not None:
-                self.topics[sub_fullname].acls = users
+                self.subs[sub_fullname].acls = users
 
             return True
 

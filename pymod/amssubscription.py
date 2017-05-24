@@ -10,6 +10,7 @@ class AmsSubscription(object):
         return fullname.split('/projects/{0}/subscriptions/'.format(self.init.project))[1]
 
     def __init__(self, fullname, topic, pushconfig, ackdeadline, init):
+        self.acls = None
         self.init = init
         self.fullname = fullname
         self.topic = self.init.topics[topic]
@@ -63,6 +64,15 @@ class AmsSubscription(object):
         return self.init.pull_sub(self.name, num=num, return_immediately=return_immediately, **reqkwargs)
 
     def acl(self, users=None, **reqkwargs):
+        """Set or get ACLs assigned to subscription
+
+           Kwargs:
+               users (list): If list of users is specified, give those user
+                             access to subscription. Empty list will reset access permission.
+               reqkwargs: keyword argument that will be passed to underlying
+                          python-requests library call.
+
+        """
         if users is None:
             return self.init.getacl_sub(self.name, **reqkwargs)
         else:
