@@ -203,5 +203,57 @@ class TestSubscription(unittest.TestCase):
             sub = topic.subscription('subscription1')
             self.assertTrue(sub.delete())
 
+    def testAcl(self):
+        @urlmatch(netloc="localhost", path="/v1/projects/TEST/topics/topic1",
+                  method="GET")
+        def get_topic_mock(url, request):
+            # Return the details of a topic in json format
+            return response(200, '{"name":"/projects/TEST/topics/topic1"}', None, None, 5, request)
+
+        # Mock response for PUT topic request
+        @urlmatch(netloc="localhost", path="/v1/projects/TEST/topics/topic1",
+                  method="PUT")
+        def create_topic_mock(url, request):
+            return response(200, '{"name":"/projects/TEST/topics/topic1"}', None, None, 5, request)
+
+        # Mock response for GET subscription request
+        @urlmatch(netloc="localhost", path="/v1/projects/TEST/subscriptions/subscription1",
+                  method="GET")
+        def get_sub_mock(url, request):
+            assert url.path == "/v1/projects/TEST/subscriptions/subscription1"
+            # Return the details of a subscription in json format
+            return response(200, '{"name":"/projects/TEST/subscriptions/subscription1",\
+                            "topic":"/projects/TEST/topics/topic1",\
+                            "pushConfig": {"pushEndpoint": "","retryPolicy": {}},\
+                            "ackDeadlineSeconds": 10}', None, None, 5, request)
+
+        # Mock response for GET topic request
+        @urlmatch(netloc="localhost", path="/v1/projects/TEST/subscriptions/subscription1:modifyAcl",
+                  method="POST")
+        def modifyacl_sub_mock(url, request):
+            self.assertEqual(url.path, "/v1/projects/TEST/subscriptions/subscription1:modifyAcl")
+            self.assertEqual(request.body, '{"authorized_users": ["user1", "user2"]}')
+            # Return the details of a topic in json format
+            return response(200, '{}', None, None, 5, request)
+
+        # Mock response for GET topic request
+        @urlmatch(netloc="localhost", path="/v1/projects/TEST/subscriptions/subscription1:acl",
+                  method="GET")
+        def getacl_sub_mock(url, request):
+            assert url.path == "/v1/projects/TEST/subscriptions/subscription1:acl"
+            # Return the details of a topic in json format
+            return response(200, '{"authorized_users": ["user1", "user2"]}', None, None, 5, request)
+
+
+        # Execute ams client with mocked response
+        with HTTMock(create_topic_mock, get_topic_mock, getacl_sub_mock, get_sub_mock, modifyacl_sub_mock):
+            topic = self.ams.topic('topic1')
+            sub = topic.subscription('subscription1')
+            ret = sub.acl(['user1', 'user2'])
+            self.assertTrue(ret)
+            resp_users = sub.acl()
+            self.assertEqual(resp_users['authorized_users'], ['user1', 'user2'])
+
+
 if __name__ == '__main__':
     unittest.main()

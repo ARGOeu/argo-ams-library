@@ -147,5 +147,40 @@ class TestTopic(unittest.TestCase):
             topic = self.ams.topic('topic1')
             self.assertTrue(topic.delete())
 
+    def testAcl(self):
+        # Mock response for GET topic request
+        @urlmatch(netloc="localhost", path="/v1/projects/TEST/topics/topic1:modifyAcl",
+                  method="POST")
+        def modifyacl_topic_mock(url, request):
+            self.assertEqual(url.path, "/v1/projects/TEST/topics/topic1:modifyAcl")
+            self.assertEqual(request.body, '{"authorized_users": ["user1", "user2"]}')
+            # Return the details of a topic in json format
+            return response(200, '{}', None, None, 5, request)
+
+        # Mock response for GET topic request
+        @urlmatch(netloc="localhost", path="/v1/projects/TEST/topics/topic1:acl",
+                  method="GET")
+        def getacl_topic_mock(url, request):
+            assert url.path == "/v1/projects/TEST/topics/topic1:acl"
+            # Return the details of a topic in json format
+            return response(200, '{"authorized_users": ["user1", "user2"]}', None, None, 5, request)
+
+        # Mock response for GET topic request
+        @urlmatch(netloc="localhost", path="/v1/projects/TEST/topics/topic1",
+                  method="GET")
+        def get_topic_mock(url, request):
+            assert url.path == "/v1/projects/TEST/topics/topic1"
+            # Return the details of a topic in json format
+            return response(200, '{"name":"/projects/TEST/topics/topic1"}', None, None, 5, request)
+
+        # Execute ams client with mocked response
+        with HTTMock(getacl_topic_mock, get_topic_mock, modifyacl_topic_mock):
+            topic = self.ams.topic('topic1')
+            ret = topic.acl(['user1', 'user2'])
+            self.assertTrue(ret)
+            resp_users = topic.acl()
+            self.assertEqual(resp_users['authorized_users'], ['user1', 'user2'])
+
+
 if __name__ == '__main__':
     unittest.main()
