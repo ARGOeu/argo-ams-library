@@ -18,13 +18,17 @@ class ArgoMessagingService(object):
                        "topic_publish": ["post", "https://{0}/v1/projects/{2}/topics/{3}:publish?key={1}"],
                        "topic_create": ["put", "https://{0}/v1/projects/{2}/topics/{3}?key={1}"],
                        "topic_delete": ["delete", "https://{0}/v1/projects/{2}/topics/{3}?key={1}"],
+                       "topic_getacl": ["get", "https://{0}/v1/projects/{2}/topics/{3}:acl?key={1}"],
+                       "topic_modifyacl": ["post", "https://{0}/v1/projects/{2}/topics/{3}:modifyAcl?key={1}"],
                        "sub_create": ["put", "https://{0}/v1/projects/{2}/subscriptions/{4}?key={1}"],
                        "sub_delete": ["delete", "https://{0}/v1/projects/{2}/subscriptions/{4}?key={1}"],
                        "sub_list": ["get", "https://{0}/v1/projects/{2}/subscriptions?key={1}"],
                        "sub_get": ["get", "https://{0}/v1/projects/{2}/subscriptions/{4}?key={1}"],
                        "sub_pull": ["post", "https://{0}/v1/projects/{2}/subscriptions/{4}:pull?key={1}"],
                        "sub_ack": ["post", "https://{0}/v1/projects/{2}/subscriptions/{4}:acknowledge?key={1}"],
-                       "sub_pushconfig": ["post", "https://{0}/v1/projects/{2}/subscriptions/{4}:modifyPushConfig?key={1}"]}
+                       "sub_pushconfig": ["post", "https://{0}/v1/projects/{2}/subscriptions/{4}:modifyPushConfig?key={1}"],
+                       "sub_getacl": ["get", "https://{0}/v1/projects/{2}/subscriptions/{3}:acl?key={1}"],
+                       "sub_modifyacl": ["post", "https://{0}/v1/projects/{2}/subscriptions/{3}:modifyAcl?key={1}"]}
         # Containers for topic and subscription objects
         self.topics = dict()
         self.subs = dict()
@@ -43,6 +47,135 @@ class ArgoMessagingService(object):
 
     def _delete_topic_obj(self, t):
         del self.topics[t['name']]
+
+    def getacl_topic(self, topic, **reqkwargs):
+        """
+           Get access control lists for topic
+
+           Args:
+               topic (str): The topic name.
+
+           Kwargs:
+               reqkwargs: keyword argument that will be passed to underlying
+                          python-requests library call.
+        """
+
+        topicobj = self.get_topic(topic, retobj=True)
+
+        route = self.routes["topic_getacl"]
+        # Compose url
+        url = route[1].format(self.endpoint, self.token, self.project, topic)
+        method = eval('do_{0}'.format(route[0]))
+
+        r = method(url, "topic_getacl", **reqkwargs)
+
+        if r:
+            self.topics[topicobj.fullname].acls = r['authorized_users']
+            return r
+        else:
+            self.topics[topicobj.fullname].acls = []
+            return []
+
+    def modifyacl_topic(self, topic, users, **reqkwargs):
+        """
+           Modify access control lists for topic
+
+           Args:
+               topic (str): The topic name.
+               users (list): List of users that will have access to topic.
+                             Empty list of users will reset access control list.
+
+           Kwargs:
+               reqkwargs: keyword argument that will be passed to underlying
+                          python-requests library call.
+        """
+
+        topicobj = self.get_topic(topic, retobj=True)
+
+        route = self.routes["topic_modifyacl"]
+        # Compose url
+        url = route[1].format(self.endpoint, self.token, self.project, topic)
+        method = eval('do_{0}'.format(route[0]))
+
+        r = None
+        try:
+            msg_body = json.dumps({"authorized_users": users})
+            r = method(url, msg_body, "topic_modifyacl", **reqkwargs)
+
+            if r is not None:
+                self.topics[topicobj.fullname].acls = users
+
+            return True
+
+        except AmsServiceException as e:
+            raise e
+
+        except TypeError as e:
+            raise AmsServiceException(e)
+
+    def getacl_sub(self, sub, **reqkwargs):
+        """
+           Get access control lists for subscription
+
+           Args:
+               sub (str): The subscription name.
+
+           Kwargs:
+               reqkwargs: keyword argument that will be passed to underlying
+                          python-requests library call.
+        """
+
+        subobj = self.get_sub(sub, retobj=True)
+
+        route = self.routes["sub_getacl"]
+        # Compose url
+        url = route[1].format(self.endpoint, self.token, self.project, sub)
+        method = eval('do_{0}'.format(route[0]))
+
+        r = method(url, "sub_getacl", **reqkwargs)
+
+        if r:
+            self.subs[subobj.fullname].acls = r['authorized_users']
+            return r
+        else:
+            self.subs[subobj.fullname].acls = []
+            return []
+
+    def modifyacl_sub(self, sub, users, **reqkwargs):
+        """
+           Modify access control lists for subscription
+
+           Args:
+               sub (str): The subscription name.
+               users (list): List of users that will have access to subscription.
+                             Empty list of users will reset access control list.
+           Kwargs:
+               reqkwargs: keyword argument that will be passed to underlying
+                          python-requests library call.
+        """
+
+        subobj = self.get_sub(sub, retobj=True)
+
+        route = self.routes["sub_modifyacl"]
+        # Compose url
+        url = route[1].format(self.endpoint, self.token, self.project, sub)
+        method = eval('do_{0}'.format(route[0]))
+
+        r = None
+        try:
+            msg_body = json.dumps({"authorized_users": users})
+            r = method(url, msg_body, "sub_modifyacl", **reqkwargs)
+
+            if r is not None:
+                self.subs[subobj.fullname].acls = users
+
+            return True
+
+        except AmsServiceException as e:
+            raise e
+
+        except TypeError as e:
+            raise AmsServiceException(e)
 
     def pushconfig_sub(self, sub, push_endpoint=None, retry_policy_type='linear', retry_policy_period=300, **reqkwargs):
         """Modify push configuration of given subscription

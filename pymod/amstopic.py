@@ -12,6 +12,7 @@ class AmsTopic(object):
         return fullname.split('/projects/{0}/topics/'.format(self.init.project))[1]
 
     def __init__(self, fullname, init):
+        self.acls = None
         self.init = init
         self.fullname = fullname
         self.name = self._build_name(self.fullname)
@@ -51,6 +52,20 @@ class AmsTopic(object):
         except AmsException as e:
             raise e
 
+    def acl(self, users=None, **reqkwargs):
+        """Set or get ACLs assigned to topic
+
+           Kwargs:
+               users (list): If list of users is specified, give those user
+                             access to topic. Empty list will reset access permission.
+               reqkwargs: keyword argument that will be passed to underlying
+                          python-requests library call.
+
+        """
+        if users is None:
+            return self.init.getacl_topic(self.name, **reqkwargs)
+        else:
+            return self.init.modifyacl_topic(self.name, users, **reqkwargs)
 
     def iter_subs(self):
         """Generator method that can be used to iterate over subscriptions
