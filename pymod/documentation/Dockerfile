@@ -16,7 +16,3 @@ RUN        pip install \
 VOLUME     /opt/AMS-library/docs
 
 WORKDIR    /opt/AMS-library/docs
-
-ENTRYPOINT ["make html"]
-
-CMD        ["help"]
