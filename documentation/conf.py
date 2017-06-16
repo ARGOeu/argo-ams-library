@@ -309,6 +309,8 @@ texinfo_documents = [
    'Miscellaneous'),
 ]
 
+baseurl: /ams-library
+
 # Documents to append as an appendix to all manuals.
 #texinfo_appendices = []
 # If false, no module index is generated.
