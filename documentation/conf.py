@@ -309,7 +309,7 @@ texinfo_documents = [
    'Miscellaneous'),
 ]
 
-baseurl: /ams-library
+baseurl= "/ams-library"
 
 # Documents to append as an appendix to all manuals.
 #texinfo_appendices = []
