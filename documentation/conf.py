@@ -144,7 +144,7 @@ todo_include_todos = True
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
 
-html_theme = 'bizstyle'
+html_theme = 'sphinx_rtd_theme'
 
 
 # Theme options are theme-specific and customize the look and feel of a theme
@@ -308,6 +308,8 @@ texinfo_documents = [
    author, 'ARGO-AMSlibrary', 'One line description of project.',
    'Miscellaneous'),
 ]
+
+baseurl= "/ams-library"
 
 # Documents to append as an appendix to all manuals.
 #texinfo_appendices = []
