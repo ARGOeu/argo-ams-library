@@ -3,7 +3,7 @@
 %define underscore() %(echo %1 | sed 's/-/_/g')
 
 Name:           argo-ams-library
-Version:        0.2.0
+Version:        0.3.0
 Release:        1%{?dist}
 Summary:        A simple python library for interacting with the ARGO Messaging Service
 
