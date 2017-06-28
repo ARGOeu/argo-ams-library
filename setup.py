@@ -24,4 +24,5 @@ setup(
     url = 'https://github.com/ARGOeu/argo-ams-library',
     package_dir = {'argo_ams_library': 'pymod/'},
     packages = ['argo_ams_library'],
+    install_requires=['requests']
     )
