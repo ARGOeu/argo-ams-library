@@ -1,6 +1,7 @@
 from httmock import urlmatch, HTTMock, response
 import json
 
+
 class SubMocks(object):
     get_sub_urlmatch = dict(netloc="localhost",
                             path="/v1/projects/TEST/subscriptions/subscription1",
@@ -20,6 +21,12 @@ class SubMocks(object):
     modifyacl_subscription_urlmatch = dict(netloc="localhost",
                                            path="/v1/projects/TEST/subscriptions/subscription1:modifyAcl",
                                            method="POST")
+    get_sub_offets_urlmatch = dict(netloc="localhost",
+                                   path="/v1/projects/TEST/subscriptions/subscription1:offsets",
+                                   method="GET")
+    modifyoffset_sub_urlmatch = dict(netloc="localhost",
+                                     path="/v1/projects/TEST/subscriptions/subscription1:modifyOffset",
+                                     method="POST")
 
     # Mock response for GET subscription request
     @urlmatch(**get_sub_urlmatch)
@@ -50,7 +57,6 @@ class SubMocks(object):
                         "pushConfig": {"pushEndpoint": "","retryPolicy": {}},\
                         "ackDeadlineSeconds":"10"}', None, None, 5, request)
 
-
     @urlmatch(**ack_subscription_match)
     def ack_mock(self, url, request):
         assert url.path == "/v1/projects/TEST/subscriptions/subscription1:acknowledge"
@@ -58,6 +64,19 @@ class SubMocks(object):
         assert request.body == '{"ackIds": ["1221"]}'
         # Check request produced by ams client
         return '{}'
+
+    @urlmatch(**modifyoffset_sub_urlmatch)
+    def modifyoffset_sub_mock(self, url, request):
+        assert url.path == "/v1/projects/TEST/subscriptions/subscription1:modifyOffset"
+        assert request.body == '{"offset": 98}'
+        return '{}'
+
+    # Mock response for GET subscriptions offsets
+    @urlmatch(**get_sub_offets_urlmatch)
+    def getoffsets_sub_mock(self, url, request):
+        assert url.path == "/v1/projects/TEST/subscriptions/subscription1:offsets"
+        # Return the offsets for a subscription1
+        return response(200, '{"max": 79, "min": 0, "current": 78}', None, None, 5, request)
 
     @urlmatch(**getactl_subscription_urlmatch)
     def getacl_subscription_mock(self, url, request):
@@ -71,6 +90,7 @@ class SubMocks(object):
         assert url.path == "/v1/projects/TEST/subscriptions/subscription1:modifyAcl"
         # Return the details of a topic in json format
         return response(200, '{}', None, None, 5, request)
+
 
 class TopicMocks(object):
     get_topic_urlmatch = dict(netloc="localhost",
