@@ -34,27 +34,23 @@ class AmsHttpRequests(object):
                        "sub_mod_offset": ["post", "https://{0}/v1/projects/{2}/subscriptions/{3}:modifyOffset?key={1}"]}
         # HTTP error status codes returned by AMS according to:
         # http://argoeu.github.io/messaging/v1/api_errors/
-        self.errors = {'post': [408, 400, 413, 401, 403],
-                       'get': [404, 401, 403],
-                       'put': [409, 400, 403]
+        self.errors = {'post': [400, 401, 403, 408, 413],
+                       'get': [401, 403, 404],
+                       'put': [400, 403, 409]
                        }
 
-    def do_get(self, url, route_name, **reqkwargs):
-        """This global function supports all the GET requests. Used for (topics,
-        subscriptions, messages).
-
-        Args:
-            url: str. The final messaging service endpoint
-            route_name: str. The name of the route to follow selected from the route list
-            reqkwargs: keyword argument that will be passed to underlying python-requests library call.
+    def _make_request(self, url, body=None, route_name=None, **reqkwargs):
+        """Common method for PUT, GET, POST HTTP requests with appropriate
+        service error handling. For known error HTTP statuses, returned JSON
+        will be used as exception error message, otherwise build one from
+        response content.
         """
-        # try to send a GET request to the messaging service.
-        # if a connection problem araises a Connection error exception is raised.
         m = self.routes[route_name][0]
         decoded = None
         try:
             # the get request based on requests.
-            r = requests.get(url, **reqkwargs)
+            reqmethod = getattr(requests, m)
+            r = reqmethod(url, data=body, **reqkwargs)
 
             if r.status_code == 200:
                 decoded = json.loads(r.content) if r.content else {}
@@ -76,8 +72,25 @@ class AmsHttpRequests(object):
             return decoded if decoded else {}
 
 
+    def do_get(self, url, route_name, **reqkwargs):
+        """Method supports all the GET requests. Used for (topics,
+        subscriptions, messages).
+
+        Args:
+            url: str. The final messaging service endpoint
+            route_name: str. The name of the route to follow selected from the route list
+            reqkwargs: keyword argument that will be passed to underlying python-requests library call.
+        """
+        # try to send a GET request to the messaging service.
+        # if a connection problem araises a Connection error exception is raised.
+        try:
+            return self._make_request(url, route_name=route_name, **reqkwargs)
+        except Exception as e:
+            raise e
+
+
     def do_put(self, url, body, route_name, **reqkwargs):
-        """This global function supports all the PUT requests. Used for (topics,
+        """Method supports all the PUT requests. Used for (topics,
         subscriptions, messages).
 
         Args:
@@ -88,33 +101,14 @@ class AmsHttpRequests(object):
         """
         # try to send a PUT request to the messaging service.
         # if a connection problem araises a Connection error exception is raised.
-        m = self.routes[route_name][0]
         try:
-            # the post request based on requests.
-            r = requests.put(url, data=body, **reqkwargs)
-
-            if r.status_code == 200:
-                decoded = json.loads(r.content) if r.content else {}
-
-            # JSON error returned by AMS
-            elif r.status_code != 200 and r.status_code in self.errors[m]:
-                decoded = json.loads(r.content) if r.content else {}
-                raise AmsServiceException(json=decoded, request=route_name)
-
-            elif r.status_code != 200 and r.status_code not in self.errors[m]:
-                errormsg = {'error': {'code': r.status_code,
-                                      'message': r.content }}
-                raise AmsServiceException(json=errormsg, request=route_name)
-
-        except (requests.exceptions.ConnectionError, requests.exceptions.Timeout) as e:
-            raise AmsConnectionException(e, route_name)
-
-        else:
-            return decoded if decoded else {}
+            return self._make_request(url, body=body, route_name=route_name, **reqkwargs)
+        except Exception as e:
+            raise e
 
 
     def do_post(self, url, body, route_name, **reqkwargs):
-        """This global function supports all the POST requests. Used for (topics,
+        """Method supports all the POST requests. Used for (topics,
         subscriptions, messages).
 
         Args:
@@ -125,33 +119,14 @@ class AmsHttpRequests(object):
         """
         # try to send a Post request to the messaging service.
         # if a connection problem araises a Connection error exception is raised.
-        m = self.routes[route_name][0]
         try:
-            # the post request based on requests.
-            r = requests.post(url, data=body, **reqkwargs)
-
-            if r.status_code == 200:
-                decoded = json.loads(r.content) if r.content else {}
-
-            # JSON error returned by AMS
-            elif r.status_code != 200 and r.status_code in self.errors[m]:
-                decoded = json.loads(r.content) if r.content else {}
-                raise AmsServiceException(json=decoded, request=route_name)
-
-            elif r.status_code != 200 and r.status_code not in self.errors[m]:
-                errormsg = {'error': {'code': r.status_code,
-                                      'message': r.content }}
-                raise AmsServiceException(json=errormsg, request=route_name)
-
-        except (requests.exceptions.ConnectionError, requests.exceptions.Timeout) as e:
-            raise AmsConnectionException(e, route_name)
-
-        else:
-            return decoded if decoded else {}
+            return self._make_request(url, body=body, route_name=route_name, **reqkwargs)
+        except Exception as e:
+            raise e
 
 
     def do_delete(self, url, route_name, **reqkwargs):
-        """A global delete function that is used to make the appropriate request.
+        """Delete method that is used to make the appropriate request.
         Used for (topics, subscriptions).
 
         Args:
