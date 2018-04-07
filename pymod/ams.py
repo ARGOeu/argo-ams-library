@@ -34,16 +34,16 @@ class AmsHttpRequests(object):
                        "sub_mod_offset": ["post", "https://{0}/v1/projects/{2}/subscriptions/{3}:modifyOffset?key={1}"]}
         # HTTP error status codes returned by AMS according to:
         # http://argoeu.github.io/messaging/v1/api_errors/
-        self.errors = {'post': [400, 401, 403, 408, 413],
-                       'get': [401, 403, 404],
-                       'put': [400, 403, 409]
+        self.errors = {'post': set([400, 401, 403, 408, 413]),
+                       'get': set([401, 403, 404]),
+                       'put': set([400, 403, 409])
                        }
 
     def _make_request(self, url, body=None, route_name=None, **reqkwargs):
         """Common method for PUT, GET, POST HTTP requests with appropriate
         service error handling. For known error HTTP statuses, returned JSON
-        will be used as exception error message, otherwise build one from
-        response content.
+        will be used as exception error message, otherwise assume and build one
+        from response content string.
         """
         m = self.routes[route_name][0]
         decoded = None
@@ -71,7 +71,6 @@ class AmsHttpRequests(object):
         else:
             return decoded if decoded else {}
 
-
     def do_get(self, url, route_name, **reqkwargs):
         """Method supports all the GET requests. Used for (topics,
         subscriptions, messages).
@@ -87,7 +86,6 @@ class AmsHttpRequests(object):
             return self._make_request(url, route_name=route_name, **reqkwargs)
         except Exception as e:
             raise e
-
 
     def do_put(self, url, body, route_name, **reqkwargs):
         """Method supports all the PUT requests. Used for (topics,
@@ -106,7 +104,6 @@ class AmsHttpRequests(object):
         except Exception as e:
             raise e
 
-
     def do_post(self, url, body, route_name, **reqkwargs):
         """Method supports all the POST requests. Used for (topics,
         subscriptions, messages).
@@ -123,7 +120,6 @@ class AmsHttpRequests(object):
             return self._make_request(url, body=body, route_name=route_name, **reqkwargs)
         except Exception as e:
             raise e
-
 
     def do_delete(self, url, route_name, **reqkwargs):
         """Delete method that is used to make the appropriate request.
@@ -393,13 +389,13 @@ class ArgoMessagingService(AmsHttpRequests):
 
         return p
 
-    def iter_subs(self, topic=None):
+    def iter_subs(self, topic=None, **reqkwargs):
         """Iterate over AmsSubscription objects
 
         Args:
             topic: Iterate over subscriptions only associated to this topic name
         """
-        self.list_subs()
+        self.list_subs(**reqkwargs)
 
         for s in self.subs.copy().itervalues():
             if topic and topic == s.topic.name:
@@ -407,10 +403,10 @@ class ArgoMessagingService(AmsHttpRequests):
             elif not topic:
                 yield s
 
-    def iter_topics(self):
+    def iter_topics(self, **reqkwargs):
         """Iterate over AmsTopic objects"""
 
-        self.list_topics()
+        self.list_topics(**reqkwargs)
 
         for t in self.topics.copy().itervalues():
             yield t

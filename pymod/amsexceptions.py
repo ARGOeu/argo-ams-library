@@ -1,5 +1,4 @@
 import json
-import re
 
 class AmsException(Exception):
     def __init__(self, *args, **kwargs):
