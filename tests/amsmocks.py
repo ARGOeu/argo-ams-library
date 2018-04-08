@@ -116,6 +116,11 @@ class TopicMocks(object):
     def create_topic_mock(self, url, request):
         return response(200, '{"name":"/projects/TEST/topics/topic1"}', None, None, 5, request)
 
+    # Mock ALREADY_EXIST error response for PUT topic request
+    @urlmatch(**create_topic_urlmatch)
+    def create_topic_alreadyexist_mock(self, url, request):
+        return response(409, '{"error":{"code": 409,"message":"Topic already exists","status":"ALREADY_EXIST"}}', None, None, 5, request)
+
     # Mock response for GET topic request
     @urlmatch(**has_topic_urlmatch)
     def has_topic_mock(self, url, request):
