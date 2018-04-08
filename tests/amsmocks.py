@@ -93,28 +93,22 @@ class SubMocks(object):
 
 
 class ErrorMocks(object):
-    get_topic_urlmatch = dict(netloc="localhost",
-                              path="/v1/projects/TEST/topics/topic1",
-                              method='GET')
     create_topic_urlmatch = dict(netloc="localhost",
                                 path="/v1/projects/TEST/topics/topic1",
                                 method='PUT')
-    has_topic_urlmatch = dict(netloc="localhost",
-                              path="/v1/projects/TEST/topics/topic1",
-                              method="GET")
-    list_topic_urlmatch = dict(netloc="localhost",
-                               path="/v1/projects/TEST/topics", method="get")
-    getacl_topic_urlmatch = dict(netloc="localhost",
-                                 path="/v1/projects/TEST/topics/topic1:acl",
-                                 method="GET")
-    modifyacl_topic_urlmatch = dict(netloc="localhost",
-                                    path="/v1/projects/TEST/topics/topic1:modifyacl",
-                                    method="POST")
+    create_subscription_urlmatch = dict(netloc="localhost",
+                                        path="/v1/projects/TEST/subscriptions/subscription1",
+                                        method="PUT")
 
     # Mock ALREADY_EXIST error response for PUT topic request
     @urlmatch(**create_topic_urlmatch)
     def create_topic_alreadyexist_mock(self, url, request):
         return response(409, '{"error":{"code": 409,"message":"Topic already exists","status":"ALREADY_EXIST"}}', None, None, 5, request)
+
+    # Mock ALREADY_EXIST error response for PUT subscription request
+    @urlmatch(**create_subscription_urlmatch)
+    def create_subscription_alreadyexist_mock(self, url, request):
+        return response(409, '{"error":{"code": 409,"message":"Subscription already exists","status":"ALREADY_EXIST"}}', None, None, 5, request)
 
 
 class TopicMocks(object):
@@ -172,4 +166,3 @@ class TopicMocks(object):
         assert url.path == "/v1/projects/TEST/topics/topic1:modifyAcl"
         # Return the details of a topic in json format
         return response(200, '{}', None, None, 5, request)
-
