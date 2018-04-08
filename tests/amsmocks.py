@@ -92,6 +92,31 @@ class SubMocks(object):
         return response(200, '{}', None, None, 5, request)
 
 
+class ErrorMocks(object):
+    get_topic_urlmatch = dict(netloc="localhost",
+                              path="/v1/projects/TEST/topics/topic1",
+                              method='GET')
+    create_topic_urlmatch = dict(netloc="localhost",
+                                path="/v1/projects/TEST/topics/topic1",
+                                method='PUT')
+    has_topic_urlmatch = dict(netloc="localhost",
+                              path="/v1/projects/TEST/topics/topic1",
+                              method="GET")
+    list_topic_urlmatch = dict(netloc="localhost",
+                               path="/v1/projects/TEST/topics", method="get")
+    getacl_topic_urlmatch = dict(netloc="localhost",
+                                 path="/v1/projects/TEST/topics/topic1:acl",
+                                 method="GET")
+    modifyacl_topic_urlmatch = dict(netloc="localhost",
+                                    path="/v1/projects/TEST/topics/topic1:modifyacl",
+                                    method="POST")
+
+    # Mock ALREADY_EXIST error response for PUT topic request
+    @urlmatch(**create_topic_urlmatch)
+    def create_topic_alreadyexist_mock(self, url, request):
+        return response(409, '{"error":{"code": 409,"message":"Topic already exists","status":"ALREADY_EXIST"}}', None, None, 5, request)
+
+
 class TopicMocks(object):
     get_topic_urlmatch = dict(netloc="localhost",
                               path="/v1/projects/TEST/topics/topic1",
@@ -115,11 +140,6 @@ class TopicMocks(object):
     @urlmatch(**create_topic_urlmatch)
     def create_topic_mock(self, url, request):
         return response(200, '{"name":"/projects/TEST/topics/topic1"}', None, None, 5, request)
-
-    # Mock ALREADY_EXIST error response for PUT topic request
-    @urlmatch(**create_topic_urlmatch)
-    def create_topic_alreadyexist_mock(self, url, request):
-        return response(409, '{"error":{"code": 409,"message":"Topic already exists","status":"ALREADY_EXIST"}}', None, None, 5, request)
 
     # Mock response for GET topic request
     @urlmatch(**has_topic_urlmatch)

@@ -7,21 +7,19 @@ from pymod import AmsSubscription
 from pymod import AmsServiceException
 import json
 
-from amsmocks import SubMocks
-from amsmocks import TopicMocks
+from amsmocks import ErrorMocks
 
 
 class TestErrorClient(unittest.TestCase):
     def setUp(self):
         # Initialize ams in localhost with token s3cr3t and project TEST
         self.ams = ArgoMessagingService(endpoint="localhost", token="s3cr3t", project="TEST")
-        self.submocks = SubMocks()
-        self.topicmocks = TopicMocks()
+        self.errormocks = ErrorMocks()
 
     # Test create topic client request
     def testCreateTopics(self):
         # Execute ams client with mocked response
-        with HTTMock(self.topicmocks.create_topic_alreadyexist_mock):
+        with HTTMock(self.errormocks.create_topic_alreadyexist_mock):
             try:
                 resp = self.ams.create_topic("topic1")
             except Exception as e:
