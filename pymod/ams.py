@@ -5,6 +5,7 @@ from amsmsg import AmsMessage
 from amstopic import AmsTopic
 from amssubscription import AmsSubscription
 
+
 class ArgoMessagingService(object):
     def __init__(self, endpoint, token="", project=""):
         self.endpoint = endpoint
@@ -28,7 +29,10 @@ class ArgoMessagingService(object):
                        "sub_ack": ["post", "https://{0}/v1/projects/{2}/subscriptions/{4}:acknowledge?key={1}"],
                        "sub_pushconfig": ["post", "https://{0}/v1/projects/{2}/subscriptions/{4}:modifyPushConfig?key={1}"],
                        "sub_getacl": ["get", "https://{0}/v1/projects/{2}/subscriptions/{3}:acl?key={1}"],
-                       "sub_modifyacl": ["post", "https://{0}/v1/projects/{2}/subscriptions/{3}:modifyAcl?key={1}"]}
+                       "sub_modifyacl": ["post", "https://{0}/v1/projects/{2}/subscriptions/{3}:modifyAcl?key={1}"],
+                       "sub_offsets": ["get", "https://{0}/v1/projects/{2}/subscriptions/{3}:offsets?key={1}"],
+                       "sub_mod_offset": ["post", "https://{0}/v1/projects/{2}/subscriptions/{3}:modifyOffset?key={1}"]}
+
         # Containers for topic and subscription objects
         self.topics = dict()
         self.subs = dict()
@@ -65,7 +69,7 @@ class ArgoMessagingService(object):
         route = self.routes["topic_getacl"]
         # Compose url
         url = route[1].format(self.endpoint, self.token, self.project, topic)
-        method = eval('do_{0}'.format(route[0]))
+        method =  globals()['do_{0}'.format(route[0])]
 
         r = method(url, "topic_getacl", **reqkwargs)
 
@@ -95,7 +99,7 @@ class ArgoMessagingService(object):
         route = self.routes["topic_modifyacl"]
         # Compose url
         url = route[1].format(self.endpoint, self.token, self.project, topic)
-        method = eval('do_{0}'.format(route[0]))
+        method =  globals()['do_{0}'.format(route[0])]
 
         r = None
         try:
@@ -130,7 +134,7 @@ class ArgoMessagingService(object):
         route = self.routes["sub_getacl"]
         # Compose url
         url = route[1].format(self.endpoint, self.token, self.project, sub)
-        method = eval('do_{0}'.format(route[0]))
+        method =  globals()['do_{0}'.format(route[0])]
 
         r = method(url, "sub_getacl", **reqkwargs)
 
@@ -140,6 +144,60 @@ class ArgoMessagingService(object):
         else:
             self.subs[subobj.fullname].acls = []
             return []
+
+    def getoffsets_sub(self, sub, offset='all', **reqkwargs):
+        """
+           Retrieve the current positions of min,max and current offsets.
+
+           Args:
+               sub (str): The subscription name.
+               offset(str): The name of the offset.If not specified, it will return all three of them as a dict.
+
+           Kwargs:
+               reqkwargs: keyword argument that will be passed to underlying
+                          python-requests library call.
+        """
+        route = self.routes["sub_offsets"]
+
+        # Compose url
+        url = route[1].format(self.endpoint, self.token, self.project, sub)
+        method = globals()['do_{0}'.format(route[0])]
+        r = method(url, "sub_offsets", **reqkwargs)
+        try:
+            if offset != 'all':
+                return r[offset]
+            return r
+        except KeyError as e:
+            raise AmsException(str(e) + " is not a valid offset position.")
+
+    def modifyoffset_sub(self, sub, move_to, **reqkwargs):
+        """
+          Modify the position of the current offset.
+
+           Args:
+               sub (str): The subscription name.
+               move_to(int): Position to move the offset.
+
+           Kwargs:
+               reqkwargs: keyword argument that will be passed to underlying
+                          python-requests library call.
+        """
+        route = self.routes["sub_mod_offset"]
+        method = globals()['do_{0}'.format(route[0])]
+
+        if not isinstance(move_to, int):
+            move_to = int(move_to)
+
+        # Compose url
+        url = route[1].format(self.endpoint, self.token, self.project, sub)
+
+        # Request body
+        data = {"offset": move_to}
+        try:
+            r = method(url, json.dumps(data), "sub_mod_offset", **reqkwargs)
+            return r
+        except AmsServiceException as e:
+            raise e
 
     def modifyacl_sub(self, sub, users, **reqkwargs):
         """
@@ -159,7 +217,7 @@ class ArgoMessagingService(object):
         route = self.routes["sub_modifyacl"]
         # Compose url
         url = route[1].format(self.endpoint, self.token, self.project, sub)
-        method = eval('do_{0}'.format(route[0]))
+        method =  globals()['do_{0}'.format(route[0])]
 
         r = None
         try:
@@ -198,7 +256,7 @@ class ArgoMessagingService(object):
         route = self.routes["sub_pushconfig"]
         # Compose url
         url = route[1].format(self.endpoint, self.token, self.project, "", sub)
-        method = eval('do_{0}'.format(route[0]))
+        method =  globals()['do_{0}'.format(route[0])]
         p = method(url, msg_body, "sub_pushconfig", **reqkwargs)
 
         subobj = self.subs.get('/projects/{0}/subscriptions/{1}'.format(self.project, sub), False)
@@ -241,7 +299,7 @@ class ArgoMessagingService(object):
         route = self.routes["topic_list"]
         # Compose url
         url = route[1].format(self.endpoint, self.token, self.project)
-        method = eval('do_{0}'.format(route[0]))
+        method =  globals()['do_{0}'.format(route[0])]
 
         r = method(url, "topic_list", **reqkwargs)
 
@@ -284,7 +342,7 @@ class ArgoMessagingService(object):
         route = self.routes["topic_get"]
         # Compose url
         url = route[1].format(self.endpoint, self.token, self.project, topic)
-        method = eval('do_{0}'.format(route[0]))
+        method =  globals()['do_{0}'.format(route[0])]
 
         r = method(url, "topic_get", **reqkwargs)
 
@@ -322,7 +380,7 @@ class ArgoMessagingService(object):
         route = self.routes["topic_publish"]
         # Compose url
         url = route[1].format(self.endpoint, self.token, self.project, topic)
-        method = eval('do_{0}'.format(route[0]))
+        method =  globals()['do_{0}'.format(route[0])]
 
         return method(url, msg_body, "topic_publish", **reqkwargs)
 
@@ -335,7 +393,7 @@ class ArgoMessagingService(object):
         route = self.routes["sub_list"]
         # Compose url
         url = route[1].format(self.endpoint, self.token, self.project)
-        method = eval('do_{0}'.format(route[0]))
+        method =  globals()['do_{0}'.format(route[0])]
 
         r = method(url, "sub_list", **reqkwargs)
 
@@ -361,7 +419,7 @@ class ArgoMessagingService(object):
         route = self.routes["sub_get"]
         # Compose url
         url = route[1].format(self.endpoint, self.token, self.project, "", sub)
-        method = eval('do_{0}'.format(route[0]))
+        method =  globals()['do_{0}'.format(route[0])]
 
         r = method(url, "sub_get", **reqkwargs)
 
@@ -414,7 +472,7 @@ class ArgoMessagingService(object):
         route = self.routes["sub_pull"]
         # Compose url
         url = route[1].format(self.endpoint, self.token, self.project, "", sub)
-        method = eval('do_{0}'.format(route[0]))
+        method =  globals()['do_{0}'.format(route[0])]
         r = method(url, msg_body, "sub_pull", **reqkwargs)
         msgs = r['receivedMessages']
 
@@ -439,7 +497,7 @@ class ArgoMessagingService(object):
         route = self.routes["sub_ack"]
         # Compose url
         url = route[1].format(self.endpoint, self.token, self.project, "", sub)
-        method = eval('do_{0}'.format(route[0]))
+        method =  globals()['do_{0}'.format(route[0])]
         method(url, msg_body, "sub_ack", **reqkwargs)
 
         return True
@@ -492,7 +550,7 @@ class ArgoMessagingService(object):
         route = self.routes["sub_create"]
         # Compose url
         url = route[1].format(self.endpoint, self.token, self.project, "", sub)
-        method = eval('do_{0}'.format(route[0]))
+        method =  globals()['do_{0}'.format(route[0])]
 
         r = method(url, msg_body, "sub_create", **reqkwargs)
 
@@ -520,7 +578,7 @@ class ArgoMessagingService(object):
         route = self.routes["sub_delete"]
         # Compose url
         url = route[1].format(self.endpoint, self.token, self.project, "", sub)
-        method = eval('do_{0}'.format(route[0]))
+        method =  globals()['do_{0}'.format(route[0])]
 
         r = method(url, "sub_delete", **reqkwargs)
 
@@ -564,7 +622,7 @@ class ArgoMessagingService(object):
         route = self.routes["topic_create"]
         # Compose url
         url = route[1].format(self.endpoint, self.token, self.project, topic)
-        method = eval('do_{0}'.format(route[0]))
+        method =  globals()['do_{0}'.format(route[0])]
 
         r = method(url, '', "topic_create", **reqkwargs)
 
@@ -586,7 +644,7 @@ class ArgoMessagingService(object):
         route = self.routes["topic_delete"]
         # Compose url
         url = route[1].format(self.endpoint, self.token, self.project, topic)
-        method = eval('do_{0}'.format(route[0]))
+        method =  globals()['do_{0}'.format(route[0])] 
 
         r = method(url, "topic_delete", **reqkwargs)
 
@@ -708,6 +766,7 @@ def do_delete(url, route_name, **reqkwargs):
 
     except (requests.exceptions.ConnectionError, requests.exceptions.Timeout) as e:
         raise AmsConnectionException(e, route_name)
+
 
 if __name__ == "__main__":
     test = ArgoMessagingService(endpoint="messaging-devel.argo.grnet.gr", token="YOUR_TOKEN", project="ARGO")

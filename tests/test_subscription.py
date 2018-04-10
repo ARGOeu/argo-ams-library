@@ -11,6 +11,7 @@ from pymod import ArgoMessagingService
 from amsmocks import SubMocks
 from amsmocks import TopicMocks
 
+
 class TestSubscription(unittest.TestCase):
     def setUp(self):
         self.ams = ArgoMessagingService(endpoint="localhost", token="s3cr3t",
@@ -100,6 +101,57 @@ class TestSubscription(unittest.TestCase):
             self.assertEqual(msg.get_msgid(), "1221")
             resp_ack = sub.ack(["1221"])
             self.assertEqual(resp_ack, True)
+
+    def testOffsets(self):
+        # Mock response for GET offsets from subscription
+        @urlmatch(netloc="localhost", path="/v1/projects/TEST/subscriptions/subscription1:offsets",
+                  method="GET")
+        def offsets_mock(url, request):
+            assert url.path == "/v1/projects/TEST/subscriptions/subscription1:offsets"
+            return response(200, '{"max": 79, "min": 0, "current": 78}', None, None, 5, request)
+
+        @urlmatch(netloc="localhost", path="/v1/projects/TEST/subscriptions/subscription1:modifyOffset",
+                  method="POST")
+        def modify_offset_mock(url, request):
+            assert url.path == "/v1/projects/TEST/subscriptions/subscription1:modifyOffset"
+            assert request.body == '{"offset": 79}'
+            # Check request produced by ams client
+            return '{}'
+
+        # Execute ams client with mocked response
+        with HTTMock(offsets_mock, modify_offset_mock, self.submocks.get_sub_mock,
+                     self.topicmocks.create_topic_mock,
+                     self.topicmocks.get_topic_mock,
+                     self.submocks.create_subscription_mock):
+            topic = self.ams.topic('topic1')
+            sub = topic.subscription('subscription1')
+            assert isinstance(sub, AmsSubscription)
+            self.assertEqual(topic.name, 'topic1')
+            self.assertEqual(topic.fullname, '/projects/TEST/topics/topic1')
+            self.assertEqual(sub.name, 'subscription1')
+            self.assertEqual(sub.fullname, '/projects/TEST/subscriptions/subscription1')
+
+            # should return a dict with all the offsets
+            resp_all = sub.offsets()
+            resp_dict_all = {
+                "max": 79,
+                "min": 0,
+                "current": 78
+            }
+            # should return the max offset
+            resp_max = sub.offsets("max")
+            # should return the current offset
+            resp_current = sub.offsets("current")
+            # should return the min offset
+            resp_min = sub.offsets("min")
+
+            self.assertEquals(resp_all, resp_dict_all)
+            self.assertEquals(resp_max, 79)
+            self.assertEquals(resp_current, 78)
+            self.assertEquals(resp_min, 0)
+
+            move_offset_resp = sub.move_offset(move_to=79)
+            self.assertEquals(move_offset_resp, {})
 
     def testDelete(self):
         # Mock response for DELETE topic request
