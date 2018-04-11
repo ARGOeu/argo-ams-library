@@ -289,7 +289,7 @@ class ArgoMessagingService(AmsHttpRequests):
 
         # Compose url
         url = route[1].format(self.endpoint, self.token, self.project, sub)
-        method = globals()['do_{0}'.format(route[0])]
+        method = getattr(self, 'do_{0}'.format(route[0]))
         r = method(url, "sub_offsets", **reqkwargs)
         try:
             if offset != 'all':
@@ -312,7 +312,7 @@ class ArgoMessagingService(AmsHttpRequests):
                           python-requests library call.
         """
         route = self.routes["sub_mod_offset"]
-        method = globals()['do_{0}'.format(route[0])]
+        method = getattr(self, 'do_{0}'.format(route[0]))
 
         if not isinstance(move_to, int):
             move_to = int(move_to)
