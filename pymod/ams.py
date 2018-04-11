@@ -60,6 +60,8 @@ class AmsHttpRequests(object):
                 decoded = json.loads(r.content) if r.content else {}
                 raise AmsServiceException(json=decoded, request=route_name)
 
+            # handle other erroneous behaviour and construct error message
+            # from plaintxt content in response
             elif r.status_code != 200 and r.status_code not in self.errors[m]:
                 errormsg = {'error': {'code': r.status_code,
                                       'message': r.content }}
@@ -142,6 +144,7 @@ class AmsHttpRequests(object):
                 decoded = json.loads(r.content) if r.content else {}
                 raise AmsServiceException(json=decoded, request=route_name)
 
+            # handle other erroneous behaviour
             elif r.status_code != 200 and r.status_code not in self.errors[m]:
                 errormsg = {'error': {'code': r.status_code,
                                       'message': r.content }}
@@ -154,6 +157,11 @@ class AmsHttpRequests(object):
 
 
 class ArgoMessagingService(AmsHttpRequests):
+    """
+       Class abstract Argo Messaging Service by covering all available HTTP API
+       calls that are wrapped in series of methods. Class is entry point for
+       client code.
+    """
     def __init__(self, endpoint, token="", project=""):
         super(ArgoMessagingService, self).__init__()
         self.endpoint = endpoint
