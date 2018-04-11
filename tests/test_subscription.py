@@ -148,7 +148,6 @@ class TestSubscription(unittest.TestCase):
             self.assertEquals(resp_all, resp_dict_all)
             self.assertEquals(resp_max, 79)
             self.assertEquals(resp_current, 78)
-            self.assertEquals(resp_min, 0)
 
             move_offset_resp = sub.move_offset(move_to=79)
             self.assertEquals(move_offset_resp, {})
