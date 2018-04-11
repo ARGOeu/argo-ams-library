@@ -145,13 +145,12 @@ class TestSubscription(unittest.TestCase):
             # should return the min offset
             resp_min = sub.offsets("min")
 
-            self.assertEquals(resp_all, [None, resp_dict_all])
-            self.assertEquals(resp_max, [None, 79])
-            self.assertEquals(resp_current, [None, 78])
-            self.assertEquals(resp_min, [None, 0])
+            self.assertEquals(resp_all, resp_dict_all)
+            self.assertEquals(resp_max, 79)
+            self.assertEquals(resp_current, 78)
 
-            total_resp = sub.offsets(move_to=79)
-            self.assertEquals(total_resp, [{}, resp_dict_all])
+            move_offset_resp = sub.move_offset(move_to=79)
+            self.assertEquals(move_offset_resp, {})
 
     def testDelete(self):
         # Mock response for DELETE topic request

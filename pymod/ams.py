@@ -289,11 +289,15 @@ class ArgoMessagingService(AmsHttpRequests):
 
         # Compose url
         url = route[1].format(self.endpoint, self.token, self.project, sub)
-        method = getattr(self, 'do_{0}'.format(route[0]))
+        method = globals()['do_{0}'.format(route[0])]
         r = method(url, "sub_offsets", **reqkwargs)
-        if offset != 'all':
-            return r[offset]
-        return r
+        try:
+            if offset != 'all':
+                return r[offset]
+            return r
+        except KeyError as e:
+            raise AmsException(str(e) + " is not a valid offset position.")
+
 
     def modifyoffset_sub(self, sub, move_to, **reqkwargs):
         """
@@ -308,7 +312,10 @@ class ArgoMessagingService(AmsHttpRequests):
                           python-requests library call.
         """
         route = self.routes["sub_mod_offset"]
-        method = getattr(self, 'do_{0}'.format(route[0]))
+        method = globals()['do_{0}'.format(route[0])]
+
+        if not isinstance(move_to, int):
+            move_to = int(move_to)
 
         if not isinstance(move_to, int):
             move_to = int(move_to)
@@ -318,8 +325,11 @@ class ArgoMessagingService(AmsHttpRequests):
 
         # Request body
         data = {"offset": move_to}
-        r = method(url, json.dumps(data), "sub_mod_offset", **reqkwargs)
-        return r
+        try:
+            r = method(url, json.dumps(data), "sub_mod_offset", **reqkwargs)
+            return r
+        except AmsServiceException as e:
+            raise e
 
     def modifyacl_sub(self, sub, users, **reqkwargs):
         """

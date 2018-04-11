@@ -63,29 +63,37 @@ class AmsSubscription(object):
 
         return self.init.pull_sub(self.name, num=num, return_immediately=return_immediately, **reqkwargs)
 
-    def offsets(self, offset='all', move_to=None, **reqkwargs):
+    def offsets(self, offset='all', **reqkwargs):
         """
-           Retrieve the current positions of min,max and current offsets.Also modify the position of current offset
+           Retrieve the current positions of min,max and current offsets.
 
            Args:
-               sub (str): The subscription name.
                offset(str): The name of the offset.If not specified, it will return all three of them as a dict.
+
+           Kwargs:
+               reqkwargs: keyword argument that will be passed to underlying
+                          python-requests library call.
+           Return:
+                 [dict or int]
+                 dict(offsets): A dictionary containing all 3 offsets. OR
+                 int(offset): The value of the specified offset.
+        """
+        return self.init.getoffsets_sub(self.name, offset, **reqkwargs)
+
+    def move_offset(self, move_to, **reqkwargs):
+        """
+           Modify the position of current offset
+
+           Args:
                move_to(int): Position to move the offset.
 
            Kwargs:
                reqkwargs: keyword argument that will be passed to underlying
                           python-requests library call.
            Return:
-                 [None or {}, dict or int]
-                 dict(offsets): A dictionary containing all 3 offsets. OR
-                 int(offset): The value of the specified offset.
+                 {}
         """
-        resp = [None]
-        if move_to is not None:
-            resp[0] = self.init.modifyoffset_sub(self.name, move_to=move_to, **reqkwargs)
-
-        resp.append(self.init.getoffsets_sub(self.name, offset, **reqkwargs))
-        return resp
+        return self.init.modifyoffset_sub(self.name, move_to, **reqkwargs)
 
     def acl(self, users=None, **reqkwargs):
         """Set or get ACLs assigned to subscription
