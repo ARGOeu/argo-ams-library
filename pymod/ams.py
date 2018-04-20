@@ -168,7 +168,7 @@ class ArgoMessagingService(AmsHttpRequests):
         self.token = token
         self.project = project
         self.pullopts = {"maxMessages": "1",
-                         "returnImmediately": "False"}
+                         "returnImmediately": "false"}
         # Containers for topic and subscription objects
         self.topics = dict()
         self.subs = dict()
@@ -606,7 +606,7 @@ class ArgoMessagingService(AmsHttpRequests):
         wasretim = self.get_pullopt('returnImmediately')
 
         self.set_pullopt('maxMessages', num)
-        self.set_pullopt('returnImmediately', str(return_immediately))
+        self.set_pullopt('returnImmediately', str(return_immediately).lower())
         msg_body = json.dumps(self.pullopts)
 
         route = self.routes["sub_pull"]
