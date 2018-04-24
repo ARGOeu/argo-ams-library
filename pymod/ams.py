@@ -322,9 +322,6 @@ class ArgoMessagingService(AmsHttpRequests):
         if not isinstance(move_to, int):
             move_to = int(move_to)
 
-        if not isinstance(move_to, int):
-            move_to = int(move_to)
-
         # Compose url
         url = route[1].format(self.endpoint, self.token, self.project, sub)
 

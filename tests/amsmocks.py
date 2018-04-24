@@ -68,12 +68,19 @@ class SubMocks(object):
     @urlmatch(**modifyoffset_sub_urlmatch)
     def modifyoffset_sub_mock(self, url, request):
         assert url.path == "/v1/projects/TEST/subscriptions/subscription1:modifyOffset"
-        assert request.body == '{"offset": 98}'
+        assert request.body == '{"offset": 79}'
         return '{}'
 
     # Mock response for GET subscriptions offsets
     @urlmatch(**get_sub_offets_urlmatch)
     def getoffsets_sub_mock(self, url, request):
+        assert url.path == "/v1/projects/TEST/subscriptions/subscription1:offsets"
+        # Return the offsets for a subscription1
+        return response(200, '{"max": 79, "min": 0, "current": 78}', None, None, 5, request)
+
+    # Mock response for GET subscriptions offsets
+    @urlmatch(**get_sub_offets_urlmatch)
+    def getoffsets_sub_mock2(self, url, request):
         assert url.path == "/v1/projects/TEST/subscriptions/subscription1:offsets"
         # Return the offsets for a subscription1
         return response(200, '{"max": 79, "min": 0, "current": 78}', None, None, 5, request)
