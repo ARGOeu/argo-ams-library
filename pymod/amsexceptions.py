@@ -15,9 +15,12 @@ class AmsServiceException(AmsException):
     def __init__(self, json, request):
         errord = dict()
 
-        self.code = json['error']['code']
         self.msg = "While trying the [{0}]: {1}".format(request, json['error']['message'])
-        errord.update(error=self.msg, status_code=self.code)
+        errord.update(error=self.msg)
+
+        if json['error'].get('code'):
+            self.code = json['error']['code']
+            errord.update(status_code=self.code)
 
         if json['error'].get('status'):
             self.status = json['error']['status']

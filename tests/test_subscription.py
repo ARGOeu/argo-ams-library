@@ -3,7 +3,7 @@ import json
 
 from httmock import urlmatch, HTTMock, response
 from pymod import AmsMessage
-from pymod import AmsServiceException
+from pymod import AmsServiceException, AmsException
 from pymod import AmsSubscription
 from pymod import AmsTopic
 from pymod import ArgoMessagingService
@@ -172,6 +172,8 @@ class TestSubscription(unittest.TestCase):
             move_offset_resp = sub2.offsets(move_to=79)
             self.assertEquals(move_offset_resp, {"max": 79, "current": 79,
                                                  "min": 0})
+            self.assertRaises(AmsException, sub2.offsets, offset='bogus', move_to=79)
+
 
     def testDelete(self):
         # Mock response for DELETE topic request

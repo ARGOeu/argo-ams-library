@@ -69,7 +69,7 @@ class AmsHttpRequests(object):
             # from plaintxt content in response
             elif r.status_code != 200 and r.status_code not in self.errors_route[route_name][1]:
                 errormsg = {'error': {'code': r.status_code,
-                                      'message': r.content }}
+                                      'message': r.content}}
                 raise AmsServiceException(json=errormsg, request=route_name)
 
         except (requests.exceptions.ConnectionError, requests.exceptions.Timeout) as e:
@@ -91,7 +91,7 @@ class AmsHttpRequests(object):
         # if a connection problem araises a Connection error exception is raised.
         try:
             return self._make_request(url, route_name=route_name, **reqkwargs)
-        except Exception as e:
+        except AmsException as e:
             raise e
 
     def do_put(self, url, body, route_name, **reqkwargs):
@@ -108,7 +108,7 @@ class AmsHttpRequests(object):
         # if a connection problem araises a Connection error exception is raised.
         try:
             return self._make_request(url, body=body, route_name=route_name, **reqkwargs)
-        except Exception as e:
+        except AmsException as e:
             raise e
 
     def do_post(self, url, body, route_name, **reqkwargs):
@@ -125,7 +125,7 @@ class AmsHttpRequests(object):
         # if a connection problem araises a Connection error exception is raised.
         try:
             return self._make_request(url, body=body, route_name=route_name, **reqkwargs)
-        except Exception as e:
+        except AmsException as e:
             raise e
 
     def do_delete(self, url, route_name, **reqkwargs):
@@ -152,7 +152,7 @@ class AmsHttpRequests(object):
             # handle other erroneous behaviour
             elif r.status_code != 200 and r.status_code not in self.errors[m]:
                 errormsg = {'error': {'code': r.status_code,
-                                      'message': r.content }}
+                                      'message': r.content}}
                 raise AmsServiceException(json=errormsg, request=route_name)
             else:
                 return True
@@ -306,7 +306,8 @@ class ArgoMessagingService(AmsHttpRequests):
                 return r[offset]
             return r
         except KeyError as e:
-            raise AmsException(str(e) + " is not a valid offset position.")
+            errormsg = {'error': {'message': str(e) + " is not valid offset position"}}
+            raise AmsServiceException(json=errormsg, request="sub_offsets")
 
 
     def modifyoffset_sub(self, sub, move_to, **reqkwargs):
@@ -789,8 +790,3 @@ class ArgoMessagingService(AmsHttpRequests):
             self._delete_topic_obj({'name': topic_fullname})
 
         return r
-
-
-if __name__ == "__main__":
-    test = ArgoMessagingService(endpoint="messaging-devel.argo.grnet.gr", token="YOUR_TOKEN", project="ARGO")
-    allprojects = test.list_topics()
