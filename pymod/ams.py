@@ -247,11 +247,8 @@ class ArgoMessagingService(AmsHttpRequests):
 
             return True
 
-        except AmsServiceException as e:
+        except (AmsServiceException, AmsConnectionException) as e:
             raise e
-
-        except TypeError as e:
-            raise AmsServiceException(e)
 
     def getacl_sub(self, sub, **reqkwargs):
         """
@@ -369,11 +366,8 @@ class ArgoMessagingService(AmsHttpRequests):
 
             return True
 
-        except AmsServiceException as e:
+        except (AmsServiceException, AmsConnectionException) as e:
             raise e
-
-        except TypeError as e:
-            raise AmsServiceException(e)
 
     def pushconfig_sub(self, sub, push_endpoint=None, retry_policy_type='linear', retry_policy_period=300, **reqkwargs):
         """Modify push configuration of given subscription
