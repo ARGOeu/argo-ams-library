@@ -71,7 +71,7 @@ class AmsSubscription(object):
            Args:
                offset (str): The name of the offset. If not specified, it will
                              return all three of them as a dict. Values that can
-                             be specified are 'max', 'min', 'current'.
+                             be specified are 'max', 'min', 'current' and 'all'.
                move_to (int): New position for current offset.
 
            Kwargs:
