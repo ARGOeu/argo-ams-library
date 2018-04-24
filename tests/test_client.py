@@ -73,7 +73,7 @@ class TestClient(unittest.TestCase):
     def testModifyOffset(self):
         # Execute ams client with mocked response
         with HTTMock(self.submocks.modifyoffset_sub_mock):
-            resp = self.ams.modifyoffset_sub("subscription1", 98)
+            resp = self.ams.modifyoffset_sub("subscription1", 79)
             self.assertEquals(resp, {})
 
     # Test the Get offsets client request

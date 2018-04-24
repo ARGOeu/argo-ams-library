@@ -34,10 +34,15 @@ class AmsHttpRequests(object):
                        "sub_mod_offset": ["post", "https://{0}/v1/projects/{2}/subscriptions/{3}:modifyOffset?key={1}"]}
         # HTTP error status codes returned by AMS according to:
         # http://argoeu.github.io/messaging/v1/api_errors/
-        self.errors = {'post': set([400, 401, 403, 408, 413]),
-                       'get': set([401, 403, 404]),
-                       'put': set([400, 403, 409])
-                       }
+        self.errors_route = {"topic_create": ["put", set([409, 401, 403])],
+                             "sub_create": ["put", set([400, 409, 408, 401, 403])],
+                             "sub_ack": ["post", set([408, 400, 401, 403])],
+                             "topic_get": ["get", set([404, 401, 403])],
+                             "topic_modifyacl": ["post", set([400, 401, 403])],
+                             "sub_get": ["get", set([404, 401, 403])],
+                             "topic_publish": ["post", set([413, 401, 403])],
+                             "sub_pushconfig": ["post", set([400, 401, 403])],
+                             "sub_pull": ["post", set([400, 401, 403])]}
 
     def _make_request(self, url, body=None, route_name=None, **reqkwargs):
         """Common method for PUT, GET, POST HTTP requests with appropriate
@@ -56,15 +61,15 @@ class AmsHttpRequests(object):
                 decoded = json.loads(r.content) if r.content else {}
 
             # JSON error returned by AMS
-            elif r.status_code != 200 and r.status_code in self.errors[m]:
+            elif r.status_code != 200 and r.status_code in self.errors_route[route_name][1]:
                 decoded = json.loads(r.content) if r.content else {}
                 raise AmsServiceException(json=decoded, request=route_name)
 
             # handle other erroneous behaviour and construct error message
             # from plaintxt content in response
-            elif r.status_code != 200 and r.status_code not in self.errors[m]:
+            elif r.status_code != 200 and r.status_code not in self.errors_route[route_name][1]:
                 errormsg = {'error': {'code': r.status_code,
-                                      'message': r.content }}
+                                      'message': r.content}}
                 raise AmsServiceException(json=errormsg, request=route_name)
 
         except (requests.exceptions.ConnectionError, requests.exceptions.Timeout) as e:
@@ -86,7 +91,7 @@ class AmsHttpRequests(object):
         # if a connection problem araises a Connection error exception is raised.
         try:
             return self._make_request(url, route_name=route_name, **reqkwargs)
-        except Exception as e:
+        except AmsException as e:
             raise e
 
     def do_put(self, url, body, route_name, **reqkwargs):
@@ -103,7 +108,7 @@ class AmsHttpRequests(object):
         # if a connection problem araises a Connection error exception is raised.
         try:
             return self._make_request(url, body=body, route_name=route_name, **reqkwargs)
-        except Exception as e:
+        except AmsException as e:
             raise e
 
     def do_post(self, url, body, route_name, **reqkwargs):
@@ -120,7 +125,7 @@ class AmsHttpRequests(object):
         # if a connection problem araises a Connection error exception is raised.
         try:
             return self._make_request(url, body=body, route_name=route_name, **reqkwargs)
-        except Exception as e:
+        except AmsException as e:
             raise e
 
     def do_delete(self, url, route_name, **reqkwargs):
@@ -147,7 +152,7 @@ class AmsHttpRequests(object):
             # handle other erroneous behaviour
             elif r.status_code != 200 and r.status_code not in self.errors[m]:
                 errormsg = {'error': {'code': r.status_code,
-                                      'message': r.content }}
+                                      'message': r.content}}
                 raise AmsServiceException(json=errormsg, request=route_name)
             else:
                 return True
@@ -247,11 +252,8 @@ class ArgoMessagingService(AmsHttpRequests):
 
             return True
 
-        except AmsServiceException as e:
+        except (AmsServiceException, AmsConnectionException) as e:
             raise e
-
-        except TypeError as e:
-            raise AmsServiceException(e)
 
     def getacl_sub(self, sub, **reqkwargs):
         """
@@ -304,7 +306,8 @@ class ArgoMessagingService(AmsHttpRequests):
                 return r[offset]
             return r
         except KeyError as e:
-            raise AmsException(str(e) + " is not a valid offset position.")
+            errormsg = {'error': {'message': str(e) + " is not valid offset position"}}
+            raise AmsServiceException(json=errormsg, request="sub_offsets")
 
 
     def modifyoffset_sub(self, sub, move_to, **reqkwargs):
@@ -321,9 +324,6 @@ class ArgoMessagingService(AmsHttpRequests):
         """
         route = self.routes["sub_mod_offset"]
         method = getattr(self, 'do_{0}'.format(route[0]))
-
-        if not isinstance(move_to, int):
-            move_to = int(move_to)
 
         if not isinstance(move_to, int):
             move_to = int(move_to)
@@ -369,11 +369,8 @@ class ArgoMessagingService(AmsHttpRequests):
 
             return True
 
-        except AmsServiceException as e:
+        except (AmsServiceException, AmsConnectionException) as e:
             raise e
-
-        except TypeError as e:
-            raise AmsServiceException(e)
 
     def pushconfig_sub(self, sub, push_endpoint=None, retry_policy_type='linear', retry_policy_period=300, **reqkwargs):
         """Modify push configuration of given subscription
@@ -793,8 +790,3 @@ class ArgoMessagingService(AmsHttpRequests):
             self._delete_topic_obj({'name': topic_fullname})
 
         return r
-
-
-if __name__ == "__main__":
-    test = ArgoMessagingService(endpoint="messaging-devel.argo.grnet.gr", token="YOUR_TOKEN", project="ARGO")
-    allprojects = test.list_topics()
