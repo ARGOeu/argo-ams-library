@@ -40,7 +40,7 @@ class AmsHttpRequests(object):
                              "topic_get": ["get", set([404, 401, 403])],
                              "topic_modifyacl": ["post", set([400, 401, 403, 404])],
                              "sub_get": ["get", set([404, 401, 403])],
-                             "topic_publish": ["post", set([413, 401, 403, 404])],
+                             "topic_publish": ["post", set([413, 401, 403])],
                              "sub_pushconfig": ["post", set([400, 401, 403, 404])],
                              "sub_pull": ["post", set([400, 401, 403, 404])]}
 
@@ -68,8 +68,11 @@ class AmsHttpRequests(object):
             # handle other erroneous behaviour and construct error message
             # from plaintxt content in response
             elif r.status_code != 200 and r.status_code not in self.errors_route[route_name][1]:
-                errormsg = {'error': {'code': r.status_code,
-                                      'message': r.content}}
+                try:
+                    errormsg = json.loads(r.content)
+                except ValueError:
+                    errormsg = {'error': {'code': r.status_code,
+                                          'message': r.content}}
                 raise AmsServiceException(json=errormsg, request=route_name)
 
         except (requests.exceptions.ConnectionError, requests.exceptions.Timeout) as e:
