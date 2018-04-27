@@ -36,13 +36,13 @@ class AmsHttpRequests(object):
         # http://argoeu.github.io/messaging/v1/api_errors/
         self.errors_route = {"topic_create": ["put", set([409, 401, 403])],
                              "sub_create": ["put", set([400, 409, 408, 401, 403])],
-                             "sub_ack": ["post", set([408, 400, 401, 403])],
+                             "sub_ack": ["post", set([408, 400, 401, 403, 404])],
                              "topic_get": ["get", set([404, 401, 403])],
-                             "topic_modifyacl": ["post", set([400, 401, 403])],
+                             "topic_modifyacl": ["post", set([400, 401, 403, 404])],
                              "sub_get": ["get", set([404, 401, 403])],
-                             "topic_publish": ["post", set([413, 401, 403])],
-                             "sub_pushconfig": ["post", set([400, 401, 403])],
-                             "sub_pull": ["post", set([400, 401, 403])]}
+                             "topic_publish": ["post", set([413, 401, 403, 404])],
+                             "sub_pushconfig": ["post", set([400, 401, 403, 404])],
+                             "sub_pull": ["post", set([400, 401, 403, 404])]}
 
     def _make_request(self, url, body=None, route_name=None, **reqkwargs):
         """Common method for PUT, GET, POST HTTP requests with appropriate
