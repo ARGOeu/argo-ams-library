@@ -4,7 +4,7 @@ from pymod import ArgoMessagingService
 from pymod import AmsMessage
 from pymod import AmsTopic
 from pymod import AmsSubscription
-from pymod import AmsServiceException
+from pymod import AmsServiceException, AmsException
 import json
 
 from amsmocks import ErrorMocks
@@ -63,6 +63,37 @@ class TestErrorClient(unittest.TestCase):
             except Exception as e:
                 assert isinstance(e, AmsServiceException)
                 self.assertEqual(e.code, 504)
+
+    # Tests for plaintext or JSON encoded backend error messages
+    def testErrorMsgBackend(self):
+        @urlmatch(netloc="localhost", path="/v1/projects/TEST/topics/topic1",
+                  method='GET')
+        def error_plaintxt(url, request):
+            assert url.path == "/v1/projects/TEST/topics/topic1"
+            return response(500, "Cannot get topic", None, None, 5, request)
+
+        with HTTMock(error_plaintxt):
+            try:
+                resp = self.ams.get_topic("topic1")
+            except AmsServiceException as e:
+                self.assertEqual(e.msg, "While trying the [topic_get]: Cannot get topic")
+
+        @urlmatch(netloc="localhost", path="/v1/projects/TEST/topics/topic1",
+                  method='GET')
+        def error_json(url, request):
+            assert url.path == "/v1/projects/TEST/topics/topic1"
+            return response(500, json.loads('{"error": {"code": 500,\
+                                              "message": "Cannot get topic",\
+                                              "status": "INTERNAL_SERVER_ERROR"\
+                                              }}'), None, None, 5, request)
+
+        with HTTMock(error_json):
+            try:
+                resp = self.ams.get_topic("topic1")
+            except AmsServiceException as e:
+                self.assertEqual(e.code, 500)
+                self.assertEqual(e.msg, "While trying the [topic_get]: Cannot get topic")
+                self.assertEqual(e.status, "INTERNAL_SERVER_ERROR")
 
 if __name__ == '__main__':
     unittest.main()

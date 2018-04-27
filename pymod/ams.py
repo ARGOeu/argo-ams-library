@@ -65,8 +65,8 @@ class AmsHttpRequests(object):
                 decoded = json.loads(r.content) if r.content else {}
                 raise AmsServiceException(json=decoded, request=route_name)
 
-            # handle other erroneous behaviour and construct error message
-            # from plaintxt content in response
+            # handle other erroneous behaviour and construct error message from
+            # JSON or plaintext content in response
             elif r.status_code != 200 and r.status_code not in self.errors_route[route_name][1]:
                 try:
                     errormsg = json.loads(r.content)
