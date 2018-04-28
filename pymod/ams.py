@@ -36,13 +36,13 @@ class AmsHttpRequests(object):
         # http://argoeu.github.io/messaging/v1/api_errors/
         self.errors_route = {"topic_create": ["put", set([409, 401, 403])],
                              "sub_create": ["put", set([400, 409, 408, 401, 403])],
-                             "sub_ack": ["post", set([408, 400, 401, 403])],
+                             "sub_ack": ["post", set([408, 400, 401, 403, 404])],
                              "topic_get": ["get", set([404, 401, 403])],
-                             "topic_modifyacl": ["post", set([400, 401, 403])],
+                             "topic_modifyacl": ["post", set([400, 401, 403, 404])],
                              "sub_get": ["get", set([404, 401, 403])],
                              "topic_publish": ["post", set([413, 401, 403])],
-                             "sub_pushconfig": ["post", set([400, 401, 403])],
-                             "sub_pull": ["post", set([400, 401, 403])]}
+                             "sub_pushconfig": ["post", set([400, 401, 403, 404])],
+                             "sub_pull": ["post", set([400, 401, 403, 404])]}
 
     def _make_request(self, url, body=None, route_name=None, **reqkwargs):
         """Common method for PUT, GET, POST HTTP requests with appropriate
@@ -65,11 +65,14 @@ class AmsHttpRequests(object):
                 decoded = json.loads(r.content) if r.content else {}
                 raise AmsServiceException(json=decoded, request=route_name)
 
-            # handle other erroneous behaviour and construct error message
-            # from plaintxt content in response
+            # handle other erroneous behaviour and construct error message from
+            # JSON or plaintext content in response
             elif r.status_code != 200 and r.status_code not in self.errors_route[route_name][1]:
-                errormsg = {'error': {'code': r.status_code,
-                                      'message': r.content}}
+                try:
+                    errormsg = json.loads(r.content)
+                except ValueError:
+                    errormsg = {'error': {'code': r.status_code,
+                                          'message': r.content}}
                 raise AmsServiceException(json=errormsg, request=route_name)
 
         except (requests.exceptions.ConnectionError, requests.exceptions.Timeout) as e:
