@@ -3,13 +3,14 @@ import json
 
 from httmock import urlmatch, HTTMock, response
 from pymod import AmsMessage
-from pymod import AmsServiceException
+from pymod import AmsServiceException, AmsException
 from pymod import AmsSubscription
 from pymod import AmsTopic
 from pymod import ArgoMessagingService
 
 from amsmocks import SubMocks
 from amsmocks import TopicMocks
+
 
 class TestSubscription(unittest.TestCase):
     def setUp(self):
@@ -100,6 +101,79 @@ class TestSubscription(unittest.TestCase):
             self.assertEqual(msg.get_msgid(), "1221")
             resp_ack = sub.ack(["1221"])
             self.assertEqual(resp_ack, True)
+
+    def testOffsets(self):
+        # Mock response for GET subscriptions offsets
+        @urlmatch(netloc="localhost",
+                  path="/v1/projects/TEST/subscriptions/subscription2:modifyOffset",
+                  method="POST")
+        def modifyoffset_sub2_mock(url, request):
+            assert url.path == "/v1/projects/TEST/subscriptions/subscription2:modifyOffset"
+            assert request.body == '{"offset": 79}'
+            return '{}'
+
+        @urlmatch(netloc="localhost",
+                  path="/v1/projects/TEST/subscriptions/subscription2:offsets",
+                  method="GET")
+        def getoffsets_sub2_mock(url, request):
+            assert url.path == "/v1/projects/TEST/subscriptions/subscription2:offsets"
+            # Return the offsets for a subscription2
+            return response(200, '{"max": 79, "min": 0, "current": 79}', None, None, 5, request)
+
+        # Mock response for GET subscription request
+        @urlmatch(netloc="localhost",
+                  path="/v1/projects/TEST/subscriptions/subscription2",
+                  method="GET")
+        def get_sub2_mock(url, request):
+            assert url.path == "/v1/projects/TEST/subscriptions/subscription2"
+            # Return the details of a subscription in json format
+            return response(200, '{"name":"/projects/TEST/subscriptions/subscription2",\
+                            "topic":"/projects/TEST/topics/topic1",\
+                            "pushConfig": {"pushEndpoint": "","retryPolicy": {}},\
+                            "ackDeadlineSeconds": 10}', None, None, 5, request)
+
+        # Execute ams client with mocked response
+        with HTTMock(self.submocks.getoffsets_sub_mock,
+                     self.submocks.get_sub_mock,
+                     self.topicmocks.create_topic_mock,
+                     self.topicmocks.get_topic_mock,
+                     getoffsets_sub2_mock,
+                     get_sub2_mock,
+                     modifyoffset_sub2_mock,
+                     self.submocks.modifyoffset_sub_mock,
+                     self.submocks.create_subscription_mock):
+            topic = self.ams.topic('topic1')
+            sub = topic.subscription('subscription1')
+            assert isinstance(sub, AmsSubscription)
+            self.assertEqual(topic.name, 'topic1')
+            self.assertEqual(topic.fullname, '/projects/TEST/topics/topic1')
+            self.assertEqual(sub.name, 'subscription1')
+            self.assertEqual(sub.fullname, '/projects/TEST/subscriptions/subscription1')
+
+            # should return a dict with all the offsets
+            resp_all = sub.offsets()
+            resp_dict_all = {
+                "max": 79,
+                "min": 0,
+                "current": 78
+            }
+            # should return the max offset
+            resp_max = sub.offsets("max")
+            # should return the current offset
+            resp_current = sub.offsets("current")
+            # should return the min offset
+            resp_min = sub.offsets("min")
+
+            self.assertEquals(resp_all, resp_dict_all)
+            self.assertEquals(resp_max, 79)
+            self.assertEquals(resp_current, 78)
+
+            sub2 = topic.subscription('subscription2')
+            move_offset_resp = sub2.offsets(move_to=79)
+            self.assertEquals(move_offset_resp, {"max": 79, "current": 79,
+                                                 "min": 0})
+            self.assertRaises(AmsException, sub2.offsets, offset='bogus', move_to=79)
+
 
     def testDelete(self):
         # Mock response for DELETE topic request

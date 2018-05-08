@@ -3,7 +3,7 @@
 %define underscore() %(echo %1 | sed 's/-/_/g')
 
 Name:           argo-ams-library
-Version:        0.3.1
+Version:        0.4.0
 Release:        1%{?dist}
 Summary:        A simple python library for interacting with the ARGO Messaging Service
 
@@ -37,6 +37,7 @@ rm -rf $RPM_BUILD_ROOT
 %{python_sitelib}/%{underscore %{name}}/*.py[co]
 
 %changelog
+* Tue May 8 2018 Daniel Vrcic <dvrcic@srce.hr> - 0.4.0-1%{?dist}
 * Mon Jun 5 2017 Daniel Vrcic <dvrcic@srce.hr> - 0.2.0-1%{?dist}
 - ARGO-782 Iterate over subscriptions and topics methods
 - ARGO-789 Topic and subscription creation/deletion that mimic Google implementation

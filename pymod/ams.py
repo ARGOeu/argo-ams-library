@@ -5,13 +5,14 @@ from amsmsg import AmsMessage
 from amstopic import AmsTopic
 from amssubscription import AmsSubscription
 
-class ArgoMessagingService(object):
-    def __init__(self, endpoint, token="", project=""):
-        self.endpoint = endpoint
-        self.token = token
-        self.project = project
-        self.pullopts = {"maxMessages": "1",
-                         "returnImmediately": "False"}
+
+class AmsHttpRequests(object):
+    """
+       Class encapsulates methods used by ArgoMessagingService. Each method represent
+       HTTP request made to AMS with the help of requests library. Proper service error
+       handling is implemented according to HTTP status codes returned by service.
+    """
+    def __init__(self):
         # Create route list
         self.routes = {"topic_list": ["get", "https://{0}/v1/projects/{2}/topics?key={1}"],
                        "topic_get": ["get", "https://{0}/v1/projects/{2}/topics/{3}?key={1}"],
@@ -28,7 +29,154 @@ class ArgoMessagingService(object):
                        "sub_ack": ["post", "https://{0}/v1/projects/{2}/subscriptions/{4}:acknowledge?key={1}"],
                        "sub_pushconfig": ["post", "https://{0}/v1/projects/{2}/subscriptions/{4}:modifyPushConfig?key={1}"],
                        "sub_getacl": ["get", "https://{0}/v1/projects/{2}/subscriptions/{3}:acl?key={1}"],
-                       "sub_modifyacl": ["post", "https://{0}/v1/projects/{2}/subscriptions/{3}:modifyAcl?key={1}"]}
+                       "sub_modifyacl": ["post", "https://{0}/v1/projects/{2}/subscriptions/{3}:modifyAcl?key={1}"],
+                       "sub_offsets": ["get", "https://{0}/v1/projects/{2}/subscriptions/{3}:offsets?key={1}"],
+                       "sub_mod_offset": ["post", "https://{0}/v1/projects/{2}/subscriptions/{3}:modifyOffset?key={1}"]}
+        # HTTP error status codes returned by AMS according to:
+        # http://argoeu.github.io/messaging/v1/api_errors/
+        self.errors_route = {"topic_create": ["put", set([409, 401, 403])],
+                             "sub_create": ["put", set([400, 409, 408, 401, 403])],
+                             "sub_ack": ["post", set([408, 400, 401, 403, 404])],
+                             "topic_get": ["get", set([404, 401, 403])],
+                             "topic_modifyacl": ["post", set([400, 401, 403, 404])],
+                             "sub_get": ["get", set([404, 401, 403])],
+                             "topic_publish": ["post", set([413, 401, 403])],
+                             "sub_pushconfig": ["post", set([400, 401, 403, 404])],
+                             "sub_pull": ["post", set([400, 401, 403, 404])]}
+
+    def _make_request(self, url, body=None, route_name=None, **reqkwargs):
+        """Common method for PUT, GET, POST HTTP requests with appropriate
+        service error handling. For known error HTTP statuses, returned JSON
+        will be used as exception error message, otherwise assume and build one
+        from response content string.
+        """
+        m = self.routes[route_name][0]
+        decoded = None
+        try:
+            # the get request based on requests.
+            reqmethod = getattr(requests, m)
+            r = reqmethod(url, data=body, **reqkwargs)
+
+            if r.status_code == 200:
+                decoded = json.loads(r.content) if r.content else {}
+
+            # JSON error returned by AMS
+            elif r.status_code != 200 and r.status_code in self.errors_route[route_name][1]:
+                decoded = json.loads(r.content) if r.content else {}
+                raise AmsServiceException(json=decoded, request=route_name)
+
+            # handle other erroneous behaviour and construct error message from
+            # JSON or plaintext content in response
+            elif r.status_code != 200 and r.status_code not in self.errors_route[route_name][1]:
+                try:
+                    errormsg = json.loads(r.content)
+                except ValueError:
+                    errormsg = {'error': {'code': r.status_code,
+                                          'message': r.content}}
+                raise AmsServiceException(json=errormsg, request=route_name)
+
+        except (requests.exceptions.ConnectionError, requests.exceptions.Timeout) as e:
+            raise AmsConnectionException(e, route_name)
+
+        else:
+            return decoded if decoded else {}
+
+    def do_get(self, url, route_name, **reqkwargs):
+        """Method supports all the GET requests. Used for (topics,
+        subscriptions, messages).
+
+        Args:
+            url: str. The final messaging service endpoint
+            route_name: str. The name of the route to follow selected from the route list
+            reqkwargs: keyword argument that will be passed to underlying python-requests library call.
+        """
+        # try to send a GET request to the messaging service.
+        # if a connection problem araises a Connection error exception is raised.
+        try:
+            return self._make_request(url, route_name=route_name, **reqkwargs)
+        except AmsException as e:
+            raise e
+
+    def do_put(self, url, body, route_name, **reqkwargs):
+        """Method supports all the PUT requests. Used for (topics,
+        subscriptions, messages).
+
+        Args:
+            url: str. The final messaging service endpoint
+            body: dict. Body the post data to send based on the PUT request. The post data is always in json format.
+            route_name: str. The name of the route to follow selected from the route list
+            reqkwargs: keyword argument that will be passed to underlying python-requests library call.
+        """
+        # try to send a PUT request to the messaging service.
+        # if a connection problem araises a Connection error exception is raised.
+        try:
+            return self._make_request(url, body=body, route_name=route_name, **reqkwargs)
+        except AmsException as e:
+            raise e
+
+    def do_post(self, url, body, route_name, **reqkwargs):
+        """Method supports all the POST requests. Used for (topics,
+        subscriptions, messages).
+
+        Args:
+            url: str. The final messaging service endpoint
+            body: dict. Body the post data to send based on the PUT request. The post data is always in json format.
+            route_name: str. The name of the route to follow selected from the route list
+            reqkwargs: keyword argument that will be passed to underlying python-requests library call.
+        """
+        # try to send a Post request to the messaging service.
+        # if a connection problem araises a Connection error exception is raised.
+        try:
+            return self._make_request(url, body=body, route_name=route_name, **reqkwargs)
+        except AmsException as e:
+            raise e
+
+    def do_delete(self, url, route_name, **reqkwargs):
+        """Delete method that is used to make the appropriate request.
+        Used for (topics, subscriptions).
+
+        Args:
+            url: str. The final messaging service endpoint
+            route_name: str. The name of the route to follow selected from the route list
+            reqkwargs: keyword argument that will be passed to underlying python-requests library call.
+        """
+        # try to send a delete request to the messaging service.
+        # if a connection problem araises a Connection error exception is raised.
+        m = self.routes[route_name][0]
+        try:
+            # the delete request based on requests.
+            r = requests.delete(url, **reqkwargs)
+
+            # JSON error returned by AMS
+            if r.status_code != 200 and r.status_code in self.errors[m]:
+                decoded = json.loads(r.content) if r.content else {}
+                raise AmsServiceException(json=decoded, request=route_name)
+
+            # handle other erroneous behaviour
+            elif r.status_code != 200 and r.status_code not in self.errors[m]:
+                errormsg = {'error': {'code': r.status_code,
+                                      'message': r.content}}
+                raise AmsServiceException(json=errormsg, request=route_name)
+            else:
+                return True
+
+        except (requests.exceptions.ConnectionError, requests.exceptions.Timeout) as e:
+            raise AmsConnectionException(e, route_name)
+
+
+class ArgoMessagingService(AmsHttpRequests):
+    """
+       Class abstract Argo Messaging Service by covering all available HTTP API
+       calls that are wrapped in series of methods. Class is entry point for
+       client code.
+    """
+    def __init__(self, endpoint, token="", project=""):
+        super(ArgoMessagingService, self).__init__()
+        self.endpoint = endpoint
+        self.token = token
+        self.project = project
+        self.pullopts = {"maxMessages": "1",
+                         "returnImmediately": "false"}
         # Containers for topic and subscription objects
         self.topics = dict()
         self.subs = dict()
@@ -65,7 +213,7 @@ class ArgoMessagingService(object):
         route = self.routes["topic_getacl"]
         # Compose url
         url = route[1].format(self.endpoint, self.token, self.project, topic)
-        method = eval('do_{0}'.format(route[0]))
+        method = getattr(self, 'do_{0}'.format(route[0]))
 
         r = method(url, "topic_getacl", **reqkwargs)
 
@@ -95,7 +243,7 @@ class ArgoMessagingService(object):
         route = self.routes["topic_modifyacl"]
         # Compose url
         url = route[1].format(self.endpoint, self.token, self.project, topic)
-        method = eval('do_{0}'.format(route[0]))
+        method = getattr(self, 'do_{0}'.format(route[0]))
 
         r = None
         try:
@@ -107,11 +255,8 @@ class ArgoMessagingService(object):
 
             return True
 
-        except AmsServiceException as e:
+        except (AmsServiceException, AmsConnectionException) as e:
             raise e
-
-        except TypeError as e:
-            raise AmsServiceException(e)
 
     def getacl_sub(self, sub, **reqkwargs):
         """
@@ -130,7 +275,7 @@ class ArgoMessagingService(object):
         route = self.routes["sub_getacl"]
         # Compose url
         url = route[1].format(self.endpoint, self.token, self.project, sub)
-        method = eval('do_{0}'.format(route[0]))
+        method = getattr(self, 'do_{0}'.format(route[0]))
 
         r = method(url, "sub_getacl", **reqkwargs)
 
@@ -140,6 +285,62 @@ class ArgoMessagingService(object):
         else:
             self.subs[subobj.fullname].acls = []
             return []
+
+    def getoffsets_sub(self, sub, offset='all', **reqkwargs):
+        """
+           Retrieve the current positions of min,max and current offsets.
+
+           Args:
+               sub (str): The subscription name.
+               offset(str): The name of the offset.If not specified, it will return all three of them as a dict.
+
+           Kwargs:
+               reqkwargs: keyword argument that will be passed to underlying
+                          python-requests library call.
+        """
+        route = self.routes["sub_offsets"]
+
+        # Compose url
+        url = route[1].format(self.endpoint, self.token, self.project, sub)
+        method = getattr(self, 'do_{0}'.format(route[0]))
+        r = method(url, "sub_offsets", **reqkwargs)
+        try:
+            if offset != 'all':
+                return r[offset]
+            return r
+        except KeyError as e:
+            errormsg = {'error': {'message': str(e) + " is not valid offset position"}}
+            raise AmsServiceException(json=errormsg, request="sub_offsets")
+
+
+    def modifyoffset_sub(self, sub, move_to, **reqkwargs):
+        """
+          Modify the position of the current offset.
+
+           Args:
+               sub (str): The subscription name.
+               move_to(int): Position to move the offset.
+
+           Kwargs:
+               reqkwargs: keyword argument that will be passed to underlying
+                          python-requests library call.
+        """
+        route = self.routes["sub_mod_offset"]
+        method = getattr(self, 'do_{0}'.format(route[0]))
+
+        if not isinstance(move_to, int):
+            move_to = int(move_to)
+
+        # Compose url
+        url = route[1].format(self.endpoint, self.token, self.project, sub)
+
+        # Request body
+        data = {"offset": move_to}
+        try:
+            r = method(url, json.dumps(data), "sub_mod_offset", **reqkwargs)
+            return r
+        except AmsServiceException as e:
+            raise e
 
     def modifyacl_sub(self, sub, users, **reqkwargs):
         """
@@ -159,7 +360,7 @@ class ArgoMessagingService(object):
         route = self.routes["sub_modifyacl"]
         # Compose url
         url = route[1].format(self.endpoint, self.token, self.project, sub)
-        method = eval('do_{0}'.format(route[0]))
+        method = getattr(self, 'do_{0}'.format(route[0]))
 
         r = None
         try:
@@ -171,11 +372,8 @@ class ArgoMessagingService(object):
 
             return True
 
-        except AmsServiceException as e:
+        except (AmsServiceException, AmsConnectionException) as e:
             raise e
-
-        except TypeError as e:
-            raise AmsServiceException(e)
 
     def pushconfig_sub(self, sub, push_endpoint=None, retry_policy_type='linear', retry_policy_period=300, **reqkwargs):
         """Modify push configuration of given subscription
@@ -198,7 +396,7 @@ class ArgoMessagingService(object):
         route = self.routes["sub_pushconfig"]
         # Compose url
         url = route[1].format(self.endpoint, self.token, self.project, "", sub)
-        method = eval('do_{0}'.format(route[0]))
+        method = getattr(self, 'do_{0}'.format(route[0]))
         p = method(url, msg_body, "sub_pushconfig", **reqkwargs)
 
         subobj = self.subs.get('/projects/{0}/subscriptions/{1}'.format(self.project, sub), False)
@@ -209,13 +407,13 @@ class ArgoMessagingService(object):
 
         return p
 
-    def iter_subs(self, topic=None):
+    def iter_subs(self, topic=None, **reqkwargs):
         """Iterate over AmsSubscription objects
 
         Args:
             topic: Iterate over subscriptions only associated to this topic name
         """
-        self.list_subs()
+        self.list_subs(**reqkwargs)
 
         for s in self.subs.copy().itervalues():
             if topic and topic == s.topic.name:
@@ -223,10 +421,10 @@ class ArgoMessagingService(object):
             elif not topic:
                 yield s
 
-    def iter_topics(self):
+    def iter_topics(self, **reqkwargs):
         """Iterate over AmsTopic objects"""
 
-        self.list_topics()
+        self.list_topics(**reqkwargs)
 
         for t in self.topics.copy().itervalues():
             yield t
@@ -241,7 +439,7 @@ class ArgoMessagingService(object):
         route = self.routes["topic_list"]
         # Compose url
         url = route[1].format(self.endpoint, self.token, self.project)
-        method = eval('do_{0}'.format(route[0]))
+        method = getattr(self, 'do_{0}'.format(route[0]))
 
         r = method(url, "topic_list", **reqkwargs)
 
@@ -284,7 +482,7 @@ class ArgoMessagingService(object):
         route = self.routes["topic_get"]
         # Compose url
         url = route[1].format(self.endpoint, self.token, self.project, topic)
-        method = eval('do_{0}'.format(route[0]))
+        method = getattr(self, 'do_{0}'.format(route[0]))
 
         r = method(url, "topic_get", **reqkwargs)
 
@@ -322,7 +520,7 @@ class ArgoMessagingService(object):
         route = self.routes["topic_publish"]
         # Compose url
         url = route[1].format(self.endpoint, self.token, self.project, topic)
-        method = eval('do_{0}'.format(route[0]))
+        method = getattr(self, 'do_{0}'.format(route[0]))
 
         return method(url, msg_body, "topic_publish", **reqkwargs)
 
@@ -335,7 +533,7 @@ class ArgoMessagingService(object):
         route = self.routes["sub_list"]
         # Compose url
         url = route[1].format(self.endpoint, self.token, self.project)
-        method = eval('do_{0}'.format(route[0]))
+        method = getattr(self, 'do_{0}'.format(route[0]))
 
         r = method(url, "sub_list", **reqkwargs)
 
@@ -361,7 +559,7 @@ class ArgoMessagingService(object):
         route = self.routes["sub_get"]
         # Compose url
         url = route[1].format(self.endpoint, self.token, self.project, "", sub)
-        method = eval('do_{0}'.format(route[0]))
+        method = getattr(self, 'do_{0}'.format(route[0]))
 
         r = method(url, "sub_get", **reqkwargs)
 
@@ -408,13 +606,13 @@ class ArgoMessagingService(object):
         wasretim = self.get_pullopt('returnImmediately')
 
         self.set_pullopt('maxMessages', num)
-        self.set_pullopt('returnImmediately', str(return_immediately))
+        self.set_pullopt('returnImmediately', str(return_immediately).lower())
         msg_body = json.dumps(self.pullopts)
 
         route = self.routes["sub_pull"]
         # Compose url
         url = route[1].format(self.endpoint, self.token, self.project, "", sub)
-        method = eval('do_{0}'.format(route[0]))
+        method = getattr(self, 'do_{0}'.format(route[0]))
         r = method(url, msg_body, "sub_pull", **reqkwargs)
         msgs = r['receivedMessages']
 
@@ -439,7 +637,7 @@ class ArgoMessagingService(object):
         route = self.routes["sub_ack"]
         # Compose url
         url = route[1].format(self.endpoint, self.token, self.project, "", sub)
-        method = eval('do_{0}'.format(route[0]))
+        method = getattr(self, 'do_{0}'.format(route[0]))
         method(url, msg_body, "sub_ack", **reqkwargs)
 
         return True
@@ -492,7 +690,7 @@ class ArgoMessagingService(object):
         route = self.routes["sub_create"]
         # Compose url
         url = route[1].format(self.endpoint, self.token, self.project, "", sub)
-        method = eval('do_{0}'.format(route[0]))
+        method = getattr(self, 'do_{0}'.format(route[0]))
 
         r = method(url, msg_body, "sub_create", **reqkwargs)
 
@@ -520,7 +718,7 @@ class ArgoMessagingService(object):
         route = self.routes["sub_delete"]
         # Compose url
         url = route[1].format(self.endpoint, self.token, self.project, "", sub)
-        method = eval('do_{0}'.format(route[0]))
+        method = getattr(self, 'do_{0}'.format(route[0]))
 
         r = method(url, "sub_delete", **reqkwargs)
 
@@ -564,7 +762,7 @@ class ArgoMessagingService(object):
         route = self.routes["topic_create"]
         # Compose url
         url = route[1].format(self.endpoint, self.token, self.project, topic)
-        method = eval('do_{0}'.format(route[0]))
+        method = getattr(self, 'do_{0}'.format(route[0]))
 
         r = method(url, '', "topic_create", **reqkwargs)
 
@@ -586,7 +784,7 @@ class ArgoMessagingService(object):
         route = self.routes["topic_delete"]
         # Compose url
         url = route[1].format(self.endpoint, self.token, self.project, topic)
-        method = eval('do_{0}'.format(route[0]))
+        method = getattr(self, 'do_{0}'.format(route[0]))
 
         r = method(url, "topic_delete", **reqkwargs)
 
@@ -595,120 +793,3 @@ class ArgoMessagingService(object):
             self._delete_topic_obj({'name': topic_fullname})
 
         return r
-
-
-def do_get(url, route_name, **reqkwargs):
-    """This global function supports all the GET requests. Used for (topics,
-    subscriptions, messages). The requests library is used for the final GET
-    request.
-
-    Args:
-        url: str. The final messaging service endpoint
-        route_name: str. The name of the route to follow selected from the route list
-        reqkwargs: keyword argument that will be passed to underlying python-requests library call.
-    """
-    # try to send a GET request to the messaging service.
-    # if a connection problem araises a Connection error exception is raised.
-    try:
-        # the get request based on requests.
-        r = requests.get(url, **reqkwargs)
-        decoded = json.loads(r.content)
-        # if the result returns an error code an exception is raised.
-        if 'error' in decoded:
-            raise AmsServiceException(json=decoded, request=route_name)
-
-    except (requests.exceptions.ConnectionError, requests.exceptions.Timeout) as e:
-        raise AmsConnectionException(e, route_name)
-
-    else:
-        return r.json()
-
-
-def do_put(url, body, route_name, **reqkwargs):
-    """This global function supports all the PUT requests. Used for (topics,
-    subscriptions, messages). The requests library is used for the final PUT
-    request.
-
-    Args:
-        url: str. The final messaging service endpoint
-        body: dict. Body the post data to send based on the PUT request. The post data is always in json format.
-        route_name: str. The name of the route to follow selected from the route list
-        reqkwargs: keyword argument that will be passed to underlying python-requests library call.
-    """
-    # try to send a PUT request to the messaging service.
-    # if a connection problem araises a Connection error exception is raised.
-    try:
-        # the post request based on requests.
-        r = requests.put(url, data=body, **reqkwargs)
-        decoded = json.loads(r.content) if r.content else {}
-
-        # if the result returns an error code an exception is raised.
-        if 'error' in decoded:
-            raise AmsServiceException(json=decoded, request=route_name)
-
-    except (requests.exceptions.ConnectionError, requests.exceptions.Timeout) as e:
-        raise AmsConnectionException(e, route_name)
-
-    else:
-        return r.json() if decoded else {}
-
-
-def do_post(url, body, route_name, **reqkwargs):
-    """This global function supports all the POST requests. Used for (topics,
-       subscriptions, messages). The requests library is used for the final POST
-       request.
-
-    Args:
-        url: str. The final messaging service endpoint
-        body: dict. Body the post data to send based on the PUT request. The post data is always in json format.
-        route_name: str. The name of the route to follow selected from the route list
-        reqkwargs: keyword argument that will be passed to underlying python-requests library call.
-    """
-    # try to send a Post request to the messaging service.
-    # if a connection problem araises a Connection error exception is raised.
-    try:
-        # the post request based on requests.
-        r = requests.post(url, data=body, **reqkwargs)
-        decoded = json.loads(r.content) if r.content else {}
-
-        # if the result returns an error code an exception is raised.
-        if 'error' in decoded:
-            raise AmsServiceException(json=decoded, request=route_name)
-
-    except (requests.exceptions.ConnectionError, requests.exceptions.Timeout) as e:
-        raise AmsConnectionException(e, route_name)
-
-    else:
-        return r.json() if decoded else {}
-
-
-def do_delete(url, route_name, **reqkwargs):
-    """A global delete function that is used to make the appropriate request.
-    Used for (topics, subscriptions). The requests library is used for the final
-    delete request.
-
-    Args:
-        url: str. The final messaging service endpoint
-        route_name: str. The name of the route to follow selected from the route list
-        reqkwargs: keyword argument that will be passed to underlying python-requests library call.
-    """
-    # try to send a delete request to the messaging service.
-    # if a connection problem araises a Connection error exception is raised.
-    try:
-        # the delete request based on requests.
-        r = requests.delete(url, **reqkwargs)
-
-        if r.status_code != 200:
-            decoded = json.loads(r.content)
-            # if the result returns an error code an exception is raised.
-            if 'error' in decoded:
-                raise AmsServiceException(json=decoded, request=route_name)
-        else:
-            return True
-
-    except (requests.exceptions.ConnectionError, requests.exceptions.Timeout) as e:
-        raise AmsConnectionException(e, route_name)
-
-if __name__ == "__main__":
-    test = ArgoMessagingService(endpoint="messaging-devel.argo.grnet.gr", token="YOUR_TOKEN", project="ARGO")
-    allprojects = test.list_topics()
