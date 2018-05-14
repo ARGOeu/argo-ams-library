@@ -15,7 +15,7 @@ class AmsSubscription(object):
         self.fullname = fullname
         self.topic = self.init.topics[topic]
         self.push_endpoint = ''
-        self.retry_policy_type = ''
+        self.retry_policy_type =  ''
         self.retry_policy_period = ''
         if pushconfig['pushEndpoint']:
             self.push_endpoint = pushconfig['pushEndpoint']
@@ -62,33 +62,6 @@ class AmsSubscription(object):
         """
 
         return self.init.pull_sub(self.name, num=num, return_immediately=return_immediately, **reqkwargs)
-
-    def offsets(self, offset='all', move_to=0, **reqkwargs):
-        """
-           Retrieve the positions of min, max and current offsets or move
-           current offset to new one.
-
-           Args:
-               offset (str): The name of the offset. If not specified, it will
-                             return all three of them as a dict. Values that can
-                             be specified are 'max', 'min', 'current' and 'all'.
-               move_to (int): New position for current offset.
-
-           Kwargs:
-               reqkwargs: keyword argument that will be passed to underlying
-                          python-requests library call.
-           Return:
-                 dict: A dictionary containing all 3 offsets. If move_to
-                       is specified, current offset will be moved and updated.
-                 int: The value of the specified offset.
-        """
-        avail_offsets = set(['max', 'min', 'current'])
-
-        if (offset == 'all' or offset in avail_offsets) and move_to == 0:
-            return self.init.getoffsets_sub(self.name, offset, **reqkwargs)
-        elif move_to != 0:
-            _ = self.init.modifyoffset_sub(self.name, move_to, **reqkwargs)
-            return self.init.getoffsets_sub(self.name, offset, **reqkwargs)
 
     def acl(self, users=None, **reqkwargs):
         """Set or get ACLs assigned to subscription
