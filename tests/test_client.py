@@ -69,36 +69,6 @@ class TestClient(unittest.TestCase):
             name = resp["name"]
             assert name == "/projects/TEST/subscriptions/subscription1"
 
-    # Test the Modify offset client request
-    def testModifyOffset(self):
-        # Execute ams client with mocked response
-        with HTTMock(self.submocks.modifyoffset_sub_mock):
-            resp = self.ams.modifyoffset_sub("subscription1", 79)
-            self.assertEquals(resp, {})
-
-    # Test the Get offsets client request
-    def testGetOffsets(self):
-        # Execute ams client with mocked response
-        with HTTMock(self.submocks.getoffsets_sub_mock):
-            # should return a dict with all the offsets
-            resp_all = self.ams.getoffsets_sub("subscription1")
-            resp_dict_all = {
-                "max": 79,
-                "min": 0,
-                "current": 78
-            }
-            # should return the max offset
-            resp_max = self.ams.getoffsets_sub("subscription1", "max")
-            # should return the current offset
-            resp_current = self.ams.getoffsets_sub("subscription1", "current")
-            # should return the min offset
-            resp_min = self.ams.getoffsets_sub("subscription1", "min")
-
-            self.assertEquals(resp_all, resp_dict_all)
-            self.assertEquals(resp_max, 79)
-            self.assertEquals(resp_current, 78)
-            self.assertEquals(resp_min, 0)
-
     # Test List topics client request
     def testListTopics(self):
         # Execute ams client with mocked response
@@ -329,7 +299,6 @@ class TestClient(unittest.TestCase):
     def testHasSub(self):
         with HTTMock(self.submocks.get_sub_mock):
             self.assertTrue(self.ams.has_sub('subscription1'))
-
 
 if __name__ == '__main__':
     unittest.main()
