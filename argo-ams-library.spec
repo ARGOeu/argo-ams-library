@@ -37,7 +37,12 @@ rm -rf $RPM_BUILD_ROOT
 %{python_sitelib}/%{underscore %{name}}/*.py[co]
 
 %changelog
-* Tue May 8 2018 Daniel Vrcic <dvrcic@srce.hr> - 0.4.0-1%{?dist}
+* Mon May 14 2018 Daniel Vrcic <dvrcic@srce.hr>, Konstantinos Kagkelidis <kaggis@gmail.com>, agelostsal <agelos.tsal@gmail.com> - 0.4.0-1%{?dist}
+- ARGO-1103 Handle non-JSON AMS responses
+- ARGO-1105 Extend ams library to support offset manipulation
+- ARGO-1118 Fix returnImmediately parameter in sub pull request
+- ARGO-1127 Wrap offsets low level methods into one
+- ARGO-1153 Extract JSON error messages propagated through AMS
 * Mon Jun 5 2017 Daniel Vrcic <dvrcic@srce.hr> - 0.2.0-1%{?dist}
 - ARGO-782 Iterate over subscriptions and topics methods
 - ARGO-789 Topic and subscription creation/deletion that mimic Google implementation
