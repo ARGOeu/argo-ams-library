@@ -53,13 +53,13 @@ class TestAuthenticate(unittest.TestCase):
     def test_auth_via_cert_success(self):
 
         auth_via_cert_urlmatch = dict(netloc="localhost",
-                                      path="/v1/service-types/ams/hosts/localhost:authX509",
+                                      path="/v1/service-types/ams/hosts/localhost:authx509",
                                       method='GET')
 
         # Mock response for successful token retrieval
         @urlmatch(**auth_via_cert_urlmatch)
         def auth_via_cert_success(url, request):
-            assert url.path == "/v1/service-types/ams/hosts/localhost:authX509"
+            assert url.path == "/v1/service-types/ams/hosts/localhost:authx509"
             return response(200, '{"token":"success_token"}', None, None, 5, request)
 
         # Execute ams client with mocked response
@@ -71,13 +71,13 @@ class TestAuthenticate(unittest.TestCase):
     def test_auth_via_cert_missing_token_field(self):
 
         auth_via_cert_urlmatch = dict(netloc="localhost",
-                                      path="/v1/service-types/ams/hosts/localhost:authX509",
+                                      path="/v1/service-types/ams/hosts/localhost:authx509",
                                       method='GET')
 
         # Mock response for successful token retrieval
         @urlmatch(**auth_via_cert_urlmatch)
         def auth_via_cert_missing_field(url, request):
-            assert url.path == "/v1/service-types/ams/hosts/localhost:authX509"
+            assert url.path == "/v1/service-types/ams/hosts/localhost:authx509"
             return response(200, '{"other_field":"success_token"}', None, None, 5, request)
 
         # Execute ams client with mocked response
