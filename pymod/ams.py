@@ -32,7 +32,7 @@ class AmsHttpRequests(object):
                        "sub_modifyacl": ["post", "https://{0}/v1/projects/{2}/subscriptions/{3}:modifyAcl?key={1}"],
                        "sub_offsets": ["get", "https://{0}/v1/projects/{2}/subscriptions/{3}:offsets?key={1}"],
                        "sub_mod_offset": ["post", "https://{0}/v1/projects/{2}/subscriptions/{3}:modifyOffset?key={1}"],
-                       "auth_x509": ["get", "https://{0}:{1}/v1/service-types/ams/hosts/{0}:authX509"]}
+                       "auth_x509": ["get", "https://{0}:{1}/v1/service-types/ams/hosts/{0}:authx509"]}
         # HTTP error status codes returned by AMS according to:
         # http://argoeu.github.io/messaging/v1/api_errors/
         self.errors_route = {"topic_create": ["put", set([409, 401, 403])],
@@ -204,9 +204,12 @@ class ArgoMessagingService(AmsHttpRequests):
             # otherwise use the provided certificate to retrieve it
             self.token = self.auth_via_cert(cert, key)
         except AmsServiceException as e:
+            # if the request send to authn didn't contain an x509 cert, that means that there was also no token provided
+            # when initializing the ArgoMessagingService object, since we only try to authenticate through authn
+            # when no token was provided
             if e.message["error"] == 'While trying the [auth_x509]: No certificate provided.':
                 e.message["error"] += "No token provided"
-                raise e
+            raise e
 
     def auth_via_cert(self, cert, key, **reqkwargs):
         """
