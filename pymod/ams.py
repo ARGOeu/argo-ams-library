@@ -36,6 +36,7 @@ class AmsHttpRequests(object):
         # HTTP error status codes returned by AMS according to:
         # http://argoeu.github.io/messaging/v1/api_errors/
         self.errors_route = {"topic_create": ["put", set([409, 401, 403])],
+                             "topic_list": ["get", set([400, 401, 403, 404])],
                              "sub_create": ["put", set([400, 409, 408, 401, 403])],
                              "sub_ack": ["post", set([408, 400, 401, 403, 404])],
                              "topic_get": ["get", set([404, 401, 403])],
