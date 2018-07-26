@@ -26,6 +26,22 @@ If you want the devel instance so as to test all new features
 If you want the stable instance you may download it from here
 http://rpm-repo.argo.grnet.gr/ARGO/prod/centos6/
 
+## Authentication
+The ams library uses a valid ams token to execute requests against the ams cluster.
+This token can be provided with 2 ways:
+
+- Obtain a valid ams token and then use it when initializing the ams object.
+```python
+from argo_ams_library import ArgoMessagingService
+ams = ArgoMessagingService(endpoint="ams_endpoint", project="ams_project", token="your_ams_token")
+```
+
+- Use a valid certificate
+```python
+from argo_ams_library import ArgoMessagingService
+ams = ArgoMessagingService(endpoint="ams_endpoint", project="ams_project", cert="/path/to/cert", key="/path/to/cert/key")
+```
+The library will use the provided certificate to access the corresponding ams token through [the ARGO Authentication Service](https://github.com/ARGOeu/argo-api-authn) and then set the ams object's token field with the retrieved token.
 
 ## Examples
 

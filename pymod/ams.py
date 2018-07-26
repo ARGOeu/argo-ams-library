@@ -31,7 +31,8 @@ class AmsHttpRequests(object):
                        "sub_getacl": ["get", "https://{0}/v1/projects/{2}/subscriptions/{3}:acl?key={1}"],
                        "sub_modifyacl": ["post", "https://{0}/v1/projects/{2}/subscriptions/{3}:modifyAcl?key={1}"],
                        "sub_offsets": ["get", "https://{0}/v1/projects/{2}/subscriptions/{3}:offsets?key={1}"],
-                       "sub_mod_offset": ["post", "https://{0}/v1/projects/{2}/subscriptions/{3}:modifyOffset?key={1}"]}
+                       "sub_mod_offset": ["post", "https://{0}/v1/projects/{2}/subscriptions/{3}:modifyOffset?key={1}"],
+                       "auth_x509": ["get", "https://{0}:{1}/v1/service-types/ams/hosts/{0}:authx509"]}
         # HTTP error status codes returned by AMS according to:
         # http://argoeu.github.io/messaging/v1/api_errors/
         self.errors_route = {"topic_create": ["put", set([409, 401, 403])],
@@ -42,6 +43,7 @@ class AmsHttpRequests(object):
                              "sub_get": ["get", set([404, 401, 403])],
                              "topic_publish": ["post", set([413, 401, 403])],
                              "sub_pushconfig": ["post", set([400, 401, 403, 404])],
+                             "auth_x509": ["post", set([400, 401, 403, 404])],
                              "sub_pull": ["post", set([400, 401, 403, 404])]}
 
     def _make_request(self, url, body=None, route_name=None, **reqkwargs):
@@ -170,16 +172,79 @@ class ArgoMessagingService(AmsHttpRequests):
        calls that are wrapped in series of methods. Class is entry point for
        client code.
     """
-    def __init__(self, endpoint, token="", project=""):
+    def __init__(self, endpoint, token="", project="", cert="", key="", authn_port=8443):
         super(ArgoMessagingService, self).__init__()
+        self.authn_port = authn_port
+        self.token = ""
         self.endpoint = endpoint
-        self.token = token
         self.project = project
+        self.assign_token(token, cert, key)
         self.pullopts = {"maxMessages": "1",
                          "returnImmediately": "false"}
         # Containers for topic and subscription objects
         self.topics = dict()
         self.subs = dict()
+
+    def assign_token(self, token, cert, key):
+        """
+        Assign a token to the ams object
+
+        Args:
+            token(str): a valid ams token
+            cert(str): a path to a valid certificate file
+            key(str): a path to the associated key file for the provided certificate
+        """
+
+        # check if a token has been provided
+        if token != "":
+            self.token = token
+            return
+
+        try:
+            # otherwise use the provided certificate to retrieve it
+            self.token = self.auth_via_cert(cert, key)
+        except AmsServiceException as e:
+            # if the request send to authn didn't contain an x509 cert, that means that there was also no token provided
+            # when initializing the ArgoMessagingService object, since we only try to authenticate through authn
+            # when no token was provided
+            if e.message["error"] == 'While trying the [auth_x509]: No certificate provided.':
+                e.message["error"] += "No token provided"
+            raise e
+
+    def auth_via_cert(self, cert, key, **reqkwargs):
+        """
+           Retrieve an ams token based on the provided certificate
+
+            Args:
+                cert(str): a path to a valid certificate file
+                key(str): a path to the associated key file for the provided certificate
+
+           Kwargs:
+               reqkwargs: keyword argument that will be passed to underlying
+                          python-requests library call.
+        """
+        if cert == "" and key == "":
+            errord = {"error": {"code": 400, "message": "No certificate provided."}}
+            raise AmsServiceException(json=errord, request="auth_x509")
+
+        # create the certificate tuple needed by the requests library
+        reqkwargs = {"cert": (cert, key)}
+
+        route = self.routes["auth_x509"]
+
+        # Compose url
+        url = route[1].format(self.endpoint, self.authn_port)
+        method = getattr(self, 'do_{0}'.format(route[0]))
+
+        try:
+            r = method(url, "auth_x509", **reqkwargs)
+            # if the `token` field was not found in the response, raise an error
+            if "token" not in r:
+                errord = {"error": {"code": 500, "message": "Token was not found in the response.Response: " + str(r)}}
+                raise AmsServiceException(json=errord, request="auth_x509")
+            return r["token"]
+        except (AmsServiceException, AmsConnectionException) as e:
+            raise e
 
     def _create_sub_obj(self, s, topic):
         self.subs.update({s['name']: AmsSubscription(s['name'], topic,

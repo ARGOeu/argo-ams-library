@@ -3,7 +3,7 @@
 %define underscore() %(echo %1 | sed 's/-/_/g')
 
 Name:           argo-ams-library
-Version:        0.4.1
+Version:        0.4.2
 Release:        1%{?dist}
 Summary:        A simple python library for interacting with the ARGO Messaging Service
 
@@ -37,6 +37,8 @@ rm -rf $RPM_BUILD_ROOT
 %{python_sitelib}/%{underscore %{name}}/*.py[co]
 
 %changelog
+* Tue Jun 19 2018 Daniel Vrcic <dvrcic@srce.hr>, Konstantinos Kagkelidis <kaggis@gmail.com>, agelostsal <agelos.tsal@gmail.com> - 0.4.1-1%{?dist}
+- ARGO-1120 Extend AMS client to support X509 method via the authentication server
 * Mon May 14 2018 Daniel Vrcic <dvrcic@srce.hr>, Konstantinos Kagkelidis <kaggis@gmail.com>, agelostsal <agelos.tsal@gmail.com> - 0.4.0-1%{?dist}
 - ARGO-1103 Handle non-JSON AMS responses
 - ARGO-1105 Extend ams library to support offset manipulation
