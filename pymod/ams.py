@@ -748,7 +748,7 @@ class ArgoMessagingService(AmsHttpRequests):
             retobj: Controls whether method should return AmsSubscription object
             reqkwargs: keyword argument that will be passed to underlying python-requests library call.
         """
-        topic = self.get_topic(topic, retobj=True)
+        topic = self.get_topic(topic, retobj=True, **reqkwargs)
 
         msg_body = json.dumps({"topic": topic.fullname.strip('/'),
                                "ackDeadlineSeconds": ackdeadline})
@@ -761,7 +761,7 @@ class ArgoMessagingService(AmsHttpRequests):
         r = method(url, msg_body, "sub_create", **reqkwargs)
 
         if push_endpoint:
-            ret = self.pushconfig_sub(sub, push_endpoint, retry_policy_type, retry_policy_period)
+            ret = self.pushconfig_sub(sub, push_endpoint, retry_policy_type, retry_policy_period, **reqkwargs)
             r['pushConfig'] = {"pushEndpoint": push_endpoint,
                                "retryPolicy": {"type": retry_policy_type,
                                                "period": retry_policy_period}}
