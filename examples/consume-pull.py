@@ -23,7 +23,7 @@ def main():
         if not ams.has_sub(args.subscription):
             ams.create_sub(args.subscription, args.topic)
     except AmsException as e:
-        print e
+        print(e)
         raise SystemExit(1)
 
     # try to pull number of messages from subscription. method will
@@ -34,7 +34,7 @@ def main():
         data = msg.get_data()
         msgid = msg.get_msgid()
         attr = msg.get_attr()
-        print 'msgid={0}, data={1}, attr={2}'.format(msgid, data, attr)
+        print('msgid={0}, data={1}, attr={2}'.format(msgid, data, attr))
         ackids.append(id)
 
     # pass list of extracted ackIds to AMS Service so that

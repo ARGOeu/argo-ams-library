@@ -27,7 +27,7 @@ sys.path.insert(0, os.path.abspath('.'))
 #    if os.environ['DEVDIR']:
 #        devdir = os.environ['DEVDIR']
 #except KeyError:
-#    print 'Unable to obtain $DEVDIR from the environment.'
+#    print('Unable to obtain $DEVDIR from the environment.')
 #    exit(-1)
 
 #sys.path.insert(0, os.path.abspath('.'))
