@@ -20,3 +20,8 @@ install:
     - "pip install httmock"
 
 script: nosetests
+
+# Cache the dependencies installed by pip
+cache: pip
+# Avoid pip log from affecting cache
+before_cache: rm -fv ~/.cache/pip/log/debug.log
