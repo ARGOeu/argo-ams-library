@@ -63,6 +63,11 @@ class AmsHttpRequests(object):
             if r.status_code == 200:
                 decoded = json.loads(r.content) if r.content else {}
 
+            # handle authnz related errors for all calls
+            elif r.status_code == 401 or r.status_code == 403:
+                decoded = json.loads(r.content) if r.content else {}
+                raise AmsServiceException(json=decoded, request=route_name)
+
             # JSON error returned by AMS
             elif r.status_code != 200 and r.status_code in self.errors_route[route_name][1]:
                 decoded = json.loads(r.content) if r.content else {}
