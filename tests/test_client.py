@@ -6,8 +6,8 @@ from pymod import AmsTopic
 from pymod import AmsSubscription
 import json
 
-from amsmocks import SubMocks
-from amsmocks import TopicMocks
+from .amsmocks import SubMocks
+from .amsmocks import TopicMocks
 
 
 class TestClient(unittest.TestCase):

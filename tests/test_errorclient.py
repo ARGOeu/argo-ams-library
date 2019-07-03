@@ -7,9 +7,9 @@ from pymod import AmsSubscription
 from pymod import AmsServiceException, AmsException
 import json
 
-from amsmocks import ErrorMocks
-from amsmocks import TopicMocks
-from amsmocks import SubMocks
+from .amsmocks import ErrorMocks
+from .amsmocks import TopicMocks
+from .amsmocks import SubMocks
 
 
 class TestErrorClient(unittest.TestCase):

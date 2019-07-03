@@ -8,8 +8,8 @@ from pymod import AmsSubscription
 from pymod import AmsTopic
 from pymod import ArgoMessagingService
 
-from amsmocks import SubMocks
-from amsmocks import TopicMocks
+from .amsmocks import SubMocks
+from .amsmocks import TopicMocks
 
 
 class TestSubscription(unittest.TestCase):
