@@ -1,9 +1,9 @@
 import requests
 import json
-from amsexceptions import AmsServiceException, AmsConnectionException, AmsMessageException, AmsException
-from amsmsg import AmsMessage
-from amstopic import AmsTopic
-from amssubscription import AmsSubscription
+from .amsexceptions import AmsServiceException, AmsConnectionException, AmsMessageException, AmsException
+from .amsmsg import AmsMessage
+from .amstopic import AmsTopic
+from .amssubscription import AmsSubscription
 
 
 class AmsHttpRequests(object):
