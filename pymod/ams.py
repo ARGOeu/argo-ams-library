@@ -213,8 +213,12 @@ class ArgoMessagingService(AmsHttpRequests):
             # if the request send to authn didn't contain an x509 cert, that means that there was also no token provided
             # when initializing the ArgoMessagingService object, since we only try to authenticate through authn
             # when no token was provided
-            if e.message["error"] == 'While trying the [auth_x509]: No certificate provided.':
-                e.message["error"] += "No token provided"
+
+            if e.msg == 'While trying the [auth_x509]: No certificate provided.':
+                refined_msg = "No certificate provided. No token provided"
+                errormsg = {'error': {'code': e.code,
+                                      'message': refined_msg}}
+                raise AmsServiceException(json=errormsg, request="auth_x509")
             raise e
 
     def auth_via_cert(self, cert, key, **reqkwargs):

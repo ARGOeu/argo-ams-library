@@ -31,18 +31,18 @@ class TestAuthenticate(unittest.TestCase):
         try:
             ams = ArgoMessagingService(endpoint="localhost", token="s3cret", project="TEST")
             ams.auth_via_cert("","")
-        except Exception as e:
-            assert isinstance(e, AmsServiceException)
-            self.assertEqual(e.message, {'status_code': 400, 'error': 'While trying the [auth_x509]: No certificate provided.'})
+        except AmsServiceException as e:
+            self.assertEqual(e.code, 400)
+            self.assertEqual(e.msg, 'While trying the [auth_x509]: No certificate provided.')
 
     # tests the case of providing empty arguments for token and cert
     def test_auth_via_cert_empty_token_and_cert(self):
 
         try:
             ams = ArgoMessagingService(endpoint="localhost", project="TEST")
-        except Exception as e:
-            assert isinstance(e, AmsServiceException)
-            self.assertEqual(e.message, {'status_code': 400, 'error': 'While trying the [auth_x509]: No certificate provided.No token provided'})
+        except AmsServiceException as e:
+            self.assertEqual(e.code, 400)
+            self.assertEqual(e.msg, 'While trying the [auth_x509]: No certificate provided. No token provided')
 
     # tests the case of providing a token
     def test_assign_token(self):
@@ -85,9 +85,9 @@ class TestAuthenticate(unittest.TestCase):
             try:
                 ams = ArgoMessagingService(endpoint="localhost", project="TEST", cert="/path/cert", key="/path/key")
                 ams.auth_via_cert("/path/cert", "/path/key")
-            except Exception as e:
-                assert isinstance(e, AmsServiceException)
-                self.assertEqual(e.message, {'status_code': 500, 'error': "While trying the [auth_x509]: Token was not found in the response.Response: {u'other_field': u'success_token'}"})
+            except AmsServiceException as e:
+                self.assertEqual(e.code, 500)
+                self.assertEqual(e.msg, "While trying the [auth_x509]: Token was not found in the response.Response: {u'other_field': u'success_token'}")
 
 if __name__ == "__main__":
     unittest.main()
