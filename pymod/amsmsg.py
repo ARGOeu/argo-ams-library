@@ -1,3 +1,4 @@
+import sys
 import json
 import inspect
 from base64 import b64encode, b64decode
@@ -54,7 +55,10 @@ class AmsMessage(Callable):
                b64enc (bool): Control whether data should be Base64 encoded
         """
         if b64enc and data:
-            self._data = b64encode(data)
+            if sys.version_info < (3, ):
+                self._data = b64encode(data)
+            else:
+                self._data = str(b64encode(bytearray(data, 'utf-8')), 'utf-8')
         elif data:
             self._data = data
 
@@ -74,7 +78,10 @@ class AmsMessage(Callable):
 
         if self._has_dataattr():
             try:
-                return b64decode(self._data)
+                if sys.version_info <(3, ):
+                    return b64decode(self._data)
+                else:
+                    return str(b64decode(self._data), 'utf-8')
             except Exception as e:
                 raise AmsMessageException('b64decode() {0}'.format(str(e)))
 
