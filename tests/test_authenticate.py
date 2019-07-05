@@ -1,3 +1,4 @@
+import sys
 import unittest
 from pymod import ArgoMessagingService
 from pymod import AmsServiceException
@@ -78,7 +79,7 @@ class TestAuthenticate(unittest.TestCase):
         @urlmatch(**auth_via_cert_urlmatch)
         def auth_via_cert_missing_field(url, request):
             assert url.path == "/v1/service-types/ams/hosts/localhost:authx509"
-            return response(200, '{"other_field":"success_token"}', None, None, 5, request)
+            return response(200, '{"other_field": "success_token"}', None, None, 5, request)
 
         # Execute ams client with mocked response
         with HTTMock(auth_via_cert_missing_field):
@@ -87,7 +88,13 @@ class TestAuthenticate(unittest.TestCase):
                 ams.auth_via_cert("/path/cert", "/path/key")
             except AmsServiceException as e:
                 self.assertEqual(e.code, 500)
-                self.assertEqual(e.msg, "While trying the [auth_x509]: Token was not found in the response.Response: {u'other_field': u'success_token'}")
+                # py2 json.loads() builds dict with unicode encoded elements
+                # while py3 version of it not
+                if sys.version_info < (3, ):
+                    response_dict = "{u'other_field': u'success_token'}"
+                else:
+                    response_dict = "{'other_field': 'success_token'}"
+                self.assertEqual(e.msg, "While trying the [auth_x509]: Token was not found in the response. Response: " + response_dict)
 
 if __name__ == "__main__":
     unittest.main()

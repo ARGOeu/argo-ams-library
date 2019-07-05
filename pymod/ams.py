@@ -250,7 +250,7 @@ class ArgoMessagingService(AmsHttpRequests):
             r = method(url, "auth_x509", **reqkwargs)
             # if the `token` field was not found in the response, raise an error
             if "token" not in r:
-                errord = {"error": {"code": 500, "message": "Token was not found in the response.Response: " + str(r)}}
+                errord = {"error": {"code": 500, "message": "Token was not found in the response. Response: " + str(r)}}
                 raise AmsServiceException(json=errord, request="auth_x509")
             return r["token"]
         except (AmsServiceException, AmsConnectionException) as e:
