@@ -1,10 +1,12 @@
+import json
+import sys
 import unittest
+
 from httmock import urlmatch, HTTMock, response
 from pymod import ArgoMessagingService
 from pymod import AmsMessage
 from pymod import AmsTopic
 from pymod import AmsSubscription
-import json
 
 from .amsmocks import SubMocks
 from .amsmocks import TopicMocks
@@ -106,7 +108,7 @@ class TestClient(unittest.TestCase):
             resp = self.ams.list_topics()
             # Assert that ams client handled the json response correctly
             topics = resp["topics"]
-            topic_objs = self.ams.topics.values()
+            topic_objs = list(self.ams.topics.values())
             assert len(topics) == 2
             assert topics[0]["name"] == "/projects/TEST/topics/topic1"
             assert topics[1]["name"] == "/projects/TEST/topics/topic2"
@@ -130,11 +132,14 @@ class TestClient(unittest.TestCase):
         with HTTMock(iter_topics_mock):
             resp = self.ams.iter_topics()
             # Assert that ams client handled the json response correctly
-            obj1 = resp.next()
-            obj2 = resp.next()
+            obj1 = next(resp)
+            obj2 = next(resp)
             assert isinstance(obj1, AmsTopic)
             assert isinstance(obj2, AmsTopic)
-            self.assertRaises(StopIteration, resp.next)
+            if sys.version_info < (3, ):
+                self.assertRaises(StopIteration, resp.next)
+            else:
+                self.assertRaises(StopIteration, resp.__next__)
             self.assertEqual(obj1.name, 'topic1')
             self.assertEqual(obj2.name, 'topic2')
 
@@ -268,8 +273,8 @@ class TestClient(unittest.TestCase):
         with HTTMock(list_subs_mock):
             resp = self.ams.list_subs()
             subscriptions = resp["subscriptions"]
-            subscription_objs = self.ams.subs.values()
-            topic_objs = self.ams.topics.values()
+            subscription_objs = list(self.ams.subs.values())
+            topic_objs = list(self.ams.topics.values())
             # Assert that ams client handled the json response correctly
             assert len(subscriptions) == 2
             assert subscriptions[0]["name"] == "/projects/TEST/subscriptions/subscription1"
@@ -300,11 +305,14 @@ class TestClient(unittest.TestCase):
         # Execute ams client with mocked response
         with HTTMock(iter_subs_mock):
             resp = self.ams.iter_subs()
-            obj1 = resp.next()
-            obj2 = resp.next()
+            obj1 = next(resp)
+            obj2 = next(resp)
             assert isinstance(obj1, AmsSubscription)
             assert isinstance(obj2, AmsSubscription)
-            self.assertRaises(StopIteration, resp.next)
+            if sys.version_info < (3, ):
+                self.assertRaises(StopIteration, resp.next)
+            else:
+                self.assertRaises(StopIteration, resp.__next__)
             self.assertEqual(obj1.name, 'subscription1')
             self.assertEqual(obj2.name, 'subscription2')
 

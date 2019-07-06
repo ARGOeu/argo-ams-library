@@ -490,7 +490,12 @@ class ArgoMessagingService(AmsHttpRequests):
         """
         self.list_subs(**reqkwargs)
 
-        for s in self.subs.copy().itervalues():
+        try:
+            values = self.subs.copy().itervalues()
+        except AttributeError:
+            values = self.subs.copy().values()
+
+        for s in values:
             if topic and topic == s.topic.name:
                 yield s
             elif not topic:
@@ -501,7 +506,12 @@ class ArgoMessagingService(AmsHttpRequests):
 
         self.list_topics(**reqkwargs)
 
-        for t in self.topics.copy().itervalues():
+        try:
+            values = self.topics.copy().itervalues()
+        except AttributeError:
+            values = self.topics.copy().values()
+
+        for t in values:
             yield t
 
     def list_topics(self, **reqkwargs):
@@ -694,7 +704,7 @@ class ArgoMessagingService(AmsHttpRequests):
         self.set_pullopt('maxMessages', wasmax)
         self.set_pullopt('returnImmediately', wasretim)
 
-        return map(lambda m: (m['ackId'], AmsMessage(b64enc=False, **m['message'])), msgs)
+        return list(map(lambda m: (m['ackId'], AmsMessage(b64enc=False, **m['message'])), msgs))
 
     def ack_sub(self, sub, ids, **reqkwargs):
         """Messages retrieved from a pull subscription can be acknowledged by sending message with an array of ackIDs.
