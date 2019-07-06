@@ -1,3 +1,4 @@
+import sys
 import unittest
 from httmock import urlmatch, HTTMock, response
 from pymod import ArgoMessagingService
@@ -76,16 +77,20 @@ class TestErrorClient(unittest.TestCase):
             try:
                 resp = self.ams.get_topic("topic1")
             except AmsServiceException as e:
-                self.assertEqual(e.msg, "While trying the [topic_get]: Cannot get topic")
+                if sys.version_info < (3, ):
+                    response_string = "Cannot get topic"
+                else:
+                    response_string = "b'Cannot get topic'"
+                self.assertEqual(e.msg, "While trying the [topic_get]: " + response_string)
 
         @urlmatch(netloc="localhost", path="/v1/projects/TEST/topics/topic1",
                   method='GET')
         def error_json(url, request):
             assert url.path == "/v1/projects/TEST/topics/topic1"
-            return response(500, json.loads('{"error": {"code": 500,\
+            return response(500, '{"error": {"code": 500,\
                                               "message": "Cannot get topic",\
                                               "status": "INTERNAL_SERVER_ERROR"\
-                                              }}'), None, None, 5, request)
+                                            }}', None, None, 5, request)
 
         with HTTMock(error_json):
             try:
