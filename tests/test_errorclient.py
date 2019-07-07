@@ -100,5 +100,24 @@ class TestErrorClient(unittest.TestCase):
                 self.assertEqual(e.msg, "While trying the [topic_get]: Cannot get topic")
                 self.assertEqual(e.status, "INTERNAL_SERVER_ERROR")
 
+    def testUnauthorized(self):
+        @urlmatch(netloc="localhost", path="/v1/projects/TEST/topics/topic1",
+                  method='GET')
+        def error_unauth(url, request):
+            assert url.path == "/v1/projects/TEST/topics/topic1"
+            return response(401, '{"error": {"code": 401, \
+                                             "message": "Unauthorized", \
+                                             "status": "UNAUTHORIZED"}}')
+        with HTTMock(error_unauth):
+            try:
+                resp = self.ams.get_topic("topic1")
+            except AmsServiceException as e:
+                self.assertEqual(e.code, 401)
+                self.assertEqual(e.msg, 'While trying the [topic_get]: Unauthorized')
+                self.assertEqual(e.status, 'UNAUTHORIZED')
+
+
+
+
 if __name__ == '__main__':
     unittest.main()
