@@ -164,13 +164,13 @@ class TestSubscription(unittest.TestCase):
             # should return the min offset
             resp_min = sub.offsets("min")
 
-            self.assertEquals(resp_all, resp_dict_all)
-            self.assertEquals(resp_max, 79)
-            self.assertEquals(resp_current, 78)
+            self.assertEqual(resp_all, resp_dict_all)
+            self.assertEqual(resp_max, 79)
+            self.assertEqual(resp_current, 78)
 
             sub2 = topic.subscription('subscription2')
             move_offset_resp = sub2.offsets(move_to=79)
-            self.assertEquals(move_offset_resp, {"max": 79, "current": 79,
+            self.assertEqual(move_offset_resp, {"max": 79, "current": 79,
                                                  "min": 0})
             self.assertRaises(AmsException, sub2.offsets, offset='bogus', move_to=79)
 

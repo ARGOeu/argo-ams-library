@@ -76,7 +76,7 @@ class TestClient(unittest.TestCase):
         # Execute ams client with mocked response
         with HTTMock(self.submocks.modifyoffset_sub_mock):
             resp = self.ams.modifyoffset_sub("subscription1", 79)
-            self.assertEquals(resp, {})
+            self.assertEqual(resp, {})
 
     # Test the Get offsets client request
     def testGetOffsets(self):
@@ -96,10 +96,10 @@ class TestClient(unittest.TestCase):
             # should return the min offset
             resp_min = self.ams.getoffsets_sub("subscription1", "min")
 
-            self.assertEquals(resp_all, resp_dict_all)
-            self.assertEquals(resp_max, 79)
-            self.assertEquals(resp_current, 78)
-            self.assertEquals(resp_min, 0)
+            self.assertEqual(resp_all, resp_dict_all)
+            self.assertEqual(resp_max, 79)
+            self.assertEqual(resp_current, 78)
+            self.assertEqual(resp_min, 0)
 
     # Test List topics client request
     def testListTopics(self):
