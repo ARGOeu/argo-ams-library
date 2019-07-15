@@ -3,6 +3,7 @@
 %global sum A simple python library for interacting with the ARGO Messaging Service 
 %global desc A simple python library for interacting with the ARGO Messaging Service 
 
+
 Name:           argo-ams-library
 Summary:        %{sum} 
 Version:        0.4.2
@@ -25,11 +26,15 @@ BuildRequires:  python-devel python36-devel
 Requires:       python-requests python36-requests
 %endif
 
+
 %description
 %{desc}
 
+
 %if 0%{?el6}
 %package -n python2-%{name}
+Obsoletes: argo-ams-library
+Provides: argo-ams-library
 Summary: %{sum} 
 %description -n python2-%{name}
 %{desc}
@@ -44,6 +49,8 @@ Summary: %{sum}
 
 %if 0%{?el7}
 %package -n python-%{name}
+Obsoletes: argo-ams-library
+Provides: argo-ams-library
 Summary: %{sum} 
 %description -n python-%{name}
 %{desc}
@@ -56,35 +63,40 @@ Summary: %{sum}
 %{?python_provide:%python_provide python3-%{name}}
 %endif
 
+
 %prep
 %setup -q
+
 
 %build
 %{py_build}
 %{py3_build}
+
 
 %install
 rm -rf %{buildroot}
 %{py_install "--record=INSTALLED_FILES" } 
 %{py3_install "--record=INSTALLED_FILES" } 
 
+
 %if 0%{?el7}
-%files -n python36-argo-ams-library -f INSTALLED_FILES
+%files -n python36-%{name} -f INSTALLED_FILES
 %else
-%files -n python34-argo-ams-library -f INSTALLED_FILES
+%files -n python34-%{name} -f INSTALLED_FILES
 %endif
 %doc examples/ README.md
 %defattr(-,root,root,-)
 %{python3_sitelib}/*
 
 %if 0%{?el7}
-%files -n python-argo-ams-library -f INSTALLED_FILES
+%files -n python-%{name} -f INSTALLED_FILES
 %else
-%files -n python2-argo-ams-library -f INSTALLED_FILES
+%files -n python2-%{name} -f INSTALLED_FILES
 %endif
 %doc examples/ README.md
 %defattr(-,root,root,-)
 %{python_sitelib}/*
+
 
 %changelog
 * Thu Jul 26 2018 agelostsal <agelos.tsal@gmail.com> - 0.4.2-1%{?dist}
