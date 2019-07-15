@@ -1,7 +1,10 @@
 %global underscore() %(echo %1 | sed 's/-/_/g')
 
+%global sum A simple python library for interacting with the ARGO Messaging Service 
+%global desc A simple python library for interacting with the ARGO Messaging Service 
+
 Name:           argo-ams-library
-Summary:        A simple python library for interacting with the ARGO Messaging Service
+Summary:        %{sum} 
 Version:        0.4.2
 Release:        1%{?dist}
 
@@ -10,7 +13,6 @@ License:        ASL 2.0
 URL:            https://github.com/ARGOeu/argo-ams-library
 Source0:        %{name}-%{version}.tar.gz 
 
-BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 BuildArch:      noarch 
 
 %if 0%{?el6}
@@ -24,37 +26,33 @@ Requires:       python-requests python36-requests
 %endif
 
 %description
-A simple python library for interacting with the ARGO Messaging Service
+%{desc}
 
 %if 0%{?el6}
 %package -n python2-%{name}
-Summary:        A simple python library for interacting with the ARGO Messaging Service
+Summary: %{sum} 
 %description -n python2-%{name}
-A simple python library for interacting with the ARGO Messaging Service
-
+%{desc}
 %{?python_provide:%python_provide python2-%{name}}
 
 %package -n python34-%{name}
-Summary:        A simple python library for interacting with the ARGO Messaging Service
+Summary: %{sum} 
 %description -n python34-%{name}
-A simple python library for interacting with the ARGO Messaging Service
-
+%{desc}
 %{?python_provide:%python_provide python3-%{name}}
 %endif
 
 %if 0%{?el7}
 %package -n python-%{name}
-Summary:        A simple python library for interacting with the ARGO Messaging Service
+Summary: %{sum} 
 %description -n python-%{name}
-A simple python library for interacting with the ARGO Messaging Service
-
+%{desc}
 %{?python_provide:%python_provide python-%{name}}
 
 %package -n python36-%{name}
-Summary:        A simple python library for interacting with the ARGO Messaging Service
+Summary: %{sum} 
 %description -n python36-%{name}
-A simple python library for interacting with the ARGO Messaging Service
-
+%{desc}
 %{?python_provide:%python_provide python3-%{name}}
 %endif
 
@@ -66,35 +64,27 @@ A simple python library for interacting with the ARGO Messaging Service
 %{py3_build}
 
 %install
-rm -rf $RPM_BUILD_ROOT
+rm -rf %{buildroot}
 %{py_install "--record=INSTALLED_FILES" } 
 %{py3_install "--record=INSTALLED_FILES" } 
 
 %if 0%{?el7}
 %files -n python36-argo-ams-library -f INSTALLED_FILES
-%doc examples/ README.md
-%defattr(-,root,root,-)
-%dir %{python3_sitelib}/%{underscore %{name}}
-%{python3_sitelib}/%{underscore %{name}}/*.py[co]
-
-%files -n python-argo-ams-library -f INSTALLED_FILES
-%doc examples/ README.md
-%defattr(-,root,root,-)
-%dir %{python_sitelib}/%{underscore %{name}}
-%{python_sitelib}/%{underscore %{name}}/*.py[co]
-%endif
-
-%if 0%{?el6}
+%else
 %files -n python34-argo-ams-library -f INSTALLED_FILES
+%endif
 %doc examples/ README.md
 %defattr(-,root,root,-)
 %{python3_sitelib}/*
 
+%if 0%{?el7}
+%files -n python-argo-ams-library -f INSTALLED_FILES
+%else
 %files -n python2-argo-ams-library -f INSTALLED_FILES
+%endif
 %doc examples/ README.md
 %defattr(-,root,root,-)
 %{python_sitelib}/*
-%endif
 
 %changelog
 * Tue Jun 19 2018 Daniel Vrcic <dvrcic@srce.hr>, Konstantinos Kagkelidis <kaggis@gmail.com>, agelostsal <agelos.tsal@gmail.com> - 0.4.1-1%{?dist}
