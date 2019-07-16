@@ -17,12 +17,12 @@ Source0:        %{name}-%{version}.tar.gz
 BuildArch:      noarch 
 
 %if 0%{?el6}
-BuildRequires:  python2-devel python34-devel
+BuildRequires:  python2-devel python2-setuptools python34-devel python34-setuptools
 Requires:       python2-requests python34-requests
 %endif
 
 %if 0%{?el7}
-BuildRequires:  python-devel python36-devel
+BuildRequires:  python-devel python-setuptools python36-devel python36-setuptools
 Requires:       python-requests python36-requests
 %endif
 
@@ -39,15 +39,7 @@ Summary: %{sum}
 %description -n python2-%{name}
 %{desc}
 %{?python_provide:%python_provide python2-%{name}}
-
-%package -n python34-%{name}
-Summary: %{sum} 
-%description -n python34-%{name}
-%{desc}
-%{?python_provide:%python_provide python3-%{name}}
-%endif
-
-%if 0%{?el7}
+%else
 %package -n python-%{name}
 Obsoletes: argo-ams-library
 Provides: argo-ams-library
@@ -55,13 +47,13 @@ Summary: %{sum}
 %description -n python-%{name}
 %{desc}
 %{?python_provide:%python_provide python-%{name}}
+%endif
 
-%package -n python36-%{name}
+%package -n python%{python3_pkgversion}-%{name}
 Summary: %{sum} 
-%description -n python36-%{name}
+%description -n python%{python3_pkgversion}-%{name}
 %{desc}
 %{?python_provide:%python_provide python3-%{name}}
-%endif
 
 
 %prep
@@ -79,15 +71,10 @@ rm -rf %{buildroot}
 %{py3_install "--record=INSTALLED_FILES" } 
 
 
-%if 0%{?el7}
-%files -n python36-%{name} -f INSTALLED_FILES
-%else
-%files -n python34-%{name} -f INSTALLED_FILES
-%endif
+%files -n python%{python3_pkgversion}-%{name} -f INSTALLED_FILES
 %doc examples/ README.md
 %defattr(-,root,root,-)
 %{python3_sitelib}/*
-
 %if 0%{?el7}
 %files -n python-%{name} -f INSTALLED_FILES
 %else
