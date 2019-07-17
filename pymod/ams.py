@@ -1,5 +1,6 @@
-import requests
 import json
+import requests
+import sys
 from .amsexceptions import AmsServiceException, AmsConnectionException, AmsMessageException, AmsException
 from .amsmsg import AmsMessage
 from .amstopic import AmsTopic
@@ -60,27 +61,33 @@ class AmsHttpRequests(object):
             reqmethod = getattr(requests, m)
             r = reqmethod(url, data=body, **reqkwargs)
 
-            if r.status_code == 200:
-                decoded = json.loads(r.content) if r.content else {}
+            content = r.content
+            status_code = r.status_code
+
+            if content and sys.version_info < (3, 6, ):
+               content = content.decode()
+
+            if status_code == 200:
+                decoded = json.loads(content) if content else {}
 
             # handle authnz related errors for all calls
-            elif r.status_code == 401 or r.status_code == 403:
-                decoded = json.loads(r.content) if r.content else {}
+            elif status_code == 401 or status_code == 403:
+                decoded = json.loads(content) if content else {}
                 raise AmsServiceException(json=decoded, request=route_name)
 
             # JSON error returned by AMS
-            elif r.status_code != 200 and r.status_code in self.errors_route[route_name][1]:
-                decoded = json.loads(r.content) if r.content else {}
+            elif status_code != 200 and status_code in self.errors_route[route_name][1]:
+                decoded = json.loads(content) if content else {}
                 raise AmsServiceException(json=decoded, request=route_name)
 
             # handle other erroneous behaviour and construct error message from
             # JSON or plaintext content in response
-            elif r.status_code != 200 and r.status_code not in self.errors_route[route_name][1]:
+            elif status_code != 200 and status_code not in self.errors_route[route_name][1]:
                 try:
-                    errormsg = json.loads(r.content)
+                    errormsg = json.loads(content)
                 except ValueError:
-                    errormsg = {'error': {'code': r.status_code,
-                                          'message': r.content}}
+                    errormsg = {'error': {'code': status_code,
+                                          'message': content}}
                 raise AmsServiceException(json=errormsg, request=route_name)
 
         except (requests.exceptions.ConnectionError, requests.exceptions.Timeout) as e:
