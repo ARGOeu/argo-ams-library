@@ -6,6 +6,11 @@ from .amsmsg import AmsMessage
 from .amstopic import AmsTopic
 from .amssubscription import AmsSubscription
 
+try:
+    from collections import OrderedDict
+except:
+    from ordereddict import OrderedDict
+
 
 class AmsHttpRequests(object):
     """
@@ -195,8 +200,8 @@ class ArgoMessagingService(AmsHttpRequests):
         self.pullopts = {"maxMessages": "1",
                          "returnImmediately": "false"}
         # Containers for topic and subscription objects
-        self.topics = dict()
-        self.subs = dict()
+        self.topics = OrderedDict()
+        self.subs = OrderedDict()
 
     def assign_token(self, token, cert, key):
         """
@@ -393,7 +398,6 @@ class ArgoMessagingService(AmsHttpRequests):
         except KeyError as e:
             errormsg = {'error': {'message': str(e) + " is not valid offset position"}}
             raise AmsServiceException(json=errormsg, request="sub_offsets")
-
 
     def modifyoffset_sub(self, sub, move_to, **reqkwargs):
         """

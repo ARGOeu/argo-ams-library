@@ -77,7 +77,7 @@ class TestErrorClient(unittest.TestCase):
             try:
                 resp = self.ams.get_topic("topic1")
             except AmsServiceException as e:
-                if sys.version_info < (3, ):
+                if sys.version_info < (3, 6 ):
                     response_string = "Cannot get topic"
                 else:
                     response_string = "b'Cannot get topic'"
