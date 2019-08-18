@@ -1,6 +1,10 @@
 import json
+import logging
+import logging.handlers
 import requests
 import sys
+import time
+
 from .amsexceptions import AmsServiceException, AmsConnectionException, AmsMessageException, AmsException
 from .amsmsg import AmsMessage
 from .amstopic import AmsTopic
@@ -11,6 +15,7 @@ try:
 except:
     from ordereddict import OrderedDict
 
+log = logging.getLogger(__name__)
 
 class AmsHttpRequests(object):
     """
@@ -52,6 +57,28 @@ class AmsHttpRequests(object):
                              "sub_pushconfig": ["post", set([400, 401, 403, 404])],
                              "auth_x509": ["post", set([400, 401, 403, 404])],
                              "sub_pull": ["post", set([400, 401, 403, 404])]}
+
+    def _retry_make_request(self, url, body=None, route_name=None, retry=3, retrysleep=60, **reqkwargs):
+        i = 1
+        timeout = reqkwargs.get('timeout', 0)
+
+        try:
+            while i <= retry + 1:
+                try:
+                    return self._make_request(url, body, route_name, **reqkwargs)
+                except AmsConnectionException as e:
+                    if i == retry + 1:
+                        raise e
+                    else:
+                        time.sleep(retrysleep)
+                        if timeout:
+                            log.warning('Retry #{0} after {1} seconds, connection timeout set to {2} seconds'.format(i, retrysleep, timeout))
+                        else:
+                            log.warning('Retry #{0} after {1} seconds'.format(i, retrysleep))
+                finally:
+                    i += 1
+        except AmsConnectionException as e:
+            raise e
 
     def _make_request(self, url, body=None, route_name=None, **reqkwargs):
         """Common method for PUT, GET, POST HTTP requests with appropriate
@@ -113,7 +140,7 @@ class AmsHttpRequests(object):
         # try to send a GET request to the messaging service.
         # if a connection problem araises a Connection error exception is raised.
         try:
-            return self._make_request(url, route_name=route_name, **reqkwargs)
+            return self._retry_make_request(url, route_name=route_name, **reqkwargs)
         except AmsException as e:
             raise e
 
@@ -130,7 +157,7 @@ class AmsHttpRequests(object):
         # try to send a PUT request to the messaging service.
         # if a connection problem araises a Connection error exception is raised.
         try:
-            return self._make_request(url, body=body, route_name=route_name, **reqkwargs)
+            return self._retry_make_request(url, body=body, route_name=route_name, **reqkwargs)
         except AmsException as e:
             raise e
 
@@ -147,7 +174,7 @@ class AmsHttpRequests(object):
         # try to send a Post request to the messaging service.
         # if a connection problem araises a Connection error exception is raised.
         try:
-            return self._make_request(url, body=body, route_name=route_name, **reqkwargs)
+            return self._retry_make_request(url, body=body, route_name=route_name, **reqkwargs)
         except AmsException as e:
             raise e
 
