@@ -1,12 +1,15 @@
+import json
+import mock
 import sys
 import unittest
+import requests
+
 from httmock import urlmatch, HTTMock, response
 from pymod import ArgoMessagingService
 from pymod import AmsMessage
 from pymod import AmsTopic
 from pymod import AmsSubscription
-from pymod import AmsServiceException, AmsException
-import json
+from pymod import AmsServiceException, AmsConnectionException, AmsException
 
 from .amsmocks import ErrorMocks
 from .amsmocks import TopicMocks
@@ -116,7 +119,23 @@ class TestErrorClient(unittest.TestCase):
                 self.assertEqual(e.msg, 'While trying the [topic_get]: Unauthorized')
                 self.assertEqual(e.status, 'UNAUTHORIZED')
 
+    @mock.patch('pymod.ams.requests.get')
+    def testRetryConnection(self, mock_requests_get):
+        mock_response = mock.create_autospec(requests.Response)
+        mock_requests_get.side_effect = [requests.exceptions.ConnectionError,
+                                         requests.exceptions.ConnectionError,
+                                         requests.exceptions.ConnectionError,
+                                         requests.exceptions.ConnectionError]
+        retry = 3
+        retrysleep = 0.1
+        self.ams._retry_make_request.im_func.func_defaults = (None, None, retry, retrysleep)
+        self.assertRaises(AmsConnectionException, self.ams.list_topics)
+        self.assertEqual(mock_requests_get.call_count, retry + 1)
 
+        # mock_response2 = mock.create_autospec(requests.Response)
+        # mock_response2.status_code = 408
+        # mock_requests_get.return_value = mock_response2
+        # r = self.ams.list_topics()
 
 
 if __name__ == '__main__':
