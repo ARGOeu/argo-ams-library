@@ -120,8 +120,7 @@ class TestErrorClient(unittest.TestCase):
                 self.assertEqual(e.status, 'UNAUTHORIZED')
 
     @mock.patch('pymod.ams.requests.get')
-    def testRetryConnection(self, mock_requests_get):
-        mock_response = mock.create_autospec(requests.Response)
+    def testRetryConnectionProblems(self, mock_requests_get):
         mock_requests_get.side_effect = [requests.exceptions.ConnectionError,
                                          requests.exceptions.ConnectionError,
                                          requests.exceptions.ConnectionError,
@@ -132,10 +131,15 @@ class TestErrorClient(unittest.TestCase):
         self.assertRaises(AmsConnectionException, self.ams.list_topics)
         self.assertEqual(mock_requests_get.call_count, retry + 1)
 
-        # mock_response2 = mock.create_autospec(requests.Response)
-        # mock_response2.status_code = 408
-        # mock_requests_get.return_value = mock_response2
-        # r = self.ams.list_topics()
+    @mock.patch('pymod.ams.requests.get')
+    def testRetryConnectionAmsTimeout(self, mock_requests_get):
+        mock_response = mock.create_autospec(requests.Response)
+        mock_response.status_code = 408
+        mock_response.content = '{"error": {"code": 408, \
+                                            "message": "Ams Timeout", \
+                                            "status": "TIMEOUT"}}'
+        mock_requests_get.return_value = mock_response
+        r = self.ams.list_topics()
 
 
 if __name__ == '__main__':
