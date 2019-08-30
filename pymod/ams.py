@@ -1,5 +1,6 @@
 import json
 import requests
+import socket
 import sys
 import datetime
 from .amsexceptions import AmsServiceException, AmsConnectionException, AmsMessageException, AmsException
@@ -101,7 +102,7 @@ class AmsHttpRequests(object):
                                           'message': content}}
                 raise AmsServiceException(json=errormsg, request=route_name)
 
-        except (requests.exceptions.ConnectionError, requests.exceptions.Timeout) as e:
+        except (requests.exceptions.ConnectionError, requests.exceptions.Timeout, socket.error) as e:
             raise AmsConnectionException(e, route_name)
 
         else:
