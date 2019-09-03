@@ -87,6 +87,9 @@ class AmsHttpRequests(object):
                 decoded = json.loads(content) if content else {}
                 raise AmsServiceException(json=decoded, request=route_name)
 
+            elif status_code == 408:
+                raise requests.exceptions.Timeout
+
             # JSON error returned by AMS
             elif status_code != 200 and status_code in self.errors_route[route_name][1]:
                 decoded = json.loads(content) if content else {}
