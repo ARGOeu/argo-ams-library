@@ -1,4 +1,4 @@
-from amsexceptions import AmsException
+from .amsexceptions import AmsException
 
 class AmsTopic(object):
     """Abstraction of AMS Topic

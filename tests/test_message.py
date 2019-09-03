@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 import unittest
 
 from pymod import AmsMessage
@@ -14,6 +16,7 @@ class TestMessage(unittest.TestCase):
         self.message_send_no_payload = AmsMessage()
         self.message_send_onlyattr = AmsMessage(attributes={'foo': 'bar'})
         self.message_send_onlydata = AmsMessage(data='baz')
+        self.message_unicode = AmsMessage(data='ùňĭćőđĕ')
 
         self.message_recv = AmsMessage(b64enc=False, attributes={'foo': 'bar'},
                                        data='YmF6', messageId='1',
@@ -34,6 +37,8 @@ class TestMessage(unittest.TestCase):
                                                  'data': 'YmF6MQ=='})
         self.assertEqual(self.message_send_onlyattr.dict(), {'attributes': {'foo': 'bar'}})
         self.assertEqual(self.message_send_onlydata.dict(), {'data': 'YmF6'})
+        self.assertEqual(self.message_unicode.dict(), {'data': 'w7nFiMStxIfFkcSRxJU='})
+        self.assertEqual(self.message_unicode.get_data(), 'ùňĭćőđĕ')
 
         self.message_send.set_data('baz')
         self.assertEqual(self.message_send.get_data(), 'baz')

@@ -1,9 +1,15 @@
-import requests
 import json
-from amsexceptions import AmsServiceException, AmsConnectionException, AmsMessageException, AmsException
-from amsmsg import AmsMessage
-from amstopic import AmsTopic
-from amssubscription import AmsSubscription
+import requests
+import sys
+from .amsexceptions import AmsServiceException, AmsConnectionException, AmsMessageException, AmsException
+from .amsmsg import AmsMessage
+from .amstopic import AmsTopic
+from .amssubscription import AmsSubscription
+
+try:
+    from collections import OrderedDict
+except:
+    from ordereddict import OrderedDict
 
 
 class AmsHttpRequests(object):
@@ -60,22 +66,33 @@ class AmsHttpRequests(object):
             reqmethod = getattr(requests, m)
             r = reqmethod(url, data=body, **reqkwargs)
 
-            if r.status_code == 200:
-                decoded = json.loads(r.content) if r.content else {}
+            content = r.content
+            status_code = r.status_code
+
+            if content and sys.version_info < (3, 6, ):
+               content = content.decode()
+
+            if status_code == 200:
+                decoded = json.loads(content) if content else {}
+
+            # handle authnz related errors for all calls
+            elif status_code == 401 or status_code == 403:
+                decoded = json.loads(content) if content else {}
+                raise AmsServiceException(json=decoded, request=route_name)
 
             # JSON error returned by AMS
-            elif r.status_code != 200 and r.status_code in self.errors_route[route_name][1]:
-                decoded = json.loads(r.content) if r.content else {}
+            elif status_code != 200 and status_code in self.errors_route[route_name][1]:
+                decoded = json.loads(content) if content else {}
                 raise AmsServiceException(json=decoded, request=route_name)
 
             # handle other erroneous behaviour and construct error message from
             # JSON or plaintext content in response
-            elif r.status_code != 200 and r.status_code not in self.errors_route[route_name][1]:
+            elif status_code != 200 and status_code not in self.errors_route[route_name][1]:
                 try:
-                    errormsg = json.loads(r.content)
+                    errormsg = json.loads(content)
                 except ValueError:
-                    errormsg = {'error': {'code': r.status_code,
-                                          'message': r.content}}
+                    errormsg = {'error': {'code': status_code,
+                                          'message': content}}
                 raise AmsServiceException(json=errormsg, request=route_name)
 
         except (requests.exceptions.ConnectionError, requests.exceptions.Timeout) as e:
@@ -183,8 +200,8 @@ class ArgoMessagingService(AmsHttpRequests):
         self.pullopts = {"maxMessages": "1",
                          "returnImmediately": "false"}
         # Containers for topic and subscription objects
-        self.topics = dict()
-        self.subs = dict()
+        self.topics = OrderedDict()
+        self.subs = OrderedDict()
 
     def assign_token(self, token, cert, key):
         """
@@ -208,8 +225,12 @@ class ArgoMessagingService(AmsHttpRequests):
             # if the request send to authn didn't contain an x509 cert, that means that there was also no token provided
             # when initializing the ArgoMessagingService object, since we only try to authenticate through authn
             # when no token was provided
-            if e.message["error"] == 'While trying the [auth_x509]: No certificate provided.':
-                e.message["error"] += "No token provided"
+
+            if e.msg == 'While trying the [auth_x509]: No certificate provided.':
+                refined_msg = "No certificate provided. No token provided"
+                errormsg = {'error': {'code': e.code,
+                                      'message': refined_msg}}
+                raise AmsServiceException(json=errormsg, request="auth_x509")
             raise e
 
     def auth_via_cert(self, cert, key, **reqkwargs):
@@ -241,7 +262,7 @@ class ArgoMessagingService(AmsHttpRequests):
             r = method(url, "auth_x509", **reqkwargs)
             # if the `token` field was not found in the response, raise an error
             if "token" not in r:
-                errord = {"error": {"code": 500, "message": "Token was not found in the response.Response: " + str(r)}}
+                errord = {"error": {"code": 500, "message": "Token was not found in the response. Response: " + str(r)}}
                 raise AmsServiceException(json=errord, request="auth_x509")
             return r["token"]
         except (AmsServiceException, AmsConnectionException) as e:
@@ -378,7 +399,6 @@ class ArgoMessagingService(AmsHttpRequests):
             errormsg = {'error': {'message': str(e) + " is not valid offset position"}}
             raise AmsServiceException(json=errormsg, request="sub_offsets")
 
-
     def modifyoffset_sub(self, sub, move_to, **reqkwargs):
         """
           Modify the position of the current offset.
@@ -481,7 +501,12 @@ class ArgoMessagingService(AmsHttpRequests):
         """
         self.list_subs(**reqkwargs)
 
-        for s in self.subs.copy().itervalues():
+        try:
+            values = self.subs.copy().itervalues()
+        except AttributeError:
+            values = self.subs.copy().values()
+
+        for s in values:
             if topic and topic == s.topic.name:
                 yield s
             elif not topic:
@@ -492,7 +517,12 @@ class ArgoMessagingService(AmsHttpRequests):
 
         self.list_topics(**reqkwargs)
 
-        for t in self.topics.copy().itervalues():
+        try:
+            values = self.topics.copy().itervalues()
+        except AttributeError:
+            values = self.topics.copy().values()
+
+        for t in values:
             yield t
 
     def list_topics(self, **reqkwargs):
@@ -685,7 +715,7 @@ class ArgoMessagingService(AmsHttpRequests):
         self.set_pullopt('maxMessages', wasmax)
         self.set_pullopt('returnImmediately', wasretim)
 
-        return map(lambda m: (m['ackId'], AmsMessage(b64enc=False, **m['message'])), msgs)
+        return list(map(lambda m: (m['ackId'], AmsMessage(b64enc=False, **m['message'])), msgs))
 
     def ack_sub(self, sub, ids, **reqkwargs):
         """Messages retrieved from a pull subscription can be acknowledged by sending message with an array of ackIDs.
