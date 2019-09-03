@@ -139,7 +139,11 @@ class TestErrorClient(unittest.TestCase):
                                             "message": "Ams Timeout", \
                                             "status": "TIMEOUT"}}'
         mock_requests_get.return_value = mock_response
-        r = self.ams.list_topics()
+        retry = 3
+        retrysleep = 0.1
+        self.ams._retry_make_request.im_func.func_defaults = (None, None, retry, retrysleep)
+        self.assertRaises(AmsConnectionException, self.ams.list_topics)
+        self.assertEqual(mock_requests_get.call_count, retry + 1)
 
 
 if __name__ == '__main__':
