@@ -6,7 +6,9 @@ import socket
 import sys
 import time
 
-from .amsexceptions import AmsServiceException, AmsConnectionException, AmsMessageException, AmsException
+from .amsexceptions import (AmsServiceException, AmsConnectionException,
+                            AmsMessageException, AmsException,
+                            AmsTimeoutException)
 from .amsmsg import AmsMessage
 from .amstopic import AmsTopic
 from .amssubscription import AmsSubscription
@@ -63,23 +65,20 @@ class AmsHttpRequests(object):
         i = 1
         timeout = reqkwargs.get('timeout', 0)
 
-        try:
-            while i <= retry + 1:
-                try:
-                    return self._make_request(url, body, route_name, **reqkwargs)
-                except AmsConnectionException as e:
-                    if i == retry + 1:
-                        raise e
+        while i <= retry + 1:
+            try:
+                return self._make_request(url, body, route_name, **reqkwargs)
+            except (AmsConnectionException, AmsTimeoutException) as e:
+                if i == retry + 1:
+                    raise e
+                else:
+                    time.sleep(retrysleep)
+                    if timeout:
+                        log.warning('Retry #{0} after {1} seconds, connection timeout set to {2} seconds'.format(i, retrysleep, timeout))
                     else:
-                        time.sleep(retrysleep)
-                        if timeout:
-                            log.warning('Retry #{0} after {1} seconds, connection timeout set to {2} seconds'.format(i, retrysleep, timeout))
-                        else:
-                            log.warning('Retry #{0} after {1} seconds'.format(i, retrysleep))
-                finally:
-                    i += 1
-        except AmsConnectionException as e:
-            raise e
+                        log.warning('Retry #{0} after {1} seconds'.format(i, retrysleep))
+            finally:
+                i += 1
 
     def _make_request(self, url, body=None, route_name=None, **reqkwargs):
         """Common method for PUT, GET, POST HTTP requests with appropriate
@@ -109,7 +108,8 @@ class AmsHttpRequests(object):
                 raise AmsServiceException(json=decoded, request=route_name)
 
             elif status_code == 408:
-                raise requests.exceptions.Timeout
+                decoded = json.loads(content) if content else {}
+                raise AmsTimeoutException(json=decoded, request=route_name)
 
             # JSON error returned by AMS
             elif status_code != 200 and status_code in self.errors_route[route_name][1]:
@@ -126,7 +126,7 @@ class AmsHttpRequests(object):
                                           'message': content}}
                 raise AmsServiceException(json=errormsg, request=route_name)
 
-        except (requests.exceptions.ConnectionError, requests.exceptions.Timeout, socket.error) as e:
+        except (requests.exceptions.ConnectionError, socket.error) as e:
             raise AmsConnectionException(e, route_name)
 
         else:

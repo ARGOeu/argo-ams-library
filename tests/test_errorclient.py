@@ -9,7 +9,7 @@ from pymod import ArgoMessagingService
 from pymod import AmsMessage
 from pymod import AmsTopic
 from pymod import AmsSubscription
-from pymod import AmsServiceException, AmsConnectionException, AmsException
+from pymod import AmsServiceException, AmsConnectionException, AmsTimeoutException, AmsException
 
 from .amsmocks import ErrorMocks
 from .amsmocks import TopicMocks
@@ -148,7 +148,7 @@ class TestErrorClient(unittest.TestCase):
             self.ams._retry_make_request.im_func.__defaults__ = (None, None, retry, retrysleep)
         else:
             self.ams._retry_make_request.__func__.__defaults__ = (None, None, retry, retrysleep)
-        self.assertRaises(AmsConnectionException, self.ams.list_topics)
+        self.assertRaises(AmsTimeoutException, self.ams.list_topics)
         self.assertEqual(mock_requests_get.call_count, retry + 1)
 
 
