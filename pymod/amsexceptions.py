@@ -29,6 +29,15 @@ class AmsServiceException(AmsException):
         super(AmsServiceException, self).__init__(errord)
 
 
+class AmsTimeoutException(AmsServiceException):
+    """
+       Exception for timeout returned by the Argo Messaging Service if message
+       was not acknownledged in desired time frame (ackDeadlineSeconds)
+    """
+    def __init__(self, json, request):
+        super(AmsServiceException, self).__init__(json, request)
+
+
 class AmsConnectionException(AmsException):
     """
        Exception for connection related problems catched from requests library
