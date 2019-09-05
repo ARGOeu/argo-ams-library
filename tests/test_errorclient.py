@@ -127,7 +127,10 @@ class TestErrorClient(unittest.TestCase):
                                          requests.exceptions.ConnectionError]
         retry = 3
         retrysleep = 0.1
-        self.ams._retry_make_request.im_func.func_defaults = (None, None, retry, retrysleep)
+        if sys.version_info < (3, ):
+            self.ams._retry_make_request.im_func.func_defaults = (None, None, retry, retrysleep)
+        else:
+            self.ams._retry_make_request.__func__.__defaults__ = (None, None, retry, retrysleep)
         self.assertRaises(AmsConnectionException, self.ams.list_topics)
         self.assertEqual(mock_requests_get.call_count, retry + 1)
 
@@ -141,7 +144,10 @@ class TestErrorClient(unittest.TestCase):
         mock_requests_get.return_value = mock_response
         retry = 3
         retrysleep = 0.1
-        self.ams._retry_make_request.im_func.func_defaults = (None, None, retry, retrysleep)
+        if sys.version_info < (3, ):
+            self.ams._retry_make_request.im_func.__defaults__ = (None, None, retry, retrysleep)
+        else:
+            self.ams._retry_make_request.__func__.__defaults__ = (None, None, retry, retrysleep)
         self.assertRaises(AmsConnectionException, self.ams.list_topics)
         self.assertEqual(mock_requests_get.call_count, retry + 1)
 
