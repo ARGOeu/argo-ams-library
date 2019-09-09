@@ -1,6 +1,7 @@
 import json
 import requests
 import sys
+import datetime
 from .amsexceptions import AmsServiceException, AmsConnectionException, AmsMessageException, AmsException
 from .amsmsg import AmsMessage
 from .amstopic import AmsTopic
@@ -38,7 +39,10 @@ class AmsHttpRequests(object):
                        "sub_modifyacl": ["post", "https://{0}/v1/projects/{2}/subscriptions/{3}:modifyAcl?key={1}"],
                        "sub_offsets": ["get", "https://{0}/v1/projects/{2}/subscriptions/{3}:offsets?key={1}"],
                        "sub_mod_offset": ["post", "https://{0}/v1/projects/{2}/subscriptions/{3}:modifyOffset?key={1}"],
-                       "auth_x509": ["get", "https://{0}:{1}/v1/service-types/ams/hosts/{0}:authx509"]}
+                       "auth_x509": ["get", "https://{0}:{1}/v1/service-types/ams/hosts/{0}:authx509"],
+                       "sub_timeToOffset": ["get", "https://{0}/v1/projects/{2}/subscriptions/{3}:timeToOffset?key={1}&time={4}"]
+                       }
+
         # HTTP error status codes returned by AMS according to:
         # http://argoeu.github.io/messaging/v1/api_errors/
         self.errors_route = {"topic_create": ["put", set([409, 401, 403])],
@@ -51,7 +55,9 @@ class AmsHttpRequests(object):
                              "topic_publish": ["post", set([413, 401, 403])],
                              "sub_pushconfig": ["post", set([400, 401, 403, 404])],
                              "auth_x509": ["post", set([400, 401, 403, 404])],
-                             "sub_pull": ["post", set([400, 401, 403, 404])]}
+                             "sub_pull": ["post", set([400, 401, 403, 404])],
+                             "sub_timeToOffset": ["get", set([400, 401, 403, 404, 409])]
+                             }
 
     def _make_request(self, url, body=None, route_name=None, **reqkwargs):
         """Common method for PUT, GET, POST HTTP requests with appropriate
@@ -398,6 +404,38 @@ class ArgoMessagingService(AmsHttpRequests):
         except KeyError as e:
             errormsg = {'error': {'message': str(e) + " is not valid offset position"}}
             raise AmsServiceException(json=errormsg, request="sub_offsets")
+
+    def time_to_offset_sub(self, sub, timestamp, **reqkwargs):
+        """
+           Retrieve the closest(greater than) available offset to the given timestamp.
+
+           Args:
+               sub (str): The subscription name.
+               timestamp(datetime.datetime): The timestamp of the offset we are looking for.
+
+           Kwargs:
+               reqkwargs: keyword argument that will be passed to underlying
+                          python-requests library call.
+        """
+        route = self.routes["sub_timeToOffset"]
+        method = getattr(self, 'do_{0}'.format(route[0]))
+
+        time_in_string = ""
+
+        if isinstance(timestamp, datetime.datetime):
+            if timestamp.microsecond != 0:
+                time_in_string = timestamp.isoformat()[:-3] + "Z"
+            else:
+                time_in_string = timestamp.strftime("%Y-%m-%d %H:%M:%S.000Z")
+
+        # Compose url
+        url = route[1].format(self.endpoint, self.token, self.project, sub, time_in_string)
+
+        try:
+            r = method(url, "sub_timeToOffset", **reqkwargs)
+            return r["offset"]
+        except AmsServiceException as e:
+            raise e
 
     def modifyoffset_sub(self, sub, move_to, **reqkwargs):
         """

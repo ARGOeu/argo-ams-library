@@ -7,7 +7,7 @@ from pymod import ArgoMessagingService
 from pymod import AmsMessage
 from pymod import AmsTopic
 from pymod import AmsSubscription
-
+import datetime
 from .amsmocks import SubMocks
 from .amsmocks import TopicMocks
 
@@ -100,6 +100,15 @@ class TestClient(unittest.TestCase):
             self.assertEqual(resp_max, 79)
             self.assertEqual(resp_current, 78)
             self.assertEqual(resp_min, 0)
+
+    # Test the Get time to offset client request
+    def testTimeToOffset(self):
+        # Execute ams client with mocked response
+        with HTTMock(self.submocks.timetooffset_sub_mock):
+            # should return a dict with all the offsets
+            t1 = datetime.datetime(2019, 9, 2, 13, 39, 11, 500000)
+            r1 = self.ams.time_to_offset_sub("subscription1", t1)
+            self.assertEqual(44, r1)
 
     # Test List topics client request
     def testListTopics(self):
