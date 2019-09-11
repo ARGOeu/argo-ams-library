@@ -27,6 +27,9 @@ class SubMocks(object):
     modifyoffset_sub_urlmatch = dict(netloc="localhost",
                                      path="/v1/projects/TEST/subscriptions/subscription1:modifyOffset",
                                      method="POST")
+    get_sub_timeTooffet_urlmatch = dict(netloc="localhost",
+                                   path="/v1/projects/TEST/subscriptions/subscription1:timeToOffset",
+                                   method="GET")
 
     # Mock response for GET subscription request
     @urlmatch(**get_sub_urlmatch)
@@ -77,6 +80,14 @@ class SubMocks(object):
         assert url.path == "/v1/projects/TEST/subscriptions/subscription1:offsets"
         # Return the offsets for a subscription1
         return response(200, '{"max": 79, "min": 0, "current": 78}', None, None, 5, request)
+
+    # Mock response for GET subscriptions offsets based on time
+    @urlmatch(**get_sub_timeTooffet_urlmatch)
+    def timetooffset_sub_mock(self, url, request):
+        assert url.path == "/v1/projects/TEST/subscriptions/subscription1:timeToOffset"
+        assert url.query.split("&")[1] == "time=2019-09-02T13:39:11.500Z"
+        # Return the offset for a subscription1
+        return response(200, '{"offset": 44}', None, None, 5, request)
 
     # Mock response for GET subscriptions offsets
     @urlmatch(**get_sub_offets_urlmatch)
