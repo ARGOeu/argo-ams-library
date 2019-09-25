@@ -1,6 +1,7 @@
 import unittest
 import json
 
+import datetime
 from httmock import urlmatch, HTTMock, response
 from pymod import AmsMessage
 from pymod import AmsServiceException, AmsException
@@ -134,6 +135,7 @@ class TestSubscription(unittest.TestCase):
 
         # Execute ams client with mocked response
         with HTTMock(self.submocks.getoffsets_sub_mock,
+                     self.submocks.timetooffset_sub_mock,
                      self.submocks.get_sub_mock,
                      self.topicmocks.create_topic_mock,
                      self.topicmocks.get_topic_mock,
@@ -163,10 +165,14 @@ class TestSubscription(unittest.TestCase):
             resp_current = sub.offsets("current")
             # should return the min offset
             resp_min = sub.offsets("min")
+            # time offset
+            time_off = sub.time_to_offset(timestamp=datetime.datetime(2019, 9, 2, 13, 39, 11, 500000))
 
             self.assertEqual(resp_all, resp_dict_all)
             self.assertEqual(resp_max, 79)
             self.assertEqual(resp_current, 78)
+            self.assertEqual(resp_min, 0)
+            self.assertEqual(time_off, 44)
 
             sub2 = topic.subscription('subscription2')
             move_offset_resp = sub2.offsets(move_to=79)
