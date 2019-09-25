@@ -23,7 +23,6 @@ Requires:       python2-requests python34-requests
 
 %if 0%{?el7}
 BuildRequires:  python-devel python-setuptools python36-devel python36-setuptools
-Requires:       python-requests python36-requests
 %endif
 
 
@@ -44,6 +43,7 @@ Summary: %{sum}
 Obsoletes: argo-ams-library
 Provides: argo-ams-library
 Summary: %{sum} 
+Requires: python-requests
 %description -n python-%{name}
 %{desc}
 %{?python_provide:%python_provide python-%{name}}
@@ -51,6 +51,7 @@ Summary: %{sum}
 
 %package -n python%{python3_pkgversion}-%{name}
 Summary: %{sum} 
+Requires: python36-requests
 %description -n python%{python3_pkgversion}-%{name}
 %{desc}
 %{?python_provide:%python_provide python3-%{name}}
