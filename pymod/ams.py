@@ -61,24 +61,46 @@ class AmsHttpRequests(object):
                              "auth_x509": ["post", set([400, 401, 403, 404])],
                              "sub_pull": ["post", set([400, 401, 403, 404])]}
 
-    def _retry_make_request(self, url, body=None, route_name=None, retry=3, retrysleep=60, **reqkwargs):
+    def _gen_backoff_time(try_number, backoff_factor):
+        for i in range(1, try_number):
+            value = backoff_factor * (2 ** (i - 1))
+            yield value
+
+    def _retry_make_request(self, url, body=None, route_name=None, retry=3,
+                            retrysleep=60, retrybackoff=None, **reqkwargs):
         i = 1
         timeout = reqkwargs.get('timeout', 0)
 
-        while i <= retry + 1:
-            try:
-                return self._make_request(url, body, route_name, **reqkwargs)
-            except (AmsConnectionException, AmsTimeoutException) as e:
-                if i == retry + 1:
-                    raise e
-                else:
-                    time.sleep(retrysleep)
+        if retrybackoff:
+            for s in self._gen_backoff_time(retry, retrybackoff):
+                try:
+                    return self._make_request(url, body, route_name, **reqkwargs)
+                except (AmsConnectionException, AmsTimeoutException) as e:
+                    time.sleep(s)
                     if timeout:
-                        log.warning('Retry #{0} after {1} seconds, connection timeout set to {2} seconds'.format(i, retrysleep, timeout))
+                        log.warning('Retry #{0} after {1} seconds, connection timeout set to {2} seconds'.format(i, s, timeout))
                     else:
                         log.warning('Retry #{0} after {1} seconds'.format(i, retrysleep))
-            finally:
-                i += 1
+                finally:
+                    i += 1
+            else:
+                raise e
+
+        else:
+            while i <= retry + 1:
+                try:
+                    return self._make_request(url, body, route_name, **reqkwargs)
+                except (AmsConnectionException, AmsTimeoutException) as e:
+                    if i == retry + 1:
+                        raise e
+                    else:
+                        time.sleep(retrysleep)
+                        if timeout:
+                            log.warning('Retry #{0} after {1} seconds, connection timeout set to {2} seconds'.format(i, retrysleep, timeout))
+                        else:
+                            log.warning('Retry #{0} after {1} seconds'.format(i, retrysleep))
+                finally:
+                    i += 1
 
     def _make_request(self, url, body=None, route_name=None, **reqkwargs):
         """Common method for PUT, GET, POST HTTP requests with appropriate
