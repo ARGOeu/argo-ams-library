@@ -84,7 +84,7 @@ class AmsHttpRequests(object):
                 finally:
                     i += 1
             else:
-                raise AmsConnectionException('Timeout', route_name)
+                raise AmsConnectionException('Backoff retries exhausted', route_name)
 
         else:
             while i <= retry + 1:
@@ -118,8 +118,10 @@ class AmsHttpRequests(object):
             content = r.content
             status_code = r.status_code
 
-            if content and sys.version_info < (3, 6, ):
-               content = content.decode()
+            if (content
+                and sys.version_info < (3, 6, )
+                and isinstance(content, bytes)):
+                content = content.decode()
 
             if status_code == 200:
                 decoded = json.loads(content) if content else {}
