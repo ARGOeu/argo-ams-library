@@ -68,7 +68,7 @@ class AmsHttpRequests(object):
                              "sub_timeToOffset": ["get", set([400, 401, 403, 404, 409])]
                              }
 
-    def _gen_backoff_time(try_number, backoff_factor):
+    def _gen_backoff_time(self, try_number, backoff_factor):
         for i in range(1, try_number):
             value = backoff_factor * (2 ** (i - 1))
             yield value
@@ -79,15 +79,15 @@ class AmsHttpRequests(object):
         timeout = reqkwargs.get('timeout', 0)
 
         if retrybackoff:
-            for s in self._gen_backoff_time(retry, retrybackoff):
+            for sleep_secs in self._gen_backoff_time(retry + 1, retrybackoff):
                 try:
                     return self._make_request(url, body, route_name, **reqkwargs)
                 except (AmsConnectionException, AmsTimeoutException) as e:
-                    time.sleep(s)
+                    time.sleep(sleep_secs)
                     if timeout:
-                        log.warning('Retry #{0} after {1} seconds, connection timeout set to {2} seconds'.format(i, s, timeout))
+                        log.warning('Backoff retry #{0} after {1} seconds, connection timeout set to {2} seconds'.format(i, sleep_secs, timeout))
                     else:
-                        log.warning('Retry #{0} after {1} seconds'.format(i, retrysleep))
+                        log.warning('Backoff retry #{0} after {1} seconds'.format(i, sleep_secs))
                 finally:
                     i += 1
             else:
