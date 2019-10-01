@@ -128,9 +128,25 @@ class TestErrorClient(unittest.TestCase):
         retry = 3
         retrysleep = 0.1
         if sys.version_info < (3, ):
-            self.ams._retry_make_request.im_func.func_defaults = (None, None, retry, retrysleep)
+            self.ams._retry_make_request.im_func.func_defaults = (None, None, retry, retrysleep, None)
         else:
-            self.ams._retry_make_request.__func__.__defaults__ = (None, None, retry, retrysleep)
+            self.ams._retry_make_request.__func__.__defaults__ = (None, None, retry, retrysleep, None)
+        self.assertRaises(AmsConnectionException, self.ams.list_topics)
+        self.assertEqual(mock_requests_get.call_count, retry + 1)
+
+    @mock.patch('pymod.ams.requests.get')
+    def testBackoffRetryConnectionProblems(self, mock_requests_get):
+        mock_requests_get.side_effect = [requests.exceptions.ConnectionError,
+                                         requests.exceptions.ConnectionError,
+                                         requests.exceptions.ConnectionError,
+                                         requests.exceptions.ConnectionError]
+        retry = 3
+        retrysleep = 0.1
+        retrybackoff = 0.1
+        if sys.version_info < (3, ):
+            self.ams._retry_make_request.im_func.func_defaults = (None, None, retry, retrysleep, retrybackoff)
+        else:
+            self.ams._retry_make_request.__func__.__defaults__ = (None, None, retry, retrysleep, retrybackoff)
         self.assertRaises(AmsConnectionException, self.ams.list_topics)
         self.assertEqual(mock_requests_get.call_count, retry + 1)
 
@@ -145,9 +161,9 @@ class TestErrorClient(unittest.TestCase):
         retry = 3
         retrysleep = 0.1
         if sys.version_info < (3, ):
-            self.ams._retry_make_request.im_func.__defaults__ = (None, None, retry, retrysleep)
+            self.ams._retry_make_request.im_func.__defaults__ = (None, None, retry, retrysleep, None)
         else:
-            self.ams._retry_make_request.__func__.__defaults__ = (None, None, retry, retrysleep)
+            self.ams._retry_make_request.__func__.__defaults__ = (None, None, retry, retrysleep, None)
         self.assertRaises(AmsTimeoutException, self.ams.list_topics)
         self.assertEqual(mock_requests_get.call_count, retry + 1)
 

@@ -69,7 +69,7 @@ class AmsHttpRequests(object):
                              }
 
     def _gen_backoff_time(self, try_number, backoff_factor):
-        for i in range(1, try_number):
+        for i in range(0, try_number):
             value = backoff_factor * (2 ** (i - 1))
             yield value
 
@@ -91,7 +91,7 @@ class AmsHttpRequests(object):
                 finally:
                     i += 1
             else:
-                raise e
+                raise AmsConnectionException('Timeout', route_name)
 
         else:
             while i <= retry + 1:
