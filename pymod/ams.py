@@ -109,6 +109,47 @@ class AmsHttpRequests(object):
                 finally:
                     i += 1
 
+    def _gen_backoff_time(self, try_number, backoff_factor):
+        for i in range(0, try_number):
+            value = backoff_factor * (2 ** (i - 1))
+            yield value
+
+    def _retry_make_request(self, url, body=None, route_name=None, retry=3,
+                            retrysleep=60, retrybackoff=None, **reqkwargs):
+        i = 1
+        timeout = reqkwargs.get('timeout', 0)
+
+        if retrybackoff:
+            for sleep_secs in self._gen_backoff_time(retry + 1, retrybackoff):
+                try:
+                    return self._make_request(url, body, route_name, **reqkwargs)
+                except (AmsConnectionException, AmsTimeoutException) as e:
+                    time.sleep(sleep_secs)
+                    if timeout:
+                        log.warning('Backoff retry #{0} after {1} seconds, connection timeout set to {2} seconds'.format(i, sleep_secs, timeout))
+                    else:
+                        log.warning('Backoff retry #{0} after {1} seconds'.format(i, sleep_secs))
+                finally:
+                    i += 1
+            else:
+                raise AmsConnectionException('Backoff retries exhausted', route_name)
+
+        else:
+            while i <= retry + 1:
+                try:
+                    return self._make_request(url, body, route_name, **reqkwargs)
+                except (AmsConnectionException, AmsTimeoutException) as e:
+                    if i == retry + 1:
+                        raise e
+                    else:
+                        time.sleep(retrysleep)
+                        if timeout:
+                            log.warning('Retry #{0} after {1} seconds, connection timeout set to {2} seconds'.format(i, retrysleep, timeout))
+                        else:
+                            log.warning('Retry #{0} after {1} seconds'.format(i, retrysleep))
+                finally:
+                    i += 1
+
     def _make_request(self, url, body=None, route_name=None, **reqkwargs):
         """Common method for PUT, GET, POST HTTP requests with appropriate
         service error handling. For known error HTTP statuses, returned JSON
