@@ -9,7 +9,7 @@ import time
 
 from .amsexceptions import (AmsServiceException, AmsConnectionException,
                             AmsMessageException, AmsException,
-                            AmsTimeoutException)
+                            AmsTimeoutException, AmsBalancerException)
 from .amsmsg import AmsMessage
 from .amstopic import AmsTopic
 from .amssubscription import AmsSubscription
@@ -147,15 +147,10 @@ class AmsHttpRequests(object):
                 decoded = json.loads(content) if content else {}
                 raise AmsServiceException(json=decoded, request=route_name)
 
-            # handle other erroneous behaviour and construct error message from
-            # JSON or plaintext content in response
+            # handle errors coming from HAProxy load balancer and construct
+            # error message from JSON or plaintext content in response
             elif status_code != 200 and status_code not in self.errors_route[route_name][1]:
-                try:
-                    errormsg = json.loads(content)
-                except ValueError:
-                    errormsg = {'error': {'code': status_code,
-                                          'message': content}}
-                raise AmsServiceException(json=errormsg, request=route_name)
+                raise AmsBalancerException(content, status_code, request=route_name)
 
         except (requests.exceptions.ConnectionError, socket.error) as e:
             raise AmsConnectionException(e, route_name)

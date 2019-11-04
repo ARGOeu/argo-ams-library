@@ -9,7 +9,8 @@ from pymod import ArgoMessagingService
 from pymod import AmsMessage
 from pymod import AmsTopic
 from pymod import AmsSubscription
-from pymod import AmsServiceException, AmsConnectionException, AmsTimeoutException, AmsException
+from pymod import (AmsServiceException, AmsConnectionException,
+                   AmsTimeoutException, AmsBalancerException, AmsException)
 
 from .amsmocks import ErrorMocks
 from .amsmocks import TopicMocks
@@ -65,7 +66,7 @@ class TestErrorClient(unittest.TestCase):
             try:
                 resp = self.ams.publish("topic1", msg)
             except Exception as e:
-                assert isinstance(e, AmsServiceException)
+                assert isinstance(e, AmsBalancerException)
                 self.assertEqual(e.code, 504)
 
     # Tests for plaintext or JSON encoded backend error messages
@@ -79,7 +80,7 @@ class TestErrorClient(unittest.TestCase):
         with HTTMock(error_plaintxt):
             try:
                 resp = self.ams.get_topic("topic1")
-            except AmsServiceException as e:
+            except AmsBalancerException as e:
                 if sys.version_info < (3, 6 ):
                     response_string = "Cannot get topic"
                 else:
@@ -98,7 +99,7 @@ class TestErrorClient(unittest.TestCase):
         with HTTMock(error_json):
             try:
                 resp = self.ams.get_topic("topic1")
-            except AmsServiceException as e:
+            except AmsBalancerException as e:
                 self.assertEqual(e.code, 500)
                 self.assertEqual(e.msg, "While trying the [topic_get]: Cannot get topic")
                 self.assertEqual(e.status, "INTERNAL_SERVER_ERROR")

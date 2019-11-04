@@ -29,6 +29,32 @@ class AmsServiceException(AmsException):
         super(AmsServiceException, self).__init__(errord)
 
 
+class AmsBalancerException(AmsException):
+    """
+       Exception for HAProxy Argo Messaging Service errors
+    """
+    def __init__(self, error, status, request):
+        errord = dict()
+
+        try:
+            errormsg = json.loads(error)
+        except ValueError:
+            errormsg = {'error': {'code': status, 'message': error}}
+
+        self.msg = "While trying the [{0}]: {1}".format(request, errormsg['error']['message'])
+        errord.update(error=self.msg)
+
+        if errormsg['error'].get('code'):
+            self.code = errormsg['error']['code']
+            errord.update(status_code=self.code)
+
+        if errormsg['error'].get('status'):
+            self.status = errormsg['error']['status']
+            errord.update(status=self.status)
+
+        super(AmsException, self).__init__(errord)
+
+
 class AmsTimeoutException(AmsServiceException):
     """
        Exception for timeout returned by the Argo Messaging Service if message
