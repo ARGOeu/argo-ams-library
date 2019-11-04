@@ -5,7 +5,6 @@ import requests
 import socket
 import sys
 import datetime
-from .amsexceptions import AmsServiceException, AmsConnectionException, AmsMessageException, AmsException
 import time
 
 from .amsexceptions import (AmsServiceException, AmsConnectionException,
@@ -21,6 +20,7 @@ except:
     from ordereddict import OrderedDict
 
 log = logging.getLogger(__name__)
+
 
 class AmsHttpRequests(object):
     """
