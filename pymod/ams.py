@@ -82,7 +82,8 @@ class AmsHttpRequests(object):
             for sleep_secs in self._gen_backoff_time(retry + 1, retrybackoff):
                 try:
                     return self._make_request(url, body, route_name, **reqkwargs)
-                except (AmsConnectionException, AmsTimeoutException) as e:
+                except (AmsBalancerException, AmsConnectionException,
+                        AmsTimeoutException) as e:
                     time.sleep(sleep_secs)
                     if timeout:
                         log.warning('Backoff retry #{0} after {1} seconds, connection timeout set to {2} seconds'.format(i, sleep_secs, timeout))
@@ -97,7 +98,7 @@ class AmsHttpRequests(object):
             while i <= retry + 1:
                 try:
                     return self._make_request(url, body, route_name, **reqkwargs)
-                except (AmsConnectionException, AmsTimeoutException) as e:
+                except (AmsBalancerException, AmsConnectionException, AmsTimeoutException) as e:
                     if i == retry + 1:
                         raise e
                     else:
