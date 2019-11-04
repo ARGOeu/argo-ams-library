@@ -73,7 +73,7 @@ class AmsHttpRequests(object):
             value = backoff_factor * (2 ** (i - 1))
             yield value
 
-    def _retry_make_request(self, url, body=None, route_name=None, retry=3,
+    def _retry_make_request(self, url, body=None, route_name=None, retry=0,
                             retrysleep=60, retrybackoff=None, **reqkwargs):
         i = 1
         timeout = reqkwargs.get('timeout', 0)
@@ -196,7 +196,8 @@ class AmsHttpRequests(object):
         except AmsException as e:
             raise e
 
-    def do_post(self, url, body, route_name, **reqkwargs):
+    def do_post(self, url, body, route_name, retry=0, retrysleep=60,
+                retrybackoff=None, **reqkwargs):
         """Method supports all the POST requests. Used for (topics,
         subscriptions, messages).
 
@@ -209,7 +210,11 @@ class AmsHttpRequests(object):
         # try to send a Post request to the messaging service.
         # if a connection problem araises a Connection error exception is raised.
         try:
-            return self._retry_make_request(url, body=body, route_name=route_name, **reqkwargs)
+            return self._retry_make_request(url, body=body,
+                                            route_name=route_name, retry=retry,
+                                            retrysleep=retrysleep,
+                                            retrybackoff=retrybackoff,
+                                            **reqkwargs)
         except AmsException as e:
             raise e
 
@@ -684,7 +689,7 @@ class ArgoMessagingService(AmsHttpRequests):
         else:
             return r
 
-    def publish(self, topic, msg, **reqkwargs):
+    def publish(self, topic, msg, retry=0, retrysleep=60, retrybackoff=None, **reqkwargs):
         """Publish a message or list of messages to a selected topic.
 
         Args:
@@ -782,7 +787,8 @@ class ArgoMessagingService(AmsHttpRequests):
         except AmsConnectionException as e:
             raise e
 
-    def pull_sub(self, sub, num=1, return_immediately=False, **reqkwargs):
+    def pull_sub(self, sub, retry=0, retrysleep=60, retrybackoff=None, num=1,
+                 return_immediately=False, **reqkwargs):
         """This function consumes messages from a subscription in a project
         with a POST request.
 
@@ -803,7 +809,9 @@ class ArgoMessagingService(AmsHttpRequests):
         # Compose url
         url = route[1].format(self.endpoint, self.token, self.project, "", sub)
         method = getattr(self, 'do_{0}'.format(route[0]))
-        r = method(url, msg_body, "sub_pull", **reqkwargs)
+        r = method(url, msg_body, "sub_pull", retry=retry,
+                   retrysleep=retrysleep, retrybackoff=retrybackoff,
+                   **reqkwargs)
         msgs = r['receivedMessages']
 
         self.set_pullopt('maxMessages', wasmax)
@@ -811,7 +819,8 @@ class ArgoMessagingService(AmsHttpRequests):
 
         return list(map(lambda m: (m['ackId'], AmsMessage(b64enc=False, **m['message'])), msgs))
 
-    def ack_sub(self, sub, ids, **reqkwargs):
+    def ack_sub(self, sub, ids, retry=0, retrysleep=60, retrybackoff=None,
+                **reqkwargs):
         """Messages retrieved from a pull subscription can be acknowledged by sending message with an array of ackIDs.
         The service will retrieve the ackID corresponding to the highest message offset and will consider that message
         and all previous messages as acknowledged by the consumer.
