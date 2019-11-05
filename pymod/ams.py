@@ -140,9 +140,8 @@ class AmsHttpRequests(object):
             content = r.content
             status_code = r.status_code
 
-            if (content
-                and sys.version_info < (3, 6, )
-                and isinstance(content, bytes)):
+            if (content and sys.version_info < (3, 6, ) and isinstance(content,
+                                                                       bytes)):
                 content = content.decode()
 
             if status_code == 200:
@@ -160,7 +159,8 @@ class AmsHttpRequests(object):
                                           request=route_name)
 
             # JSON error returned by AMS
-            elif status_code != 200 and status_code in self.ams_errors_route[route_name][1]:
+            elif (status_code != 200 and status_code in
+                  self.ams_errors_route[route_name][1]):
                 raise AmsServiceException(json=self._error_dict(content,
                                                                 status_code),
                                           request=route_name)
@@ -197,7 +197,8 @@ class AmsHttpRequests(object):
         # try to send a GET request to the messaging service.
         # if a connection problem araises a Connection error exception is raised.
         try:
-            return self._retry_make_request(url, route_name=route_name, **reqkwargs)
+            return self._retry_make_request(url, route_name=route_name,
+                                            **reqkwargs)
         except AmsException as e:
             raise e
 
@@ -214,7 +215,8 @@ class AmsHttpRequests(object):
         # try to send a PUT request to the messaging service.
         # if a connection problem araises a Connection error exception is raised.
         try:
-            return self._retry_make_request(url, body=body, route_name=route_name, **reqkwargs)
+            return self._retry_make_request(url, body=body,
+                                            route_name=route_name, **reqkwargs)
         except AmsException as e:
             raise e
 
@@ -258,18 +260,18 @@ class AmsHttpRequests(object):
 
             # JSON error returned by AMS
             if r.status_code != 200 and r.status_code in self.errors[m]:
-                decoded = json.loads(r.content) if r.content else {}
-                raise AmsServiceException(json=decoded, request=route_name)
+                errormsg = self._error_dict(r.content, r.status_code)
+                raise AmsServiceException(json=errormsg, request=route_name)
 
             # handle other erroneous behaviour
             elif r.status_code != 200 and r.status_code not in self.errors[m]:
-                errormsg = {'error': {'code': r.status_code,
-                                      'message': r.content}}
+                errormsg = self._error_dict(r.content, r.status_code)
                 raise AmsServiceException(json=errormsg, request=route_name)
             else:
                 return True
 
-        except (requests.exceptions.ConnectionError, requests.exceptions.Timeout) as e:
+        except (requests.exceptions.ConnectionError,
+                requests.exceptions.Timeout) as e:
             raise AmsConnectionException(e, route_name)
 
 
@@ -316,9 +318,8 @@ class ArgoMessagingService(AmsHttpRequests):
             # when no token was provided
 
             if e.msg == 'While trying the [auth_x509]: No certificate provided.':
-                refined_msg = "No certificate provided. No token provided"
-                errormsg = {'error': {'code': e.code,
-                                      'message': refined_msg}}
+                refined_msg = "No certificate provided. No token provided."
+                errormsg = self._error_dict(refined_msg, e.code)
                 raise AmsServiceException(json=errormsg, request="auth_x509")
             raise e
 
@@ -335,7 +336,7 @@ class ArgoMessagingService(AmsHttpRequests):
                           python-requests library call.
         """
         if cert == "" and key == "":
-            errord = {"error": {"code": 400, "message": "No certificate provided."}}
+            errord = self._error_dict("No certificate provided.", 400)
             raise AmsServiceException(json=errord, request="auth_x509")
 
         # create the certificate tuple needed by the requests library
@@ -351,7 +352,7 @@ class ArgoMessagingService(AmsHttpRequests):
             r = method(url, "auth_x509", **reqkwargs)
             # if the `token` field was not found in the response, raise an error
             if "token" not in r:
-                errord = {"error": {"code": 500, "message": "Token was not found in the response. Response: " + str(r)}}
+                errord = self._error_dict("Token was not found in the response. Response: " + str(r), 500)
                 raise AmsServiceException(json=errord, request="auth_x509")
             return r["token"]
         except (AmsServiceException, AmsConnectionException) as e:

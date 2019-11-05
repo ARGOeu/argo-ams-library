@@ -43,7 +43,7 @@ class TestAuthenticate(unittest.TestCase):
             ams = ArgoMessagingService(endpoint="localhost", project="TEST")
         except AmsServiceException as e:
             self.assertEqual(e.code, 400)
-            self.assertEqual(e.msg, 'While trying the [auth_x509]: No certificate provided. No token provided')
+            self.assertEqual(e.msg, 'While trying the [auth_x509]: No certificate provided. No token provided.')
 
     # tests the case of providing a token
     def test_assign_token(self):
