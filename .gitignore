@@ -1,1 +1,14 @@
+*.gitignore
+*.ropeproject
 *.pyc
+__pycache__
+*.values
+MANIFEST
+*.gz
+*.rpm
+*.pyc
+*.egg*
+*egg-info*
+.tox*
+coverage.xml
+.coverage
