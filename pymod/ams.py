@@ -72,6 +72,16 @@ class AmsHttpRequests(object):
                                       "sub_pull": ["post", set([500, 502, 503, 504])],
                                       "topic_publish": ["post", set([500, 502, 503, 504])]}
 
+    def _error_dict(self, response_content, status):
+        error_dict = dict()
+
+        try:
+            error_dict = json.loads(response_content) if response_content else {}
+        except ValueError:
+            error_dict = {'error': {'code': status, 'message': response_content}}
+
+        return error_dict
+
     def _gen_backoff_time(self, try_number, backoff_factor):
         for i in range(0, try_number):
             value = backoff_factor * (2 ** (i - 1))
@@ -136,36 +146,38 @@ class AmsHttpRequests(object):
                 content = content.decode()
 
             if status_code == 200:
-                decoded = json.loads(content) if content else {}
+                decoded = self._error_dict(content, status_code)
 
             # handle authnz related errors for all calls
             elif status_code == 401 or status_code == 403:
-                decoded = json.loads(content) if content else {}
-                raise AmsServiceException(json=decoded, request=route_name)
+                raise AmsServiceException(json=self._error_dict(content,
+                                                                status_code),
+                                          request=route_name)
 
             elif status_code == 408:
-                decoded = json.loads(content) if content else {}
-                raise AmsTimeoutException(json=decoded, request=route_name)
+                raise AmsTimeoutException(json=self._error_dict(content,
+                                                                status_code),
+                                          request=route_name)
 
             # JSON error returned by AMS
             elif status_code != 200 and status_code in self.ams_errors_route[route_name][1]:
-                decoded = json.loads(content) if content else {}
-                raise AmsServiceException(json=decoded, request=route_name)
+                raise AmsServiceException(json=self._error_dict(content,
+                                                                status_code),
+                                          request=route_name)
 
             # handle errors coming from HAProxy load balancer
             elif (status_code != 200 and route_name in
                   self.balancer_errors_route and status_code in
                   self.balancer_errors_route[route_name][1]):
-                raise AmsBalancerException(content, status_code, request=route_name)
+                raise AmsBalancerException(json=self._error_dict(content,
+                                                                 status_code),
+                                           request=route_name)
 
             # handle any other erroneous behaviour by raising exception
             else:
-                try:
-                    errormsg = json.loads(content)
-                except ValueError:
-                    errormsg = {'error': {'code': status_code,
-                                          'message': content}}
-                raise AmsServiceException(json=errormsg, request=route_name)
+                raise AmsServiceException(json=self._error_dict(content,
+                                                                status_code),
+                                          request=route_name)
 
         except (requests.exceptions.ConnectionError, socket.error) as e:
             raise AmsConnectionException(e, route_name)
