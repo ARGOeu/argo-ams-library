@@ -54,7 +54,7 @@ class AmsHttpRequests(object):
 
         # HTTP error status codes returned by AMS according to:
         # http://argoeu.github.io/messaging/v1/api_errors/
-        self.errors_route = {"topic_create": ["put", set([409, 401, 403])],
+        self.ams_errors_route = {"topic_create": ["put", set([409, 401, 403])],
                              "topic_list": ["get", set([400, 401, 403, 404])],
                              "sub_create": ["put", set([400, 409, 408, 401, 403])],
                              "sub_ack": ["post", set([408, 400, 401, 403, 404])],
@@ -67,6 +67,10 @@ class AmsHttpRequests(object):
                              "sub_pull": ["post", set([400, 401, 403, 404])],
                              "sub_timeToOffset": ["get", set([400, 401, 403, 404, 409])]
                              }
+        # https://cbonte.github.io/haproxy-dconv/1.8/configuration.html#1.3
+        self.balancer_errors_route = {"sub_ack": ["post", set([500, 502, 503, 504])],
+                                      "sub_pull": ["post", set([500, 502, 503, 504])],
+                                      "topic_publish": ["post", set([500, 502, 503, 504])]}
 
     def _gen_backoff_time(self, try_number, backoff_factor):
         for i in range(0, try_number):
@@ -144,14 +148,24 @@ class AmsHttpRequests(object):
                 raise AmsTimeoutException(json=decoded, request=route_name)
 
             # JSON error returned by AMS
-            elif status_code != 200 and status_code in self.errors_route[route_name][1]:
+            elif status_code != 200 and status_code in self.ams_errors_route[route_name][1]:
                 decoded = json.loads(content) if content else {}
                 raise AmsServiceException(json=decoded, request=route_name)
 
-            # handle errors coming from HAProxy load balancer and construct
-            # error message from JSON or plaintext content in response
-            elif status_code != 200 and status_code not in self.errors_route[route_name][1]:
+            # handle errors coming from HAProxy load balancer
+            elif (status_code != 200 and route_name in
+                  self.balancer_errors_route and status_code in
+                  self.balancer_errors_route[route_name][1]):
                 raise AmsBalancerException(content, status_code, request=route_name)
+
+            # handle any other erroneous behaviour by raising exception
+            else:
+                try:
+                    errormsg = json.loads(content)
+                except ValueError:
+                    errormsg = {'error': {'code': status_code,
+                                          'message': content}}
+                raise AmsServiceException(json=errormsg, request=route_name)
 
         except (requests.exceptions.ConnectionError, socket.error) as e:
             raise AmsConnectionException(e, route_name)
