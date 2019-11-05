@@ -89,7 +89,7 @@ class TestErrorClient(unittest.TestCase):
         with HTTMock(error_plaintxt):
             try:
                 resp = self.ams.get_topic("topic1")
-            except AmsBalancerException as e:
+            except AmsServiceException as e:
                 if sys.version_info < (3, 6 ):
                     response_string = "Cannot get topic"
                 else:
@@ -108,7 +108,7 @@ class TestErrorClient(unittest.TestCase):
         with HTTMock(error_json):
             try:
                 resp = self.ams.get_topic("topic1")
-            except AmsBalancerException as e:
+            except AmsServiceException as e:
                 self.assertEqual(e.code, 500)
                 self.assertEqual(e.msg, "While trying the [topic_get]: Cannot get topic")
                 self.assertEqual(e.status, "INTERNAL_SERVER_ERROR")
