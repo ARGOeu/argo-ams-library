@@ -164,7 +164,7 @@ class TestErrorClient(unittest.TestCase):
     def testRetryAmsBalancerTimeout408(self, mock_requests_post):
         retry = 4
         retrysleep = 0.2
-        errmsg = "<html><body><h1>408 Request Time-out</h1>\nYour browser didn't send a complete request in time.\n</body></html>"
+        errmsg = "<html><body><h1>408 Request Time-out</h1>\nYour browser didn't send a complete request in time.\n</body></html>\n"
         mock_response = mock.create_autospec(requests.Response)
         mock_response.status_code = 408
         mock_response.content = errmsg
@@ -178,10 +178,44 @@ class TestErrorClient(unittest.TestCase):
         self.assertEqual(mock_requests_post.call_count, retry + 1)
 
     @mock.patch('pymod.ams.requests.post')
+    def testRetryAmsBalancer502(self, mock_requests_post):
+        retry = 4
+        retrysleep = 0.2
+        errmsg = "<html><body><h1>502 Bad Gateway</h1>\nThe server returned an invalid or incomplete response.\n</body></html>\n"
+        mock_response = mock.create_autospec(requests.Response)
+        mock_response.status_code = 502
+        mock_response.content = errmsg
+        mock_requests_post.return_value = mock_response
+        try:
+            self.ams.pull_sub('subscription1', retry=retry, retrysleep=retrysleep)
+        except Exception as e:
+            assert isinstance(e, AmsBalancerException)
+            self.assertEqual(e.code, 502)
+            self.assertEqual(e.msg, 'While trying the [sub_pull]: ' + errmsg)
+        self.assertEqual(mock_requests_post.call_count, retry + 1)
+
+    @mock.patch('pymod.ams.requests.post')
+    def testRetryAmsBalancer503(self, mock_requests_post):
+        retry = 4
+        retrysleep = 0.2
+        errmsg = "<html><body><h1>503 Service Unavailable</h1>\nNo server is available to handle this request.\n</body></html>\n"
+        mock_response = mock.create_autospec(requests.Response)
+        mock_response.status_code = 503
+        mock_response.content = errmsg
+        mock_requests_post.return_value = mock_response
+        try:
+            self.ams.pull_sub('subscription1', retry=retry, retrysleep=retrysleep)
+        except Exception as e:
+            assert isinstance(e, AmsBalancerException)
+            self.assertEqual(e.code, 503)
+            self.assertEqual(e.msg, 'While trying the [sub_pull]: ' + errmsg)
+        self.assertEqual(mock_requests_post.call_count, retry + 1)
+
+    @mock.patch('pymod.ams.requests.post')
     def testRetryAmsBalancerTimeout504(self, mock_requests_post):
         retry = 4
         retrysleep = 0.2
-        errmsg = "<html><body><h1>504 Gateway Time-out</h1>\nThe server didn't respond in time.\n</body></html>"
+        errmsg = "<html><body><h1>504 Gateway Time-out</h1>\nThe server didn't respond in time.\n</body></html>\n"
         mock_response = mock.create_autospec(requests.Response)
         mock_response.status_code = 504
         mock_response.content = errmsg
