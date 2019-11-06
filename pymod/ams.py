@@ -24,9 +24,10 @@ log = logging.getLogger(__name__)
 
 class AmsHttpRequests(object):
     """
-       Class encapsulates methods used by ArgoMessagingService. Each method represent
-       HTTP request made to AMS with the help of requests library. Proper service error
-       handling is implemented according to HTTP status codes returned by service.
+       Class encapsulates methods used by ArgoMessagingService. Each method
+       represent HTTP request made to AMS with the help of requests library.
+       Proper service error handling is implemented according to HTTP status
+       codes returned by service and the balancer.
     """
     def __init__(self):
         # Create route list
@@ -89,6 +90,10 @@ class AmsHttpRequests(object):
 
     def _retry_make_request(self, url, body=None, route_name=None, retry=0,
                             retrysleep=60, retrybackoff=None, **reqkwargs):
+        """
+           Wrapper around _make_request() that decides whether should request
+           be retried or not.
+        """
         i = 1
         timeout = reqkwargs.get('timeout', 0)
 
@@ -125,10 +130,10 @@ class AmsHttpRequests(object):
                     i += 1
 
     def _make_request(self, url, body=None, route_name=None, **reqkwargs):
-        """Common method for PUT, GET, POST HTTP requests with appropriate
-        service error handling. For known error HTTP statuses, returned JSON
-        will be used as exception error message, otherwise assume and build one
-        from response content string.
+        """
+           Common method for PUT, GET, POST HTTP requests with appropriate
+           service error handling by differing between AMS and HAProxy
+           erroneous behaviour. Method is wrapped by _retry_make_request().
         """
         m = self.routes[route_name][0]
         decoded = None
@@ -153,12 +158,13 @@ class AmsHttpRequests(object):
                                                                 status_code),
                                           request=route_name)
 
-            elif status_code == 408:
+            elif status_code == 408 or (status_code == 504 and route_name in
+                                        self.balancer_errors_route):
                 raise AmsTimeoutException(json=self._error_dict(content,
                                                                 status_code),
                                           request=route_name)
 
-            # JSON error returned by AMS
+            # handle errors from AMS
             elif (status_code != 200 and status_code in
                   self.ams_errors_route[route_name][1]):
                 raise AmsServiceException(json=self._error_dict(content,
@@ -186,13 +192,14 @@ class AmsHttpRequests(object):
             return decoded if decoded else {}
 
     def do_get(self, url, route_name, **reqkwargs):
-        """Method supports all the GET requests. Used for (topics,
-        subscriptions, messages).
+        """
+            Method supports all the GET requests. Used for (topics,
+            subscriptions, messages).
 
-        Args:
-            url: str. The final messaging service endpoint
-            route_name: str. The name of the route to follow selected from the route list
-            reqkwargs: keyword argument that will be passed to underlying python-requests library call.
+            Args:
+                url: str. The final messaging service endpoint
+                route_name: str. The name of the route to follow selected from the route list
+                reqkwargs: keyword argument that will be passed to underlying python-requests library call.
         """
         # try to send a GET request to the messaging service.
         # if a connection problem araises a Connection error exception is raised.
@@ -203,14 +210,15 @@ class AmsHttpRequests(object):
             raise e
 
     def do_put(self, url, body, route_name, **reqkwargs):
-        """Method supports all the PUT requests. Used for (topics,
-        subscriptions, messages).
+        """
+           Method supports all the PUT requests. Used for (topics,
+           subscriptions, messages).
 
-        Args:
-            url: str. The final messaging service endpoint
-            body: dict. Body the post data to send based on the PUT request. The post data is always in json format.
-            route_name: str. The name of the route to follow selected from the route list
-            reqkwargs: keyword argument that will be passed to underlying python-requests library call.
+           Args:
+               url: str. The final messaging service endpoint
+               body: dict. Body the post data to send based on the PUT request. The post data is always in json format.
+               route_name: str. The name of the route to follow selected from the route list
+               reqkwargs: keyword argument that will be passed to underlying python-requests library call.
         """
         # try to send a PUT request to the messaging service.
         # if a connection problem araises a Connection error exception is raised.
@@ -222,14 +230,15 @@ class AmsHttpRequests(object):
 
     def do_post(self, url, body, route_name, retry=0, retrysleep=60,
                 retrybackoff=None, **reqkwargs):
-        """Method supports all the POST requests. Used for (topics,
-        subscriptions, messages).
+        """
+           Method supports all the POST requests. Used for (topics,
+           subscriptions, messages).
 
-        Args:
-            url: str. The final messaging service endpoint
-            body: dict. Body the post data to send based on the PUT request. The post data is always in json format.
-            route_name: str. The name of the route to follow selected from the route list
-            reqkwargs: keyword argument that will be passed to underlying python-requests library call.
+           Args:
+               url: str. The final messaging service endpoint
+               body: dict. Body the post data to send based on the PUT request. The post data is always in json format.
+               route_name: str. The name of the route to follow selected from the route list
+               reqkwargs: keyword argument that will be passed to underlying python-requests library call.
         """
         # try to send a Post request to the messaging service.
         # if a connection problem araises a Connection error exception is raised.
@@ -243,13 +252,14 @@ class AmsHttpRequests(object):
             raise e
 
     def do_delete(self, url, route_name, **reqkwargs):
-        """Delete method that is used to make the appropriate request.
-        Used for (topics, subscriptions).
+        """
+            Delete method that is used to make the appropriate request.
+            Used for (topics, subscriptions).
 
-        Args:
-            url: str. The final messaging service endpoint
-            route_name: str. The name of the route to follow selected from the route list
-            reqkwargs: keyword argument that will be passed to underlying python-requests library call.
+            Args:
+                url: str. The final messaging service endpoint
+                route_name: str. The name of the route to follow selected from the route list
+                reqkwargs: keyword argument that will be passed to underlying python-requests library call.
         """
         # try to send a delete request to the messaging service.
         # if a connection problem araises a Connection error exception is raised.
@@ -296,12 +306,12 @@ class ArgoMessagingService(AmsHttpRequests):
 
     def assign_token(self, token, cert, key):
         """
-        Assign a token to the ams object
+           Assign a token to the ams object
 
-        Args:
-            token(str): a valid ams token
-            cert(str): a path to a valid certificate file
-            key(str): a path to the associated key file for the provided certificate
+           Args:
+               token(str): a valid ams token
+               cert(str): a path to a valid certificate file
+               key(str): a path to the associated key file for the provided certificate
         """
 
         # check if a token has been provided
@@ -523,7 +533,7 @@ class ArgoMessagingService(AmsHttpRequests):
 
     def modifyoffset_sub(self, sub, move_to, **reqkwargs):
         """
-          Modify the position of the current offset.
+           Modify the position of the current offset.
 
            Args:
                sub (str): The subscription name.
@@ -584,7 +594,8 @@ class ArgoMessagingService(AmsHttpRequests):
             raise e
 
     def pushconfig_sub(self, sub, push_endpoint=None, retry_policy_type='linear', retry_policy_period=300, **reqkwargs):
-        """Modify push configuration of given subscription
+        """
+           Modify push configuration of given subscription
 
            Args:
                sub: shortname of subscription
