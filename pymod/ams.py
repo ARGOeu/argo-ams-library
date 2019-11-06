@@ -97,12 +97,14 @@ class AmsHttpRequests(object):
         i = 1
         timeout = reqkwargs.get('timeout', 0)
 
+        saved_exp = None
         if retrybackoff:
             for sleep_secs in self._gen_backoff_time(retry + 1, retrybackoff):
                 try:
                     return self._make_request(url, body, route_name, **reqkwargs)
                 except (AmsBalancerException, AmsConnectionException,
                         AmsTimeoutException) as e:
+                    saved_exp = e
                     time.sleep(sleep_secs)
                     if timeout:
                         log.warning('Backoff retry #{0} after {1} seconds, connection timeout set to {2} seconds'.format(i, sleep_secs, timeout))
@@ -111,7 +113,7 @@ class AmsHttpRequests(object):
                 finally:
                     i += 1
             else:
-                raise AmsConnectionException('Backoff retries exhausted', route_name)
+                raise saved_exp
 
         else:
             while i <= retry + 1:
@@ -821,8 +823,8 @@ class ArgoMessagingService(AmsHttpRequests):
         except AmsConnectionException as e:
             raise e
 
-    def pull_sub(self, sub, retry=0, retrysleep=60, retrybackoff=None, num=1,
-                 return_immediately=False, **reqkwargs):
+    def pull_sub(self, sub, num=1, return_immediately=False, retry=0,
+                 retrysleep=60, retrybackoff=None, **reqkwargs):
         """This function consumes messages from a subscription in a project
         with a POST request.
 
