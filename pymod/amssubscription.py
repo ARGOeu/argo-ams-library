@@ -47,7 +47,8 @@ class AmsSubscription(object):
                                         retry_policy_period=retry_policy_period,
                                         **reqkwargs)
 
-    def pull(self, num=1, return_immediately=False, **reqkwargs):
+    def pull(self, num=1, retry=0, retrysleep=60, retrybackoff=None,
+             return_immediately=False, **reqkwargs):
         """Pull messages from subscription
 
            Kwargs:
@@ -119,7 +120,7 @@ class AmsSubscription(object):
         else:
             return self.init.modifyacl_sub(self.name, users, **reqkwargs)
 
-    def ack(self, ids, **reqkwargs):
+    def ack(self, ids, retry=0, retrysleep=60, retrybackoff=None, **reqkwargs):
         """Acknowledge receive of messages
 
            Kwargs:
