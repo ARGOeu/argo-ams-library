@@ -92,26 +92,32 @@ class AmsHttpRequests(object):
                             retrysleep=60, retrybackoff=None, **reqkwargs):
         """
            Wrapper around _make_request() that decides whether should request
-           be retried or not. If enabled, request will be retried in the
-           following occassions:
+           be retried or not. Two request retry modes are available:
+               1) static sleep - fixed amount of seconds to sleep between
+                  request attempts
+               2) backoff - each next sleep before request attempt is
+                  exponentially longer
+
+           If enabled, request will be retried in the following occassions:
                * timeouts from AMS (HTTP 408) or load balancer (HTTP 408 and 504)
                * load balancer HTTP 502, 503
                * connection related problems in the lower network layers
-            Default behaviour is no retry attempts.
 
-            Args:
-                url: str. The final messaging service endpoint
-                body: dict. Payload of the request
-                route_name: str. The name of the route to follow selected from the route list
-                retry: int. Number of request retries before giving up. Default
-                            is 0 meaning no further request retry will be made
-                            after first unsuccesfull request.
-                retrysleep: int. Static number of seconds to sleep before next
-                            request attempt
-                retrybackoff: int. Backoff factor to apply between each request
-                              attempts
-                reqkwargs: keyword argument that will be passed to underlying
-                           python-requests library call.
+           Default behaviour is no retry attempts.
+
+           Args:
+               url: str. The final messaging service endpoint
+               body: dict. Payload of the request
+               route_name: str. The name of the route to follow selected from the route list
+               retry: int. Number of request retries before giving up. Default
+                           is 0 meaning no further request retry will be made
+                           after first unsuccesfull request.
+               retrysleep: int. Static number of seconds to sleep before next
+                           request attempt
+               retrybackoff: int. Backoff factor to apply between each request
+                             attempts
+               reqkwargs: keyword argument that will be passed to underlying
+                          python-requests library call.
         """
         i = 1
         timeout = reqkwargs.get('timeout', 0)
@@ -214,13 +220,13 @@ class AmsHttpRequests(object):
 
     def do_get(self, url, route_name, **reqkwargs):
         """
-            Method supports all the GET requests. Used for (topics,
-            subscriptions, messages).
+           Method supports all the GET requests. Used for (topics,
+           subscriptions, messages).
 
-            Args:
-                url: str. The final messaging service endpoint
-                route_name: str. The name of the route to follow selected from the route list
-                reqkwargs: keyword argument that will be passed to underlying python-requests library call.
+           Args:
+               url: str. The final messaging service endpoint
+               route_name: str. The name of the route to follow selected from the route list
+               reqkwargs: keyword argument that will be passed to underlying python-requests library call.
         """
         # try to send a GET request to the messaging service.
         # if a connection problem araises a Connection error exception is raised.
@@ -274,13 +280,13 @@ class AmsHttpRequests(object):
 
     def do_delete(self, url, route_name, **reqkwargs):
         """
-            Delete method that is used to make the appropriate request.
-            Used for (topics, subscriptions).
+           Delete method that is used to make the appropriate request.
+           Used for (topics, subscriptions).
 
-            Args:
-                url: str. The final messaging service endpoint
-                route_name: str. The name of the route to follow selected from the route list
-                reqkwargs: keyword argument that will be passed to underlying python-requests library call.
+           Args:
+               url: str. The final messaging service endpoint
+               route_name: str. The name of the route to follow selected from the route list
+               reqkwargs: keyword argument that will be passed to underlying python-requests library call.
         """
         # try to send a delete request to the messaging service.
         # if a connection problem araises a Connection error exception is raised.
