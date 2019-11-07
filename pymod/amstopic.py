@@ -75,7 +75,7 @@ class AmsTopic(object):
         for s in self.init.iter_subs(topic=self.name):
             yield s
 
-    def publish(self, msg, **reqkwargs):
+    def publish(self, msg, retry=0, retrysleep=60, retrybackoff=None, **reqkwargs):
         """Publish message to topic
 
            Args:
@@ -89,4 +89,6 @@ class AmsTopic(object):
                dict: Dictionary with messageIds of published messages
         """
 
-        return self.init.publish(self.name, msg, **reqkwargs)
+        return self.init.publish(self.name, msg, retry=retry,
+                                 retrysleep=retrysleep,
+                                 retrybackoff=retrybackoff, **reqkwargs)
