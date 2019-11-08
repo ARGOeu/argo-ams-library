@@ -6,7 +6,7 @@
 
 Name:           argo-ams-library
 Summary:        %{sum} 
-Version:        0.4.2
+Version:        0.4.3
 Release:        1%{?dist}
 
 Group:          Development/Libraries
@@ -91,6 +91,10 @@ rm -rf %{buildroot}
 
 
 %changelog
+* Fri Nov 8 2019 Daniel Vrcic <dvrcic@srce.hr>, agelostsal <agelos.tsal@gmail.com> - 0.4.3-1%{?dist}
+- ARGO-1990 Fix runtime dependencies
+- ARGO-1862 Make argo-ams-library Python 3 ready
+- ARGO-1841 Update the ams library to include the new timeToOffset functionality
 * Thu Jul 26 2018 agelostsal <agelos.tsal@gmail.com> - 0.4.2-1%{?dist}
 - ARGO-1479 Subscription create methods don't delegate **reqkwargs where needed
 - Error handling bug during list_topic route
