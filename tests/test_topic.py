@@ -1,5 +1,6 @@
-import unittest
 import json
+import sys
+import unittest
 
 from httmock import urlmatch, HTTMock, response
 from pymod import AmsMessage
@@ -8,8 +9,8 @@ from pymod import AmsSubscription
 from pymod import AmsTopic
 from pymod import ArgoMessagingService
 
-from amsmocks import SubMocks
-from amsmocks import TopicMocks
+from .amsmocks import SubMocks
+from .amsmocks import TopicMocks
 
 class TestTopic(unittest.TestCase):
     def setUp(self):
@@ -74,11 +75,14 @@ class TestTopic(unittest.TestCase):
         with HTTMock(iter_subs_mock, self.topicmocks.create_topic_mock, self.topicmocks.has_topic_mock):
             topic = self.ams.topic('topic1')
             resp = topic.iter_subs()
-            obj1 = resp.next()
-            obj2 = resp.next()
+            obj1 = next(resp)
+            obj2 = next(resp)
             assert isinstance(obj1, AmsSubscription)
             assert isinstance(obj2, AmsSubscription)
-            self.assertRaises(StopIteration, resp.next)
+            if sys.version_info < (3, ):
+                self.assertRaises(StopIteration, resp.next)
+            else:
+                self.assertRaises(StopIteration, resp.__next__)
             self.assertEqual(obj1.name, 'subscription1')
             self.assertEqual(obj2.name, 'subscription2')
 

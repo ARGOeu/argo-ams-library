@@ -1,13 +1,15 @@
+import json
+import sys
 import unittest
+
 from httmock import urlmatch, HTTMock, response
 from pymod import ArgoMessagingService
 from pymod import AmsMessage
 from pymod import AmsTopic
 from pymod import AmsSubscription
-import json
-
-from amsmocks import SubMocks
-from amsmocks import TopicMocks
+import datetime
+from .amsmocks import SubMocks
+from .amsmocks import TopicMocks
 
 
 class TestClient(unittest.TestCase):
@@ -74,7 +76,7 @@ class TestClient(unittest.TestCase):
         # Execute ams client with mocked response
         with HTTMock(self.submocks.modifyoffset_sub_mock):
             resp = self.ams.modifyoffset_sub("subscription1", 79)
-            self.assertEquals(resp, {})
+            self.assertEqual(resp, {})
 
     # Test the Get offsets client request
     def testGetOffsets(self):
@@ -94,10 +96,19 @@ class TestClient(unittest.TestCase):
             # should return the min offset
             resp_min = self.ams.getoffsets_sub("subscription1", "min")
 
-            self.assertEquals(resp_all, resp_dict_all)
-            self.assertEquals(resp_max, 79)
-            self.assertEquals(resp_current, 78)
-            self.assertEquals(resp_min, 0)
+            self.assertEqual(resp_all, resp_dict_all)
+            self.assertEqual(resp_max, 79)
+            self.assertEqual(resp_current, 78)
+            self.assertEqual(resp_min, 0)
+
+    # Test the Get time to offset client request
+    def testTimeToOffset(self):
+        # Execute ams client with mocked response
+        with HTTMock(self.submocks.timetooffset_sub_mock):
+            # should return a dict with all the offsets
+            t1 = datetime.datetime(2019, 9, 2, 13, 39, 11, 500000)
+            r1 = self.ams.time_to_offset_sub("subscription1", t1)
+            self.assertEqual(44, r1)
 
     # Test List topics client request
     def testListTopics(self):
@@ -106,7 +117,7 @@ class TestClient(unittest.TestCase):
             resp = self.ams.list_topics()
             # Assert that ams client handled the json response correctly
             topics = resp["topics"]
-            topic_objs = self.ams.topics.values()
+            topic_objs = list(self.ams.topics.values())
             assert len(topics) == 2
             assert topics[0]["name"] == "/projects/TEST/topics/topic1"
             assert topics[1]["name"] == "/projects/TEST/topics/topic2"
@@ -130,11 +141,14 @@ class TestClient(unittest.TestCase):
         with HTTMock(iter_topics_mock):
             resp = self.ams.iter_topics()
             # Assert that ams client handled the json response correctly
-            obj1 = resp.next()
-            obj2 = resp.next()
+            obj1 = next(resp)
+            obj2 = next(resp)
             assert isinstance(obj1, AmsTopic)
             assert isinstance(obj2, AmsTopic)
-            self.assertRaises(StopIteration, resp.next)
+            if sys.version_info < (3, ):
+                self.assertRaises(StopIteration, resp.next)
+            else:
+                self.assertRaises(StopIteration, resp.__next__)
             self.assertEqual(obj1.name, 'topic1')
             self.assertEqual(obj2.name, 'topic2')
 
@@ -268,8 +282,8 @@ class TestClient(unittest.TestCase):
         with HTTMock(list_subs_mock):
             resp = self.ams.list_subs()
             subscriptions = resp["subscriptions"]
-            subscription_objs = self.ams.subs.values()
-            topic_objs = self.ams.topics.values()
+            subscription_objs = list(self.ams.subs.values())
+            topic_objs = list(self.ams.topics.values())
             # Assert that ams client handled the json response correctly
             assert len(subscriptions) == 2
             assert subscriptions[0]["name"] == "/projects/TEST/subscriptions/subscription1"
@@ -300,11 +314,14 @@ class TestClient(unittest.TestCase):
         # Execute ams client with mocked response
         with HTTMock(iter_subs_mock):
             resp = self.ams.iter_subs()
-            obj1 = resp.next()
-            obj2 = resp.next()
+            obj1 = next(resp)
+            obj2 = next(resp)
             assert isinstance(obj1, AmsSubscription)
             assert isinstance(obj2, AmsSubscription)
-            self.assertRaises(StopIteration, resp.next)
+            if sys.version_info < (3, ):
+                self.assertRaises(StopIteration, resp.next)
+            else:
+                self.assertRaises(StopIteration, resp.__next__)
             self.assertEqual(obj1.name, 'subscription1')
             self.assertEqual(obj2.name, 'subscription2')
 

@@ -19,7 +19,7 @@ def main():
         if not ams.has_topic(args.topic):
             ams.create_topic(args.topic)
     except AmsException as e:
-        print e
+        print(e)
         raise SystemExit(1)
 
     # publish one message to given topic. message is constructed with
@@ -29,9 +29,9 @@ def main():
     msg = AmsMessage(data='foo1', attributes={'bar1': 'baz1'}).dict()
     try:
         ret = ams.publish(args.topic, msg)
-        print ret
+        print(ret)
     except AmsException as e:
-        print e
+        print(e)
 
     # publish a list of two messages to given topic. AmsMessage can also be
     # used as a callable. publish() method accepts either one messages or
@@ -41,8 +41,8 @@ def main():
                msg(data='foo3', attributes={'bar3': 'baz3'})]
     try:
         ret = ams.publish(args.topic, msglist)
-        print ret
+        print(ret)
     except AmsException as e:
-        print e
+        print(e)
 
 main()

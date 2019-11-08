@@ -1,3 +1,4 @@
+import sys
 import unittest
 from pymod import ArgoMessagingService
 from pymod import AmsServiceException
@@ -31,18 +32,18 @@ class TestAuthenticate(unittest.TestCase):
         try:
             ams = ArgoMessagingService(endpoint="localhost", token="s3cret", project="TEST")
             ams.auth_via_cert("","")
-        except Exception as e:
-            assert isinstance(e, AmsServiceException)
-            self.assertEqual(e.message, {'status_code': 400, 'error': 'While trying the [auth_x509]: No certificate provided.'})
+        except AmsServiceException as e:
+            self.assertEqual(e.code, 400)
+            self.assertEqual(e.msg, 'While trying the [auth_x509]: No certificate provided.')
 
     # tests the case of providing empty arguments for token and cert
     def test_auth_via_cert_empty_token_and_cert(self):
 
         try:
             ams = ArgoMessagingService(endpoint="localhost", project="TEST")
-        except Exception as e:
-            assert isinstance(e, AmsServiceException)
-            self.assertEqual(e.message, {'status_code': 400, 'error': 'While trying the [auth_x509]: No certificate provided.No token provided'})
+        except AmsServiceException as e:
+            self.assertEqual(e.code, 400)
+            self.assertEqual(e.msg, 'While trying the [auth_x509]: No certificate provided. No token provided')
 
     # tests the case of providing a token
     def test_assign_token(self):
@@ -78,16 +79,22 @@ class TestAuthenticate(unittest.TestCase):
         @urlmatch(**auth_via_cert_urlmatch)
         def auth_via_cert_missing_field(url, request):
             assert url.path == "/v1/service-types/ams/hosts/localhost:authx509"
-            return response(200, '{"other_field":"success_token"}', None, None, 5, request)
+            return response(200, '{"other_field": "success_token"}', None, None, 5, request)
 
         # Execute ams client with mocked response
         with HTTMock(auth_via_cert_missing_field):
             try:
                 ams = ArgoMessagingService(endpoint="localhost", project="TEST", cert="/path/cert", key="/path/key")
                 ams.auth_via_cert("/path/cert", "/path/key")
-            except Exception as e:
-                assert isinstance(e, AmsServiceException)
-                self.assertEqual(e.message, {'status_code': 500, 'error': "While trying the [auth_x509]: Token was not found in the response.Response: {u'other_field': u'success_token'}"})
+            except AmsServiceException as e:
+                self.assertEqual(e.code, 500)
+                # py2 json.loads() builds dict with unicode encoded elements
+                # while py3 version of it not
+                if sys.version_info < (3, ):
+                    response_dict = "{u'other_field': u'success_token'}"
+                else:
+                    response_dict = "{'other_field': 'success_token'}"
+                self.assertEqual(e.msg, "While trying the [auth_x509]: Token was not found in the response. Response: " + response_dict)
 
 if __name__ == "__main__":
     unittest.main()

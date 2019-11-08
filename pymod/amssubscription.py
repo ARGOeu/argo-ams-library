@@ -63,6 +63,20 @@ class AmsSubscription(object):
 
         return self.init.pull_sub(self.name, num=num, return_immediately=return_immediately, **reqkwargs)
 
+    def time_to_offset(self, timestamp, **reqkwargs):
+        """
+           Retrieve the closest(greater than) available offset to the given timestamp.
+
+           Args:
+               timestamp(datetime.datetime): The timestamp of the offset we are looking for.
+
+           Kwargs:
+               reqkwargs: keyword argument that will be passed to underlying
+                          python-requests library call.
+        """
+
+        return self.init.time_to_offset_sub(self.name, timestamp, **reqkwargs)
+
     def offsets(self, offset='all', move_to=0, **reqkwargs):
         """
            Retrieve the positions of min, max and current offsets or move
