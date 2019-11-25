@@ -88,6 +88,9 @@ class AmsHttpRequests(object):
         error_dict = dict()
 
         try:
+            if (response_content and sys.version_info < (3, 6, ) and
+                isinstance(response_content, bytes)):
+                response_content = response_content.decode()
             error_dict = json.loads(response_content) if response_content else {}
         except ValueError:
             error_dict = {'error': {'code': status, 'message': response_content}}
