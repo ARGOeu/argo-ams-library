@@ -45,6 +45,17 @@ class TestErrorClient(unittest.TestCase):
                 self.assertEqual(e.status, 'ALREADY_EXIST')
                 self.assertEqual(e.code, 409)
 
+    # Test delete topic client request
+    def testDeleteTopics(self):
+        # Execute ams client with mocked response
+        with HTTMock(self.errormocks.delete_topic_notfound_mock):
+            try:
+                resp = self.ams.delete_topic("topic1")
+            except Exception as e:
+                assert isinstance(e, AmsServiceException)
+                self.assertEqual(e.status, 'NOT_FOUND')
+                self.assertEqual(e.code, 404)
+
     def testCreateSubscription(self):
         # Execute ams client with mocked response
         with HTTMock(self.topicmocks.get_topic_mock,
