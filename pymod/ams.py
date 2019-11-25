@@ -56,18 +56,29 @@ class AmsHttpRequests(object):
         # HTTP error status codes returned by AMS according to:
         # http://argoeu.github.io/messaging/v1/api_errors/
         self.ams_errors_route = {"topic_create": ["put", set([409, 401, 403])],
-                             "topic_list": ["get", set([400, 401, 403, 404])],
-                             "sub_create": ["put", set([400, 409, 408, 401, 403])],
-                             "sub_ack": ["post", set([408, 400, 401, 403, 404])],
-                             "topic_get": ["get", set([404, 401, 403])],
-                             "topic_modifyacl": ["post", set([400, 401, 403, 404])],
-                             "sub_get": ["get", set([404, 401, 403])],
-                             "topic_publish": ["post", set([413, 401, 403])],
-                             "sub_pushconfig": ["post", set([400, 401, 403, 404])],
-                             "auth_x509": ["post", set([400, 401, 403, 404])],
-                             "sub_pull": ["post", set([400, 401, 403, 404])],
-                             "sub_timeToOffset": ["get", set([400, 401, 403, 404, 409])]
-                             }
+                                 "topic_list": ["get", set([400, 401, 403,
+                                                            404])],
+                                 "topic_delete": ["delete", set([401, 403,
+                                                                 404])],
+                                 "sub_create": ["put", set([400, 409, 408, 401,
+                                                            403])],
+                                 "sub_ack": ["post", set([408, 400, 401, 403,
+                                                          404])],
+                                 "topic_get": ["get", set([404, 401, 403])],
+                                 "topic_modifyacl": ["post", set([400, 401,
+                                                                  403, 404])],
+                                 "sub_get": ["get", set([404, 401, 403])],
+                                 "topic_publish": ["post", set([413, 401,
+                                                                403])],
+                                 "sub_pushconfig": ["post", set([400, 401, 403,
+                                                                 404])],
+                                 "auth_x509": ["post", set([400, 401, 403,
+                                                            404])],
+                                 "sub_pull": ["post", set([400, 401, 403,
+                                                           404])],
+                                 "sub_timeToOffset": ["get", set([400, 401,
+                                                                  403, 404,
+                                                                  409])]}
         # https://cbonte.github.io/haproxy-dconv/1.8/configuration.html#1.3
         self.balancer_errors_route = {"sub_ack": ["post", set([500, 502, 503, 504])],
                                       "sub_pull": ["post", set([500, 502, 503, 504])],
@@ -302,20 +313,15 @@ class AmsHttpRequests(object):
         """
         # try to send a delete request to the messaging service.
         # if a connection problem araises a Connection error exception is raised.
-        m = self.routes[route_name][0]
         try:
             # the delete request based on requests.
             r = requests.delete(url, **reqkwargs)
 
             # JSON error returned by AMS
-            if r.status_code != 200 and r.status_code in self.errors[m]:
+            if r.status_code != 200:
                 errormsg = self._error_dict(r.content, r.status_code)
                 raise AmsServiceException(json=errormsg, request=route_name)
 
-            # handle other erroneous behaviour
-            elif r.status_code != 200 and r.status_code not in self.errors[m]:
-                errormsg = self._error_dict(r.content, r.status_code)
-                raise AmsServiceException(json=errormsg, request=route_name)
             else:
                 return True
 
