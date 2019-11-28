@@ -1,8 +1,15 @@
 import json
+import logging
+import logging.handlers
 import requests
+import socket
 import sys
 import datetime
-from .amsexceptions import AmsServiceException, AmsConnectionException, AmsMessageException, AmsException
+import time
+
+from .amsexceptions import (AmsServiceException, AmsConnectionException,
+                            AmsMessageException, AmsException,
+                            AmsTimeoutException, AmsBalancerException)
 from .amsmsg import AmsMessage
 from .amstopic import AmsTopic
 from .amssubscription import AmsSubscription
@@ -12,12 +19,15 @@ try:
 except:
     from ordereddict import OrderedDict
 
+log = logging.getLogger(__name__)
+
 
 class AmsHttpRequests(object):
-    """
-       Class encapsulates methods used by ArgoMessagingService. Each method represent
-       HTTP request made to AMS with the help of requests library. Proper service error
-       handling is implemented according to HTTP status codes returned by service.
+    """Class encapsulates methods used by ArgoMessagingService.
+
+       Each method represent HTTP request made to AMS with the help of requests
+       library. service error handling is implemented according to HTTP
+       status codes returned by service and the balancer.
     """
     def __init__(self):
         # Create route list
@@ -45,25 +55,131 @@ class AmsHttpRequests(object):
 
         # HTTP error status codes returned by AMS according to:
         # http://argoeu.github.io/messaging/v1/api_errors/
-        self.errors_route = {"topic_create": ["put", set([409, 401, 403])],
-                             "topic_list": ["get", set([400, 401, 403, 404])],
-                             "sub_create": ["put", set([400, 409, 408, 401, 403])],
-                             "sub_ack": ["post", set([408, 400, 401, 403, 404])],
-                             "topic_get": ["get", set([404, 401, 403])],
-                             "topic_modifyacl": ["post", set([400, 401, 403, 404])],
-                             "sub_get": ["get", set([404, 401, 403])],
-                             "topic_publish": ["post", set([413, 401, 403])],
-                             "sub_pushconfig": ["post", set([400, 401, 403, 404])],
-                             "auth_x509": ["post", set([400, 401, 403, 404])],
-                             "sub_pull": ["post", set([400, 401, 403, 404])],
-                             "sub_timeToOffset": ["get", set([400, 401, 403, 404, 409])]
-                             }
+        self.ams_errors_route = {"topic_create": ["put", set([409, 401, 403])],
+                                 "topic_list": ["get", set([400, 401, 403,
+                                                            404])],
+                                 "topic_delete": ["delete", set([401, 403,
+                                                                 404])],
+                                 "sub_create": ["put", set([400, 409, 408, 401,
+                                                            403])],
+                                 "sub_ack": ["post", set([408, 400, 401, 403,
+                                                          404])],
+                                 "topic_get": ["get", set([404, 401, 403])],
+                                 "topic_modifyacl": ["post", set([400, 401,
+                                                                  403, 404])],
+                                 "sub_get": ["get", set([404, 401, 403])],
+                                 "topic_publish": ["post", set([413, 401,
+                                                                403])],
+                                 "sub_pushconfig": ["post", set([400, 401, 403,
+                                                                 404])],
+                                 "auth_x509": ["post", set([400, 401, 403,
+                                                            404])],
+                                 "sub_pull": ["post", set([400, 401, 403,
+                                                           404])],
+                                 "sub_timeToOffset": ["get", set([400, 401,
+                                                                  403, 404,
+                                                                  409])]}
+        # https://cbonte.github.io/haproxy-dconv/1.8/configuration.html#1.3
+        self.balancer_errors_route = {"sub_ack": ["post", set([500, 502, 503, 504])],
+                                      "sub_pull": ["post", set([500, 502, 503, 504])],
+                                      "topic_publish": ["post", set([500, 502, 503, 504])]}
+
+    def _error_dict(self, response_content, status):
+        error_dict = dict()
+
+        try:
+            if (response_content and sys.version_info < (3, 6, ) and
+                isinstance(response_content, bytes)):
+                response_content = response_content.decode()
+            error_dict = json.loads(response_content) if response_content else {}
+        except ValueError:
+            error_dict = {'error': {'code': status, 'message': response_content}}
+
+        return error_dict
+
+    def _gen_backoff_time(self, try_number, backoff_factor):
+        for i in range(0, try_number):
+            value = backoff_factor * (2 ** (i - 1))
+            yield value
+
+    def _retry_make_request(self, url, body=None, route_name=None, retry=0,
+                            retrysleep=60, retrybackoff=None, **reqkwargs):
+        """Wrapper around _make_request() that decides whether should request
+        be retried or not.
+
+           Two request retry modes are available:
+               1) static sleep - fixed amount of seconds to sleep between
+                  request attempts
+               2) backoff - each next sleep before request attempt is
+                  exponentially longer
+
+           If enabled, request will be retried in the following occassions:
+               * timeouts from AMS (HTTP 408) or load balancer (HTTP 408 and 504)
+               * load balancer HTTP 502, 503
+               * connection related problems in the lower network layers
+
+           Default behaviour is no retry attempts. If both, retry and
+           retrybackoff are enabled, retrybackoff will take precedence.
+
+           Args:
+               url: str. The final messaging service endpoint
+               body: dict. Payload of the request
+               route_name: str. The name of the route to follow selected from the route list
+               retry: int. Number of request retries before giving up. Default
+                           is 0 meaning no further request retry will be made
+                           after first unsuccesfull request.
+               retrysleep: int. Static number of seconds to sleep before next
+                           request attempt
+               retrybackoff: int. Backoff factor to apply between each request
+                             attempts
+               reqkwargs: keyword argument that will be passed to underlying
+                          python-requests library call.
+        """
+        i = 1
+        timeout = reqkwargs.get('timeout', 0)
+
+        saved_exp = None
+        if retrybackoff:
+            try:
+                return self._make_request(url, body, route_name, **reqkwargs)
+            except (AmsBalancerException, AmsConnectionException,
+                    AmsTimeoutException) as e:
+                for sleep_secs in self._gen_backoff_time(retry, retrybackoff):
+                    try:
+                        return self._make_request(url, body, route_name, **reqkwargs)
+                    except (AmsBalancerException, AmsConnectionException,
+                            AmsTimeoutException) as e:
+                        saved_exp = e
+                        time.sleep(sleep_secs)
+                        if timeout:
+                            log.warning('Backoff retry #{0} after {1} seconds, connection timeout set to {2} seconds'.format(i, sleep_secs, timeout))
+                        else:
+                            log.warning('Backoff retry #{0} after {1} seconds'.format(i, sleep_secs))
+                    finally:
+                        i += 1
+                else:
+                    raise saved_exp
+
+        else:
+            while i <= retry + 1:
+                try:
+                    return self._make_request(url, body, route_name, **reqkwargs)
+                except (AmsBalancerException, AmsConnectionException, AmsTimeoutException) as e:
+                    if i == retry + 1:
+                        raise e
+                    else:
+                        time.sleep(retrysleep)
+                        if timeout:
+                            log.warning('Retry #{0} after {1} seconds, connection timeout set to {2} seconds'.format(i, retrysleep, timeout))
+                        else:
+                            log.warning('Retry #{0} after {1} seconds'.format(i, retrysleep))
+                finally:
+                    i += 1
 
     def _make_request(self, url, body=None, route_name=None, **reqkwargs):
         """Common method for PUT, GET, POST HTTP requests with appropriate
-        service error handling. For known error HTTP statuses, returned JSON
-        will be used as exception error message, otherwise assume and build one
-        from response content string.
+           service error handling by differing between AMS and load balancer
+           erroneous behaviour.
         """
         m = self.routes[route_name][0]
         decoded = None
@@ -75,126 +191,153 @@ class AmsHttpRequests(object):
             content = r.content
             status_code = r.status_code
 
-            if content and sys.version_info < (3, 6, ):
-               content = content.decode()
+            if (content and sys.version_info < (3, 6, ) and isinstance(content,
+                                                                       bytes)):
+                content = content.decode()
 
             if status_code == 200:
-                decoded = json.loads(content) if content else {}
+                decoded = self._error_dict(content, status_code)
 
             # handle authnz related errors for all calls
             elif status_code == 401 or status_code == 403:
-                decoded = json.loads(content) if content else {}
-                raise AmsServiceException(json=decoded, request=route_name)
+                raise AmsServiceException(json=self._error_dict(content,
+                                                                status_code),
+                                          request=route_name)
 
-            # JSON error returned by AMS
-            elif status_code != 200 and status_code in self.errors_route[route_name][1]:
-                decoded = json.loads(content) if content else {}
-                raise AmsServiceException(json=decoded, request=route_name)
+            elif status_code == 408 or (status_code == 504 and route_name in
+                                        self.balancer_errors_route):
+                raise AmsTimeoutException(json=self._error_dict(content,
+                                                                status_code),
+                                          request=route_name)
 
-            # handle other erroneous behaviour and construct error message from
-            # JSON or plaintext content in response
-            elif status_code != 200 and status_code not in self.errors_route[route_name][1]:
-                try:
-                    errormsg = json.loads(content)
-                except ValueError:
-                    errormsg = {'error': {'code': status_code,
-                                          'message': content}}
-                raise AmsServiceException(json=errormsg, request=route_name)
+            # handle errors from AMS
+            elif (status_code != 200 and status_code in
+                  self.ams_errors_route[route_name][1]):
+                raise AmsServiceException(json=self._error_dict(content,
+                                                                status_code),
+                                          request=route_name)
 
-        except (requests.exceptions.ConnectionError, requests.exceptions.Timeout) as e:
+            # handle errors coming from load balancer
+            elif (status_code != 200 and route_name in
+                  self.balancer_errors_route and status_code in
+                  self.balancer_errors_route[route_name][1]):
+                raise AmsBalancerException(json=self._error_dict(content,
+                                                                 status_code),
+                                           request=route_name)
+
+            # handle any other erroneous behaviour by raising exception
+            else:
+                raise AmsServiceException(json=self._error_dict(content,
+                                                                status_code),
+                                          request=route_name)
+
+        except (requests.exceptions.ConnectionError, socket.error) as e:
             raise AmsConnectionException(e, route_name)
 
         else:
             return decoded if decoded else {}
 
     def do_get(self, url, route_name, **reqkwargs):
-        """Method supports all the GET requests. Used for (topics,
-        subscriptions, messages).
+        """Method supports all the GET requests.
 
-        Args:
-            url: str. The final messaging service endpoint
-            route_name: str. The name of the route to follow selected from the route list
-            reqkwargs: keyword argument that will be passed to underlying python-requests library call.
+           Used for (topics, subscriptions, messages).
+
+           Args:
+               url: str. The final messaging service endpoint
+               route_name: str. The name of the route to follow selected from the route list
+               reqkwargs: keyword argument that will be passed to underlying
+                          python-requests library call.
         """
         # try to send a GET request to the messaging service.
         # if a connection problem araises a Connection error exception is raised.
         try:
-            return self._make_request(url, route_name=route_name, **reqkwargs)
+            return self._retry_make_request(url, route_name=route_name,
+                                            **reqkwargs)
         except AmsException as e:
             raise e
 
     def do_put(self, url, body, route_name, **reqkwargs):
-        """Method supports all the PUT requests. Used for (topics,
-        subscriptions, messages).
+        """Method supports all the PUT requests.
 
-        Args:
-            url: str. The final messaging service endpoint
-            body: dict. Body the post data to send based on the PUT request. The post data is always in json format.
-            route_name: str. The name of the route to follow selected from the route list
-            reqkwargs: keyword argument that will be passed to underlying python-requests library call.
+           Used for (topics, subscriptions, messages).
+
+           Args:
+               url: str. The final messaging service endpoint
+               body: dict. Body the post data to send based on the PUT request.
+                           The post data is always in json format.
+               route_name: str. The name of the route to follow selected from
+                           the route list
+               reqkwargs: keyword argument that will be passed to underlying
+                          python-requests library call.
         """
         # try to send a PUT request to the messaging service.
         # if a connection problem araises a Connection error exception is raised.
         try:
-            return self._make_request(url, body=body, route_name=route_name, **reqkwargs)
+            return self._retry_make_request(url, body=body,
+                                            route_name=route_name, **reqkwargs)
         except AmsException as e:
             raise e
 
-    def do_post(self, url, body, route_name, **reqkwargs):
-        """Method supports all the POST requests. Used for (topics,
-        subscriptions, messages).
+    def do_post(self, url, body, route_name, retry=0, retrysleep=60,
+                retrybackoff=None, **reqkwargs):
+        """Method supports all the POST requests.
 
-        Args:
-            url: str. The final messaging service endpoint
-            body: dict. Body the post data to send based on the PUT request. The post data is always in json format.
-            route_name: str. The name of the route to follow selected from the route list
-            reqkwargs: keyword argument that will be passed to underlying python-requests library call.
+           Used for (topics, subscriptions, messages).
+
+           Args:
+               url: str. The final messaging service endpoint
+               body: dict. Body the post data to send based on the PUT request.
+                     The post data is always in json format.
+               route_name: str. The name of the route to follow selected from
+                           the route list
+               reqkwargs: keyword argument that will be passed to underlying
+                          python-requests library call.
         """
         # try to send a Post request to the messaging service.
         # if a connection problem araises a Connection error exception is raised.
         try:
-            return self._make_request(url, body=body, route_name=route_name, **reqkwargs)
+            return self._retry_make_request(url, body=body,
+                                            route_name=route_name, retry=retry,
+                                            retrysleep=retrysleep,
+                                            retrybackoff=retrybackoff,
+                                            **reqkwargs)
         except AmsException as e:
             raise e
 
     def do_delete(self, url, route_name, **reqkwargs):
         """Delete method that is used to make the appropriate request.
-        Used for (topics, subscriptions).
 
-        Args:
-            url: str. The final messaging service endpoint
-            route_name: str. The name of the route to follow selected from the route list
-            reqkwargs: keyword argument that will be passed to underlying python-requests library call.
+           Used for (topics, subscriptions).
+
+           Args:
+               url: str. The final messaging service endpoint
+               route_name: str. The name of the route to follow selected from the route list
+               reqkwargs: keyword argument that will be passed to underlying python-requests library call.
         """
         # try to send a delete request to the messaging service.
         # if a connection problem araises a Connection error exception is raised.
-        m = self.routes[route_name][0]
         try:
             # the delete request based on requests.
             r = requests.delete(url, **reqkwargs)
 
             # JSON error returned by AMS
-            if r.status_code != 200 and r.status_code in self.errors[m]:
-                decoded = json.loads(r.content) if r.content else {}
-                raise AmsServiceException(json=decoded, request=route_name)
-
-            # handle other erroneous behaviour
-            elif r.status_code != 200 and r.status_code not in self.errors[m]:
-                errormsg = {'error': {'code': r.status_code,
-                                      'message': r.content}}
+            if r.status_code != 200:
+                errormsg = self._error_dict(r.content, r.status_code)
                 raise AmsServiceException(json=errormsg, request=route_name)
+
             else:
                 return True
 
-        except (requests.exceptions.ConnectionError, requests.exceptions.Timeout) as e:
+        except (requests.exceptions.ConnectionError,
+                requests.exceptions.Timeout) as e:
             raise AmsConnectionException(e, route_name)
 
 
 class ArgoMessagingService(AmsHttpRequests):
-    """
+    """Class is entry point for client code.
+
        Class abstract Argo Messaging Service by covering all available HTTP API
-       calls that are wrapped in series of methods. Class is entry point for
-       client code.
+       calls that are wrapped in series of methods.
     """
     def __init__(self, endpoint, token="", project="", cert="", key="", authn_port=8443):
         super(ArgoMessagingService, self).__init__()
@@ -210,13 +353,12 @@ class ArgoMessagingService(AmsHttpRequests):
         self.subs = OrderedDict()
 
     def assign_token(self, token, cert, key):
-        """
-        Assign a token to the ams object
+        """Assign a token to the ams object
 
-        Args:
-            token(str): a valid ams token
-            cert(str): a path to a valid certificate file
-            key(str): a path to the associated key file for the provided certificate
+           Args:
+               token(str): a valid ams token
+               cert(str): a path to a valid certificate file
+               key(str): a path to the associated key file for the provided certificate
         """
 
         # check if a token has been provided
@@ -233,15 +375,13 @@ class ArgoMessagingService(AmsHttpRequests):
             # when no token was provided
 
             if e.msg == 'While trying the [auth_x509]: No certificate provided.':
-                refined_msg = "No certificate provided. No token provided"
-                errormsg = {'error': {'code': e.code,
-                                      'message': refined_msg}}
+                refined_msg = "No certificate provided. No token provided."
+                errormsg = self._error_dict(refined_msg, e.code)
                 raise AmsServiceException(json=errormsg, request="auth_x509")
             raise e
 
     def auth_via_cert(self, cert, key, **reqkwargs):
-        """
-           Retrieve an ams token based on the provided certificate
+        """Retrieve an ams token based on the provided certificate
 
             Args:
                 cert(str): a path to a valid certificate file
@@ -252,7 +392,7 @@ class ArgoMessagingService(AmsHttpRequests):
                           python-requests library call.
         """
         if cert == "" and key == "":
-            errord = {"error": {"code": 400, "message": "No certificate provided."}}
+            errord = self._error_dict("No certificate provided.", 400)
             raise AmsServiceException(json=errord, request="auth_x509")
 
         # create the certificate tuple needed by the requests library
@@ -268,7 +408,7 @@ class ArgoMessagingService(AmsHttpRequests):
             r = method(url, "auth_x509", **reqkwargs)
             # if the `token` field was not found in the response, raise an error
             if "token" not in r:
-                errord = {"error": {"code": 500, "message": "Token was not found in the response. Response: " + str(r)}}
+                errord = self._error_dict("Token was not found in the response. Response: " + str(r), 500)
                 raise AmsServiceException(json=errord, request="auth_x509")
             return r["token"]
         except (AmsServiceException, AmsConnectionException) as e:
@@ -290,8 +430,7 @@ class ArgoMessagingService(AmsHttpRequests):
         del self.topics[t['name']]
 
     def getacl_topic(self, topic, **reqkwargs):
-        """
-           Get access control lists for topic
+        """Get access control lists for topic
 
            Args:
                topic (str): The topic name.
@@ -318,8 +457,7 @@ class ArgoMessagingService(AmsHttpRequests):
             return []
 
     def modifyacl_topic(self, topic, users, **reqkwargs):
-        """
-           Modify access control lists for topic
+        """Modify access control lists for topic
 
            Args:
                topic (str): The topic name.
@@ -352,8 +490,7 @@ class ArgoMessagingService(AmsHttpRequests):
             raise e
 
     def getacl_sub(self, sub, **reqkwargs):
-        """
-           Get access control lists for subscription
+        """Get access control lists for subscription
 
            Args:
                sub (str): The subscription name.
@@ -380,8 +517,7 @@ class ArgoMessagingService(AmsHttpRequests):
             return []
 
     def getoffsets_sub(self, sub, offset='all', **reqkwargs):
-        """
-           Retrieve the current positions of min,max and current offsets.
+        """Retrieve the current positions of min,max and current offsets.
 
            Args:
                sub (str): The subscription name.
@@ -406,8 +542,7 @@ class ArgoMessagingService(AmsHttpRequests):
             raise AmsServiceException(json=errormsg, request="sub_offsets")
 
     def time_to_offset_sub(self, sub, timestamp, **reqkwargs):
-        """
-           Retrieve the closest(greater than) available offset to the given timestamp.
+        """Retrieve the closest(greater than) available offset to the given timestamp.
 
            Args:
                sub (str): The subscription name.
@@ -438,8 +573,7 @@ class ArgoMessagingService(AmsHttpRequests):
             raise e
 
     def modifyoffset_sub(self, sub, move_to, **reqkwargs):
-        """
-          Modify the position of the current offset.
+        """Modify the position of the current offset.
 
            Args:
                sub (str): The subscription name.
@@ -467,8 +601,7 @@ class ArgoMessagingService(AmsHttpRequests):
             raise e
 
     def modifyacl_sub(self, sub, users, **reqkwargs):
-        """
-           Modify access control lists for subscription
+        """Modify access control lists for subscription
 
            Args:
                sub (str): The subscription name.
@@ -534,8 +667,8 @@ class ArgoMessagingService(AmsHttpRequests):
     def iter_subs(self, topic=None, **reqkwargs):
         """Iterate over AmsSubscription objects
 
-        Args:
-            topic: Iterate over subscriptions only associated to this topic name
+           Args:
+               topic: Iterate over subscriptions only associated to this topic name
         """
         self.list_subs(**reqkwargs)
 
@@ -566,9 +699,9 @@ class ArgoMessagingService(AmsHttpRequests):
     def list_topics(self, **reqkwargs):
         """List the topics of a selected project
 
-        Args:
-            reqkwargs: keyword argument that will be passed to underlying
-                python-requests library call
+           Args:
+               reqkwargs: keyword argument that will be passed to underlying
+               python-requests library call
         """
         route = self.routes["topic_list"]
         # Compose url
@@ -589,8 +722,8 @@ class ArgoMessagingService(AmsHttpRequests):
     def has_topic(self, topic, **reqkwargs):
         """Inspect if topic already exists or not
 
-        Args:
-            topic: str. Topic name
+           Args:
+               topic: str. Topic name
         """
         try:
             self.get_topic(topic, **reqkwargs)
@@ -608,10 +741,11 @@ class ArgoMessagingService(AmsHttpRequests):
     def get_topic(self, topic, retobj=False, **reqkwargs):
         """Get the details of a selected topic.
 
-        Args:
-            topic: str. Topic name.
-            retobj: Controls whether method should return AmsTopic object
-            reqkwargs: keyword argument that will be passed to underlying python-requests library call.
+           Args:
+               topic: str. Topic name.
+               retobj: Controls whether method should return AmsTopic object
+               reqkwargs: keyword argument that will be passed to underlying
+                          python-requests library call.
         """
         route = self.routes["topic_get"]
         # Compose url
@@ -628,19 +762,30 @@ class ArgoMessagingService(AmsHttpRequests):
         else:
             return r
 
-    def publish(self, topic, msg, **reqkwargs):
+    def publish(self, topic, msg, retry=0, retrysleep=60, retrybackoff=None, **reqkwargs):
         """Publish a message or list of messages to a selected topic.
 
-        Args:
-            topic (str): Topic name.
-            msg (list): A list with one or more messages to send.
-                        Each message is represented as AmsMessage object or python
-                        dictionary with at least data or one attribute key defined.
-        Kwargs:
-            reqkwargs: keyword argument that will be passed to underlying
+           If enabled (retry > 0), multiple topic publishes will be tried in
+           case of problems/glitches with the AMS service. retry* options are
+           eventually passed to _retry_make_request()
+
+           Args:
+               topic (str): Topic name.
+               msg (list): A list with one or more messages to send.
+                           Each message is represented as AmsMessage object or python
+                           dictionary with at least data or one attribute key defined.
+           Kwargs:
+               retry: int. Number of request retries before giving up. Default
+                           is 0 meaning no further request retry will be made
+                           after first unsuccesfull request.
+               retrysleep: int. Static number of seconds to sleep before next
+                           request attempt
+               retrybackoff: int. Backoff factor to apply between each request
+                             attempts
+               reqkwargs: keyword argument that will be passed to underlying
                        python-requests library call.
-        Return:
-            dict: Dictionary with messageIds of published messages
+           Return:
+               dict: Dictionary with messageIds of published messages
         """
         if not isinstance(msg, list):
             msg = [msg]
@@ -661,8 +806,9 @@ class ArgoMessagingService(AmsHttpRequests):
     def list_subs(self, **reqkwargs):
         """Lists all subscriptions in a project with a GET request.
 
-        Args:
-            reqkwargs: keyword argument that will be passed to underlying python-requests library call.
+           Args:
+               reqkwargs: keyword argument that will be passed to underlying
+                          python-requests library call.
         """
         route = self.routes["sub_list"]
         # Compose url
@@ -685,10 +831,11 @@ class ArgoMessagingService(AmsHttpRequests):
     def get_sub(self, sub, retobj=False, **reqkwargs):
         """Get the details of a subscription.
 
-        Args:
-            sub: str. The subscription name.
-            retobj: Controls whether method should return AmsSubscription object
-            reqkwargs: keyword argument that will be passed to underlying python-requests library call.
+           Args:
+               sub: str. The subscription name.
+               retobj: Controls whether method should return AmsSubscription object
+               reqkwargs: keyword argument that will be passed to underlying
+                          python-requests library call.
         """
         route = self.routes["sub_get"]
         # Compose url
@@ -710,8 +857,8 @@ class ArgoMessagingService(AmsHttpRequests):
     def has_sub(self, sub, **reqkwargs):
         """Inspect if subscription already exists or not
 
-        Args:
-            sub: str. The subscription name.
+           Args:
+               sub: str. The subscription name.
         """
         try:
             self.get_sub(sub, **reqkwargs)
@@ -726,14 +873,20 @@ class ArgoMessagingService(AmsHttpRequests):
         except AmsConnectionException as e:
             raise e
 
-    def pull_sub(self, sub, num=1, return_immediately=False, **reqkwargs):
+    def pull_sub(self, sub, num=1, return_immediately=False, retry=0,
+                 retrysleep=60, retrybackoff=None, **reqkwargs):
         """This function consumes messages from a subscription in a project
-        with a POST request.
+           with a POST request.
 
-        Args:
-            sub: str. The subscription name.
-            num: int. The number of messages to pull.
-            reqkwargs: keyword argument that will be passed to underlying python-requests library call.
+           If enabled (retry > 0), multiple subscription pulls will be tried in
+           case of problems/glitches with the AMS service. retry* options are
+           eventually passed to _retry_make_request()
+
+           Args:
+               sub: str. The subscription name.
+               num: int. The number of messages to pull.
+               reqkwargs: keyword argument that will be passed to underlying
+                          python-requests library call.
         """
 
         wasmax = self.get_pullopt('maxMessages')
@@ -747,7 +900,9 @@ class ArgoMessagingService(AmsHttpRequests):
         # Compose url
         url = route[1].format(self.endpoint, self.token, self.project, "", sub)
         method = getattr(self, 'do_{0}'.format(route[0]))
-        r = method(url, msg_body, "sub_pull", **reqkwargs)
+        r = method(url, msg_body, "sub_pull", retry=retry,
+                   retrysleep=retrysleep, retrybackoff=retrybackoff,
+                   **reqkwargs)
         msgs = r['receivedMessages']
 
         self.set_pullopt('maxMessages', wasmax)
@@ -755,15 +910,22 @@ class ArgoMessagingService(AmsHttpRequests):
 
         return list(map(lambda m: (m['ackId'], AmsMessage(b64enc=False, **m['message'])), msgs))
 
-    def ack_sub(self, sub, ids, **reqkwargs):
-        """Messages retrieved from a pull subscription can be acknowledged by sending message with an array of ackIDs.
-        The service will retrieve the ackID corresponding to the highest message offset and will consider that message
-        and all previous messages as acknowledged by the consumer.
+    def ack_sub(self, sub, ids, retry=0, retrysleep=60, retrybackoff=None,
+                **reqkwargs):
+        """Acknownledgment of received messages
 
-        Args:
-            sub: str. The subscription name.
-            ids: list(str). A list of ids of the messages to acknowledge.
-            reqkwargs: keyword argument that will be passed to underlying python-requests library call.
+           Messages retrieved from a pull subscription can be acknowledged by
+           sending message with an array of ackIDs. The service will retrieve
+           the ackID corresponding to the highest message offset and will
+           consider that message and all previous messages as acknowledged by
+           the consumer. If enabled (retry > 0), multiple acknowledgement
+           will be tried in case of problems/glitches with the AMS service.
+           retry* options are eventually passed to _retry_make_request()
+
+           Args:
+              sub: str. The subscription name.
+              ids: list(str). A list of ids of the messages to acknowledge.
+              reqkwargs: keyword argument that will be passed to underlying python-requests library call.
         """
 
         msg_body = json.dumps({"ackIds": ids})
@@ -779,11 +941,11 @@ class ArgoMessagingService(AmsHttpRequests):
     def set_pullopt(self, key, value):
         """Function for setting pull options
 
-        Args:
-            key: str. The name of the pull option (ex. maxMessages, returnImmediately).Messaging specific
-               names are allowed.
-            value: str or int. The name of the pull option (ex. maxMessages, returnImmediately).Messaging specific names
-            are allowed.
+           Args:
+               key: str. The name of the pull option (ex. maxMessages, returnImmediately). Messaging specific
+                    names are allowed.
+               value: str or int. The name of the pull option (ex. maxMessages,
+                      returnImmediately). Messaging specific names are allowed.
         """
 
         self.pullopts.update({key: str(value)})
@@ -791,12 +953,12 @@ class ArgoMessagingService(AmsHttpRequests):
     def get_pullopt(self, key):
         """Function for getting pull options
 
-        Args:
-            key: str. The name of the pull option (ex. maxMessages, returnImmediately).Messaging specific
-               names are allowed.
+           Args:
+               key: str. The name of the pull option (ex. maxMessages,
+                    returnImmediately). Messaging specific names are allowed.
 
-        Returns:
-            str. The value of the pull option
+           Returns:
+               str. The value of the pull option
         """
         return self.pullopts[key]
 
@@ -804,17 +966,21 @@ class ArgoMessagingService(AmsHttpRequests):
                    retry_policy_type='linear', retry_policy_period=300, retobj=False, **reqkwargs):
         """This function creates a new subscription in a project with a PUT request
 
-        Args:
-            sub: str. The subscription name.
-            topic: str. The topic name.
-            ackdeadline: int. It is a custom "ack" deadline (in seconds) in the subscription. If your code doesn't
-                              acknowledge the message in this time, the message is sent again. If you don't specify
-                              the deadline, the default is 10 seconds.
-            push_endpoint: URL of remote endpoint that should receive messages in push subscription mode
-            retry_policy_type:
-            retry_policy_period:
-            retobj: Controls whether method should return AmsSubscription object
-            reqkwargs: keyword argument that will be passed to underlying python-requests library call.
+           Args:
+               sub: str. The subscription name.
+               topic: str. The topic name.
+               ackdeadline: int. It is a custom "ack" deadline (in seconds) in
+                               the subscription. If your code doesn't
+                               acknowledge the message in this time, the
+                               message is sent again. If you don't specify
+                               the deadline, the default is 10 seconds.
+               push_endpoint: URL of remote endpoint that should receive
+                              messages in push subscription mode
+               retry_policy_type:
+               retry_policy_period:
+               retobj: Controls whether method should return AmsSubscription object
+               reqkwargs: keyword argument that will be passed to underlying
+               python-requests library call.
         """
         topic = self.get_topic(topic, retobj=True, **reqkwargs)
 
@@ -845,9 +1011,10 @@ class ArgoMessagingService(AmsHttpRequests):
     def delete_sub(self, sub, **reqkwargs):
         """This function deletes a selected subscription in a project
 
-        Args:
-            sub: str. The subscription name.
-            reqkwargs: keyword argument that will be passed to underlying python-requests library call.
+           Args:
+               sub: str. The subscription name.
+               reqkwargs: keyword argument that will be passed to underlying
+                          python-requests library call.
         """
         route = self.routes["sub_delete"]
         # Compose url
@@ -863,10 +1030,11 @@ class ArgoMessagingService(AmsHttpRequests):
         return r
 
     def topic(self, topic, **reqkwargs):
-        """Function create a topic in a project. It's wrapper around few
-           methods defined in client class. Method will ensure that AmsTopic
-           object is returned either by fetching existing one or creating
-           a new one in case it doesn't exist.
+        """Function create a topic in a project.
+
+           It's wrapper around few methods defined in client class. Method will
+           ensure that AmsTopic object is returned either by fetching existing
+           one or creating a new one in case it doesn't exist.
 
            Args:
                topic (str): The topic name
@@ -888,10 +1056,11 @@ class ArgoMessagingService(AmsHttpRequests):
     def create_topic(self, topic, retobj=False, **reqkwargs):
         """This function creates a topic in a project
 
-        Args:
-            topic: str. The topic name.
-            retobj: Controls whether method should return AmsTopic object
-            reqkwargs: keyword argument that will be passed to underlying python-requests library call.
+           Args:
+               topic: str. The topic name.
+               retobj: Controls whether method should return AmsTopic object
+               reqkwargs: keyword argument that will be passed to underlying
+                          python-requests library call.
         """
         route = self.routes["topic_create"]
         # Compose url
@@ -909,11 +1078,12 @@ class ArgoMessagingService(AmsHttpRequests):
             return r
 
     def delete_topic(self, topic, **reqkwargs):
-        """ This function deletes a topic in a project
+        """This function deletes a topic in a project
 
-        Args:
-            topic: str. The topic name.
-            reqkwargs: keyword argument that will be passed to underlying python-requests library call.
+           Args:
+               topic: str. The topic name.
+               reqkwargs: keyword argument that will be passed to underlying
+                          python-requests library call.
         """
         route = self.routes["topic_delete"]
         # Compose url

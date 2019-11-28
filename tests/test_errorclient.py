@@ -1,12 +1,16 @@
+import json
+import mock
 import sys
 import unittest
+import requests
+
 from httmock import urlmatch, HTTMock, response
 from pymod import ArgoMessagingService
 from pymod import AmsMessage
 from pymod import AmsTopic
 from pymod import AmsSubscription
-from pymod import AmsServiceException, AmsException
-import json
+from pymod import (AmsServiceException, AmsConnectionException,
+                   AmsTimeoutException, AmsBalancerException, AmsException)
 
 from .amsmocks import ErrorMocks
 from .amsmocks import TopicMocks
@@ -21,6 +25,15 @@ class TestErrorClient(unittest.TestCase):
         self.topicmocks = TopicMocks()
         self.submocks = SubMocks()
 
+        # set defaults for testing of retries
+        retry = 0
+        retrysleep = 0.1
+        retrybackoff = None
+        if sys.version_info < (3, ):
+            self.ams._retry_make_request.im_func.func_defaults = (None, None, retry, retrysleep, retrybackoff)
+        else:
+            self.ams._retry_make_request.__func__.__defaults__ = (None, None, retry, retrysleep, retrybackoff)
+
     # Test create topic client request
     def testCreateTopics(self):
         # Execute ams client with mocked response
@@ -31,6 +44,17 @@ class TestErrorClient(unittest.TestCase):
                 assert isinstance(e, AmsServiceException)
                 self.assertEqual(e.status, 'ALREADY_EXIST')
                 self.assertEqual(e.code, 409)
+
+    # Test delete topic client request
+    def testDeleteTopics(self):
+        # Execute ams client with mocked response
+        with HTTMock(self.errormocks.delete_topic_notfound_mock):
+            try:
+                resp = self.ams.delete_topic("topic1")
+            except Exception as e:
+                assert isinstance(e, AmsServiceException)
+                self.assertEqual(e.status, 'NOT_FOUND')
+                self.assertEqual(e.code, 404)
 
     def testCreateSubscription(self):
         # Execute ams client with mocked response
@@ -62,7 +86,7 @@ class TestErrorClient(unittest.TestCase):
             try:
                 resp = self.ams.publish("topic1", msg)
             except Exception as e:
-                assert isinstance(e, AmsServiceException)
+                assert isinstance(e, AmsTimeoutException)
                 self.assertEqual(e.code, 504)
 
     # Tests for plaintext or JSON encoded backend error messages
@@ -116,6 +140,121 @@ class TestErrorClient(unittest.TestCase):
                 self.assertEqual(e.msg, 'While trying the [topic_get]: Unauthorized')
                 self.assertEqual(e.status, 'UNAUTHORIZED')
 
+    @mock.patch('pymod.ams.requests.get')
+    def testRetryConnectionProblems(self, mock_requests_get):
+        mock_requests_get.side_effect = [requests.exceptions.ConnectionError,
+                                         requests.exceptions.ConnectionError,
+                                         requests.exceptions.ConnectionError,
+                                         requests.exceptions.ConnectionError]
+        retry = 3
+        retrysleep = 0.1
+        if sys.version_info < (3, ):
+            self.ams._retry_make_request.im_func.func_defaults = (None, None, retry, retrysleep, None)
+        else:
+            self.ams._retry_make_request.__func__.__defaults__ = (None, None, retry, retrysleep, None)
+        self.assertRaises(AmsConnectionException, self.ams.list_topics)
+        self.assertEqual(mock_requests_get.call_count, retry + 1)
+
+    @mock.patch('pymod.ams.requests.get')
+    def testBackoffRetryConnectionProblems(self, mock_requests_get):
+        mock_requests_get.side_effect = [requests.exceptions.ConnectionError,
+                                         requests.exceptions.ConnectionError,
+                                         requests.exceptions.ConnectionError,
+                                         requests.exceptions.ConnectionError]
+        retry = 3
+        retrysleep = 0.1
+        retrybackoff = 0.1
+        if sys.version_info < (3, ):
+            self.ams._retry_make_request.im_func.func_defaults = (None, None, retry, retrysleep, retrybackoff)
+        else:
+            self.ams._retry_make_request.__func__.__defaults__ = (None, None, retry, retrysleep, retrybackoff)
+        self.assertRaises(AmsConnectionException, self.ams.list_topics)
+        self.assertEqual(mock_requests_get.call_count, retry + 1)
+
+    @mock.patch('pymod.ams.requests.post')
+    def testRetryAmsBalancerTimeout408(self, mock_requests_post):
+        retry = 4
+        retrysleep = 0.2
+        errmsg = "<html><body><h1>408 Request Time-out</h1>\nYour browser didn't send a complete request in time.\n</body></html>\n"
+        mock_response = mock.create_autospec(requests.Response)
+        mock_response.status_code = 408
+        mock_response.content = errmsg
+        mock_requests_post.return_value = mock_response
+        try:
+            self.ams.pull_sub('subscription1', retry=retry, retrysleep=retrysleep)
+        except Exception as e:
+            assert isinstance(e, AmsTimeoutException)
+            self.assertEqual(e.code, 408)
+            self.assertEqual(e.msg, 'While trying the [sub_pull]: ' + errmsg)
+        self.assertEqual(mock_requests_post.call_count, retry + 1)
+
+    @mock.patch('pymod.ams.requests.post')
+    def testRetryAmsBalancer502(self, mock_requests_post):
+        retry = 4
+        retrysleep = 0.2
+        errmsg = "<html><body><h1>502 Bad Gateway</h1>\nThe server returned an invalid or incomplete response.\n</body></html>\n"
+        mock_response = mock.create_autospec(requests.Response)
+        mock_response.status_code = 502
+        mock_response.content = errmsg
+        mock_requests_post.return_value = mock_response
+        try:
+            self.ams.pull_sub('subscription1', retry=retry, retrysleep=retrysleep)
+        except Exception as e:
+            assert isinstance(e, AmsBalancerException)
+            self.assertEqual(e.code, 502)
+            self.assertEqual(e.msg, 'While trying the [sub_pull]: ' + errmsg)
+        self.assertEqual(mock_requests_post.call_count, retry + 1)
+
+    @mock.patch('pymod.ams.requests.post')
+    def testRetryAmsBalancer503(self, mock_requests_post):
+        retry = 4
+        retrysleep = 0.2
+        errmsg = "<html><body><h1>503 Service Unavailable</h1>\nNo server is available to handle this request.\n</body></html>\n"
+        mock_response = mock.create_autospec(requests.Response)
+        mock_response.status_code = 503
+        mock_response.content = errmsg
+        mock_requests_post.return_value = mock_response
+        try:
+            self.ams.pull_sub('subscription1', retry=retry, retrysleep=retrysleep)
+        except Exception as e:
+            assert isinstance(e, AmsBalancerException)
+            self.assertEqual(e.code, 503)
+            self.assertEqual(e.msg, 'While trying the [sub_pull]: ' + errmsg)
+        self.assertEqual(mock_requests_post.call_count, retry + 1)
+
+    @mock.patch('pymod.ams.requests.post')
+    def testRetryAmsBalancerTimeout504(self, mock_requests_post):
+        retry = 4
+        retrysleep = 0.2
+        errmsg = "<html><body><h1>504 Gateway Time-out</h1>\nThe server didn't respond in time.\n</body></html>\n"
+        mock_response = mock.create_autospec(requests.Response)
+        mock_response.status_code = 504
+        mock_response.content = errmsg
+        mock_requests_post.return_value = mock_response
+        try:
+            self.ams.pull_sub('subscription1', retry=retry, retrysleep=retrysleep)
+        except Exception as e:
+            assert isinstance(e, AmsTimeoutException)
+            self.assertEqual(e.code, 504)
+            self.assertEqual(e.msg, 'While trying the [sub_pull]: ' + errmsg)
+        self.assertEqual(mock_requests_post.call_count, retry + 1)
+
+    @mock.patch('pymod.ams.requests.get')
+    def testRetryAckDeadlineAmsTimeout(self, mock_requests_get):
+        mock_response = mock.create_autospec(requests.Response)
+        mock_response.status_code = 408
+        mock_response.content = '{"error": {"code": 408, \
+                                            "message": "Ams Timeout", \
+                                            "status": "TIMEOUT"}}'
+        mock_requests_get.return_value = mock_response
+        retry = 3
+        retrysleep = 0.1
+        if sys.version_info < (3, ):
+            self.ams._retry_make_request.im_func.__defaults__ = (None, None, retry, retrysleep, None)
+        else:
+            self.ams._retry_make_request.__func__.__defaults__ = (None, None, retry, retrysleep, None)
+        self.assertRaises(AmsTimeoutException, self.ams.list_topics)
+        self.assertEqual(mock_requests_get.call_count, retry + 1)
 
 
 
