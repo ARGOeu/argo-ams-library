@@ -91,6 +91,8 @@ rm -rf %{buildroot}
 
 
 %changelog
+* Wed Dec 4 2019 Daniel Vrcic <dvrcic@srce.hr> - 0.5.0-1%{?dist}
+- ARGO-1481 Connection retry logic in ams-library 
 * Fri Nov 8 2019 Daniel Vrcic <dvrcic@srce.hr>, agelostsal <agelos.tsal@gmail.com> - 0.4.3-1%{?dist}
 - ARGO-1990 Fix runtime dependencies
 - ARGO-1862 Make argo-ams-library Python 3 ready
