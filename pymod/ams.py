@@ -154,7 +154,7 @@ class AmsHttpRequests(object):
                         if timeout:
                             log.warning('Backoff retry #{0} after {1} seconds, connection timeout set to {2} seconds - {3}'.format(i, sleep_secs, timeout, e))
                         else:
-                            log.warning('Backoff retry #{0} after {1} seconds - {3}'.format(i, sleep_secs, e))
+                            log.warning('Backoff retry #{0} after {1} seconds - {2}'.format(i, sleep_secs, e))
                     finally:
                         i += 1
                 else:
