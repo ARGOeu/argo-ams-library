@@ -152,9 +152,9 @@ class AmsHttpRequests(object):
                         saved_exp = e
                         time.sleep(sleep_secs)
                         if timeout:
-                            log.warning('Backoff retry #{0} after {1} seconds, connection timeout set to {2} seconds'.format(i, sleep_secs, timeout))
+                            log.warning('Backoff retry #{0} after {1} seconds, connection timeout set to {2} seconds - {3}'.format(i, sleep_secs, timeout, e))
                         else:
-                            log.warning('Backoff retry #{0} after {1} seconds'.format(i, sleep_secs))
+                            log.warning('Backoff retry #{0} after {1} seconds - {3}'.format(i, sleep_secs, e))
                     finally:
                         i += 1
                 else:
@@ -170,9 +170,9 @@ class AmsHttpRequests(object):
                     else:
                         time.sleep(retrysleep)
                         if timeout:
-                            log.warning('Retry #{0} after {1} seconds, connection timeout set to {2} seconds'.format(i, retrysleep, timeout))
+                            log.warning('Retry #{0} after {1} seconds, connection timeout set to {2} seconds - {3}'.format(i, retrysleep, timeout, e))
                         else:
-                            log.warning('Retry #{0} after {1} seconds'.format(i, retrysleep))
+                            log.warning('Retry #{0} after {1} seconds - {2}'.format(i, retrysleep, e))
                 finally:
                     i += 1
 
