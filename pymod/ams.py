@@ -29,7 +29,8 @@ class AmsHttpRequests(object):
        library. service error handling is implemented according to HTTP
        status codes returned by service and the balancer.
     """
-    def __init__(self):
+    def __init__(self, endpoint):
+        self.endpoint = endpoint
         # Create route list
         self.routes = {"topic_list": ["get", "https://{0}/v1/projects/{2}/topics?key={1}"],
                        "topic_get": ["get", "https://{0}/v1/projects/{2}/topics/{3}?key={1}"],
@@ -152,9 +153,9 @@ class AmsHttpRequests(object):
                         saved_exp = e
                         time.sleep(sleep_secs)
                         if timeout:
-                            log.warning('Backoff retry #{0} after {1} seconds, connection timeout set to {2} seconds - {3}'.format(i, sleep_secs, timeout, e))
+                            log.warning('Backoff retry #{0} after {1} seconds, connection timeout set to {2} seconds - {3}: {4}'.format(i, sleep_secs, timeout, self.endpoint, e))
                         else:
-                            log.warning('Backoff retry #{0} after {1} seconds - {2}'.format(i, sleep_secs, e))
+                            log.warning('Backoff retry #{0} after {1} seconds - {2}: {3}'.format(i, sleep_secs, self.endpoint, e))
                     finally:
                         i += 1
                 else:
@@ -170,9 +171,9 @@ class AmsHttpRequests(object):
                     else:
                         time.sleep(retrysleep)
                         if timeout:
-                            log.warning('Retry #{0} after {1} seconds, connection timeout set to {2} seconds - {3}'.format(i, retrysleep, timeout, e))
+                            log.warning('Retry #{0} after {1} seconds, connection timeout set to {2} seconds - {3}: {4}'.format(i, retrysleep, timeout, self.endpoint, e))
                         else:
-                            log.warning('Retry #{0} after {1} seconds - {2}'.format(i, retrysleep, e))
+                            log.warning('Retry #{0} after {1} seconds - {2}: {3}'.format(i, retrysleep, self.endpoint, e))
                 finally:
                     i += 1
 
@@ -340,7 +341,7 @@ class ArgoMessagingService(AmsHttpRequests):
        calls that are wrapped in series of methods.
     """
     def __init__(self, endpoint, token="", project="", cert="", key="", authn_port=8443):
-        super(ArgoMessagingService, self).__init__()
+        super(ArgoMessagingService, self).__init__(endpoint)
         self.authn_port = authn_port
         self.token = ""
         self.endpoint = endpoint
