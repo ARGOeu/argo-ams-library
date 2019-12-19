@@ -27,10 +27,11 @@ class AmsTopic(object):
         return self.init.delete_topic(self.name)
 
     def subscription(self, sub, ackdeadline=10, **reqkwargs):
-        """Create a subscription for the topic. It's wrapper around few
-           methods defined in client class. Method will ensure that AmsSubscription
-           object is returned either by fetching existing one or creating
-           a new one in case it doesn't exist.
+        """Create a subscription for the topic.
+
+           It's wrapper around few methods defined in client class. Method will
+           ensure that AmsSubscription object is returned either by fetching
+           existing one or creating a new one in case it doesn't exist.
 
            Args:
                sub (str): Name of the subscription
@@ -75,13 +76,21 @@ class AmsTopic(object):
         for s in self.init.iter_subs(topic=self.name):
             yield s
 
-    def publish(self, msg, **reqkwargs):
+    def publish(self, msg, retry=0, retrysleep=60, retrybackoff=None, **reqkwargs):
         """Publish message to topic
 
            Args:
                msg (list, dict): One or list of dictionaries representing AMS
                                  Message
            Kwargs:
+               retry: int. Number of request retries before giving up. Default
+                           is 0 meaning no further request retry will be made
+                           after first unsuccesfull request.
+               retrysleep: int. Static number of seconds to sleep before next
+                           request attempt
+               retrybackoff: int. Backoff factor to apply between each request
+                             attempts
+
                reqkwargs: Keyword argument that will be passed to underlying
                           python-requests library call.
 
@@ -89,4 +98,6 @@ class AmsTopic(object):
                dict: Dictionary with messageIds of published messages
         """
 
-        return self.init.publish(self.name, msg, **reqkwargs)
+        return self.init.publish(self.name, msg, retry=retry,
+                                 retrysleep=retrysleep,
+                                 retrybackoff=retrybackoff, **reqkwargs)

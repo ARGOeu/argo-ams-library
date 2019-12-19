@@ -1,7 +1,12 @@
 from setuptools import setup
+from os import path
 import glob
 
 NAME='argo-ams-library'
+
+this_directory = path.abspath(path.dirname(__file__))
+with open(path.join(this_directory, 'README.md')) as f:
+    long_description = f.read()
 
 def get_ver():
     try:
@@ -14,19 +19,20 @@ def get_ver():
         raise SystemExit(1)
 
 setup(
-    name = NAME,
-    version = get_ver(),
-    author = 'SRCE, GRNET',
-    author_email = 'dvrcic@srce.hr, agelos.tsal@gmail.com, kaggis@gmail.com, themiszamani@gmail.com',
-    license = 'ASL 2.0',
-    description = 'A simple python library for interacting with the ARGO Messaging Service',
-    long_description = 'A simple python library for interacting with the ARGO Messaging Service',
-    tests_require = [
+    name=NAME,
+    version=get_ver(),
+    author='SRCE, GRNET',
+    author_email='dvrcic@srce.hr, agelos.tsal@gmail.com, kaggis@gmail.com, themiszamani@gmail.com',
+    license='ASL 2.0',
+    description='A simple python library for interacting with the ARGO Messaging Service',
+    long_description=long_description,
+    long_description_content_type='text/markdown',
+    tests_require=[
         'setuptools_scm',
         'httmock',
         'pytest'
     ],
-    classifiers = [
+    classifiers=[
         "Development Status :: 5 - Production/Stable",
         "License :: OSI Approved :: Apache Software License",
         "Operating System :: POSIX",
@@ -37,8 +43,8 @@ setup(
         "Intended Audience :: Developers",
         "Topic :: Software Development :: Libraries :: Python Modules"
     ],
-    url = 'https://github.com/ARGOeu/argo-ams-library',
-    package_dir = {'argo_ams_library': 'pymod/'},
-    packages = ['argo_ams_library'],
+    url='https://github.com/ARGOeu/argo-ams-library',
+    package_dir={'argo_ams_library': 'pymod/'},
+    packages=['argo_ams_library'],
     install_requires=['requests']
-    )
+)

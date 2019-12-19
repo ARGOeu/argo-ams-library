@@ -29,7 +29,8 @@ class AmsSubscription(object):
 
         return self.init.delete_sub(self.name)
 
-    def pushconfig(self, push_endpoint=None, retry_policy_type='linear', retry_policy_period=300, **reqkwargs):
+    def pushconfig(self, push_endpoint=None, retry_policy_type='linear',
+                   retry_policy_period=300, **reqkwargs):
         """Configure Push mode parameters of subscription. When push_endpoint
            is defined, subscription will automatically start to send messages to it.
 
@@ -47,11 +48,19 @@ class AmsSubscription(object):
                                         retry_policy_period=retry_policy_period,
                                         **reqkwargs)
 
-    def pull(self, num=1, return_immediately=False, **reqkwargs):
+    def pull(self, num=1, retry=0, retrysleep=60, retrybackoff=None,
+             return_immediately=False, **reqkwargs):
         """Pull messages from subscription
 
            Kwargs:
                num (int): Number of messages to pull
+               retry: int. Number of request retries before giving up. Default
+                           is 0 meaning no further request retry will be made
+                           after first unsuccesfull request.
+               retrysleep: int. Static number of seconds to sleep before next
+                           request attempt
+               retrybackoff: int. Backoff factor to apply between each request
+                             attempts
                return_immediately (boolean): If True and if stream of messages is empty,
                                              subscriber call will not block and wait for
                                              messages
@@ -119,11 +128,18 @@ class AmsSubscription(object):
         else:
             return self.init.modifyacl_sub(self.name, users, **reqkwargs)
 
-    def ack(self, ids, **reqkwargs):
+    def ack(self, ids, retry=0, retrysleep=60, retrybackoff=None, **reqkwargs):
         """Acknowledge receive of messages
 
            Kwargs:
                ids (list): A list of ackIds of the messages to acknowledge.
+               retry: int. Number of request retries before giving up. Default
+                           is 0 meaning no further request retry will be made
+                           after first unsuccesfull request.
+               retrysleep: int. Static number of seconds to sleep before next
+                           request attempt
+               retrybackoff: int. Backoff factor to apply between each request
+                             attempts
         """
 
         return self.init.ack_sub(self.name, ids, **reqkwargs)
