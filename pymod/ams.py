@@ -937,7 +937,8 @@ class ArgoMessagingService(AmsHttpRequests):
         # Compose url
         url = route[1].format(self.endpoint, self.token, self.project, "", sub)
         method = getattr(self, 'do_{0}'.format(route[0]))
-        method(url, msg_body, "sub_ack", **reqkwargs)
+        method(url, msg_body, "sub_ack", retry=retry, retrysleep=retrysleep,
+               retrybackoff=retrybackoff, **reqkwargs)
 
         return True
 
