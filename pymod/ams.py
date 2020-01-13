@@ -802,7 +802,9 @@ class ArgoMessagingService(AmsHttpRequests):
         url = route[1].format(self.endpoint, self.token, self.project, topic)
         method = getattr(self, 'do_{0}'.format(route[0]))
 
-        return method(url, msg_body, "topic_publish", **reqkwargs)
+        return method(url, msg_body, "topic_publish", retry=retry,
+                      retrysleep=retrysleep, retrybackoff=retrybackoff,
+                      **reqkwargs)
 
     def list_subs(self, **reqkwargs):
         """Lists all subscriptions in a project with a GET request.
