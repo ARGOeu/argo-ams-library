@@ -6,7 +6,7 @@
 
 Name:           argo-ams-library
 Summary:        %{sum}
-Version:        0.5.0
+Version:        0.5.1
 Release:        1%{?dist}
 
 Group:          Development/Libraries
@@ -95,6 +95,8 @@ rm -rf %{buildroot}
 
 
 %changelog
+* Mon Feb 10 2020 Daniel Vrcic <dvrcic@srce.hr> - 0.5.1-1%{?dist}
+- ARGO-2182 ams-lib does not retry on topic publish
 * Wed Dec 4 2019 Daniel Vrcic <dvrcic@srce.hr> - 0.5.0-1%{?dist}
 - ARGO-1481 Connection retry logic in ams-library
 * Fri Nov 8 2019 Daniel Vrcic <dvrcic@srce.hr>, agelostsal <agelos.tsal@gmail.com> - 0.4.3-1%{?dist}
