@@ -12,21 +12,24 @@ You may find more information about [the ARGO Messaging Service documentation](h
 
 ## Library installation 
 
-You may find and download the ARGO Messaging Library from ARGO Repository as well as from PyPI.
+Library is tested and should work with Python versions 2.6, 2.7, 3.4 and 3.6 running on CentOS 6 and CentOS 7 releases.
 
-If you want the devel instance so as to test all new features 
+RPM packages are prepared for both CentOS releases and you may find it and download it from ARGO Repository. PyPI packages are prepared as well.
 
-http://rpm-repo.argo.grnet.gr/ARGO/devel/centos6/
-http://rpm-repo.argo.grnet.gr/ARGO/devel/centos7/
- 
-If you want the stable instance you may download it from here
+RPM production packages:
 
 http://rpm-repo.argo.grnet.gr/ARGO/prod/centos6/
 http://rpm-repo.argo.grnet.gr/ARGO/prod/centos7/
 
-PyPI package is available here:
+RPM devel packages:
+
+http://rpm-repo.argo.grnet.gr/ARGO/devel/centos6/
+http://rpm-repo.argo.grnet.gr/ARGO/devel/centos7/
+ 
+PyPI package:
 
 https://pypi.org/project/argo-ams-library/
+
 
 ## Authentication
 The AMS library uses a valid AMS token to execute requests against the AMS cluster.
@@ -64,7 +67,6 @@ publish.py  --host=[the FQDN of AMS Service]
 --project=[the name of your project registered in AMS Service] 
 --topic=[the topic to publish your messages]
 ```
- 
  
 ### Consume messages in pull mode 
  
