@@ -50,7 +50,7 @@ The library will use the provided certificate to access the corresponding ams to
 
 ## Examples
 
-In the folder examples, you may find examples of using the library:
+In the folder `examples`, you may find examples of using the library:
 
 - for publishing messages (`examples/publish.py`)
 - for consuming messages in pull mode (`examples/consume-pull.py`)

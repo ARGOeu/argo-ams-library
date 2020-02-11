@@ -1,0 +1,46 @@
+#!/usr/bin/env python3
+
+from argparse import ArgumentParser
+from argo_ams_library import ArgoMessagingService, AmsMessage, AmsException
+
+import logging
+
+
+# setup logger to see the retry messages from ams-library
+log = logging.getLogger('argo_ams_library')
+log.setLevel(logging.WARNING)
+log.addHandler(logging.handlers.SysLogHandler('/dev/log', logging.handlers.SysLogHandler.LOG_USER))
+log.addHandler(logging.StreamHandler())
+
+
+def main():
+    parser = ArgumentParser(description="Simple AMS message publish example")
+    parser.add_argument('--host', type=str, default='messaging-devel.argo.grnet.gr', help='FQDN of AMS Service')
+    parser.add_argument('--token', type=str, required=True, help='Given token')
+    parser.add_argument('--project', type=str, required=True, help='Project  registered in AMS Service')
+    parser.add_argument('--topic', type=str, required=True, help='Given topic')
+    parser.add_argument('--subscription', type=str, required=True, help='Subscription name')
+    parser.add_argument('--nummsgs', type=int, default=3, help='Number of messages to pull and ack')
+    args = parser.parse_args()
+
+    ams = ArgoMessagingService(endpoint=args.host, token=args.token, project=args.project)
+
+    # iptables -A OUTPUT -d messaging-devel.argo.grnet.gr -j DROP
+
+    msg = AmsMessage(data='foo1', attributes={'bar1': 'baz1'}).dict()
+    try:
+        ret = ams.publish(args.topic, msg, retry=3, retrysleep=5, timeout=5)
+        print(ret)
+    except AmsException as e:
+        print(e)
+
+    ackids = list()
+    for id, msg in ams.pull_sub(args.subscription, args.nummsgs, retry=3, retrysleep=5, timeout=5):
+        data = msg.get_data()
+        msgid = msg.get_msgid()
+        attr = msg.get_attr()
+        print('msgid={0}, data={1}, attr={2}'.format(msgid, data, attr))
+        ackids.append(id)
+
+
+main()
