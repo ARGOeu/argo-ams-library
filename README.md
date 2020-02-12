@@ -54,6 +54,7 @@ In the folder `examples`, you may find examples of using the library:
 
 - for publishing messages (`examples/publish.py`)
 - for consuming messages in pull mode (`examples/consume-pull.py`)
+- retry feature for publish/consume methods (`examples/retry.py`)
 
 ### Publish messages
 
@@ -83,3 +84,12 @@ consume-pull.py  --host=[the FQDN of AMS Service]
 --nummsgs=[the num of messages to consume]
 
 ```
+
+### Retry 
+
+Library has self-implemented HTTP request retry ability to seamlesssly interact with the ARGO Messaging service. Specifically, requests will be retried in case of:
+* timeouts from AMS (HTTP `408`) or load balancer (HTTP `408` and `504`)
+* load balancer HTTP `502`, `503`
+* connection related problems in the lower network layers
+
+It has two modes: static sleep and backoff. Examples are given in the in `examples/retry.py`.

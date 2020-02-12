@@ -25,8 +25,7 @@ def main():
 
     ams = ArgoMessagingService(endpoint=args.host, token=args.token, project=args.project)
 
-    # iptables -A OUTPUT -d messaging-devel.argo.grnet.gr -j DROP
-
+    # static sleep between retry attempts
     msg = AmsMessage(data='foo1', attributes={'bar1': 'baz1'}).dict()
     try:
         ret = ams.publish(args.topic, msg, retry=3, retrysleep=5, timeout=5)
@@ -34,13 +33,34 @@ def main():
     except AmsException as e:
         print(e)
 
+    # iptables -A OUTPUT -d messaging-devel.argo.grnet.gr -j DROP
+
     ackids = list()
-    for id, msg in ams.pull_sub(args.subscription, args.nummsgs, retry=3, retrysleep=5, timeout=5):
+    for id, msg in ams.pull_sub(args.subscription, args.nummsgs, retry=3,
+                                retrysleep=5, timeout=5):
         data = msg.get_data()
         msgid = msg.get_msgid()
         attr = msg.get_attr()
         print('msgid={0}, data={1}, attr={2}'.format(msgid, data, attr))
         ackids.append(id)
 
+    # backoff with each next retry attempt exponentially longer
+    msg = AmsMessage(data='foo1', attributes={'bar1': 'baz1'}).dict()
+    try:
+        ret = ams.publish(args.topic, msg, retry=3, retrybackoff=5, timeout=5)
+        print(ret)
+    except AmsException as e:
+        print(e)
+
+    # iptables -A OUTPUT -d messaging-devel.argo.grnet.gr -j DROP
+
+    ackids = list()
+    for id, msg in ams.pull_sub(args.subscription, args.nummsgs,
+                                retrybackoff=3, retrysleep=5, timeout=5):
+        data = msg.get_data()
+        msgid = msg.get_msgid()
+        attr = msg.get_attr()
+        print('msgid={0}, data={1}, attr={2}'.format(msgid, data, attr))
+        ackids.append(id)
 
 main()
