@@ -9,6 +9,8 @@ def main():
     parser.add_argument('--token', type=str, required=True, help='Given token')
     parser.add_argument('--project', type=str, required=True, help='Project  registered in AMS Service')
     parser.add_argument('--topic', type=str, required=True, help='Given topic')
+    parser.add_argument('--subscription', type=str, required=True, help='Subscription name')
+    parser.add_argument('--nummsgs', type=int, default=3, help='Number of messages to pull and ack')
     args = parser.parse_args()
 
     # initialize service with given token and project
@@ -26,7 +28,7 @@ def main():
     # help of AmsMessage which accepts data and attributes keys.
     # data is Base64 encoded, attributes is dictionary of arbitrary
     # key/value pairs
-    msg = AmsMessage(data='foo1', attributes={'bar1': 'baz1'}).dict()
+    msg = AmsMessage(data='foo1', attributes={'bar1': 'baz1'})
     try:
         ret = ams.publish(args.topic, msg)
         print(ret)
