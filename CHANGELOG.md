@@ -3,6 +3,8 @@
 ## [0.5.1] - 2020-02-12
 ### Fixed
 - ARGO-2182 ams-lib does not retry on topic publish
+- fixed RPM autodependencies so py2 RPM is no longer requiring py3 ABI
+- replaced include in MANIFEST.in with graft
 
 ## [0.5.0] - 2019-12-19
 ### Added 
