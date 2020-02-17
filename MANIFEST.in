@@ -1,6 +1,6 @@
-include pymod/*
-include helpers/*
-include examples/*
+graft pymod
+graft helpers
+graft examples
 include README.md
 include argo-ams-library.spec
 

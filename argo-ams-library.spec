@@ -1,28 +1,20 @@
 %global underscore() %(echo %1 | sed 's/-/_/g')
 
-%global sum A simple python library for interacting with the ARGO Messaging Service 
-%global desc A simple python library for interacting with the ARGO Messaging Service 
+%global sum A simple python library for interacting with the ARGO Messaging Service
+%global desc A simple python library for interacting with the ARGO Messaging Service
 
 
 Name:           argo-ams-library
-Summary:        %{sum} 
-Version:        0.5.0
+Summary:        %{sum}
+Version:        0.5.1
 Release:        1%{?dist}
 
 Group:          Development/Libraries
-License:        ASL 2.0  
+License:        ASL 2.0
 URL:            https://github.com/ARGOeu/argo-ams-library
-Source0:        %{name}-%{version}.tar.gz 
+Source0:        %{name}-%{version}.tar.gz
 
-BuildArch:      noarch 
-
-%if 0%{?el6}
-BuildRequires:  python2-devel python2-setuptools python34-devel python34-setuptools
-%endif
-
-%if 0%{?el7}
-BuildRequires:  python-devel python-setuptools python36-devel python36-setuptools
-%endif
+BuildArch:      noarch
 
 
 %description
@@ -30,31 +22,43 @@ BuildRequires:  python-devel python-setuptools python36-devel python36-setuptool
 
 
 %if 0%{?el6}
+
 %package -n python2-%{name}
-Obsoletes: argo-ams-library
-Provides: argo-ams-library
-Summary: %{sum} 
-Requires: python2-requests
+Obsoletes:     argo-ams-library
+Provides:      argo-ams-library
+Summary:       %{sum}
+BuildRequires: python2-devel    python2-setuptools
+Requires:      python2-requests
+AutoReq: no
 %description -n python2-%{name}
 %{desc}
 %{?python_provide:%python_provide python2-%{name}}
+
 %else
+
 %package -n python-%{name}
-Obsoletes: argo-ams-library
-Provides: argo-ams-library
-Summary: %{sum} 
-Requires: python-requests
+Obsoletes:     argo-ams-library
+Provides:      argo-ams-library
+Summary:       %{sum}
+BuildRequires: python-devel     python-setuptools
+Requires:      python-requests
+AutoReq: no
 %description -n python-%{name}
 %{desc}
 %{?python_provide:%python_provide python-%{name}}
+
 %endif
 
 %package -n python%{python3_pkgversion}-%{name}
-Summary: %{sum} 
+Summary: %{sum}
 %if 0%{?el6}
-Requires: python34-requests
+BuildRequires: python34-devel    python34-setuptools
+Requires:      python34-requests
+AutoReq: no
 %else
-Requires: python36-requests
+BuildRequires: python36-devel    python36-setuptools
+Requires:      python36-requests
+AutoReq: no
 %endif
 %description -n python%{python3_pkgversion}-%{name}
 %{desc}
@@ -72,8 +76,8 @@ Requires: python36-requests
 
 %install
 rm -rf %{buildroot}
-%{py_install "--record=INSTALLED_FILES" } 
-%{py3_install "--record=INSTALLED_FILES" } 
+%{py_install "--record=INSTALLED_FILES" }
+%{py3_install "--record=INSTALLED_FILES" }
 
 
 %files -n python%{python3_pkgversion}-%{name} -f INSTALLED_FILES
@@ -91,8 +95,10 @@ rm -rf %{buildroot}
 
 
 %changelog
+* Mon Feb 10 2020 Daniel Vrcic <dvrcic@srce.hr> - 0.5.1-1%{?dist}
+- ARGO-2182 ams-lib does not retry on topic publish
 * Wed Dec 4 2019 Daniel Vrcic <dvrcic@srce.hr> - 0.5.0-1%{?dist}
-- ARGO-1481 Connection retry logic in ams-library 
+- ARGO-1481 Connection retry logic in ams-library
 * Fri Nov 8 2019 Daniel Vrcic <dvrcic@srce.hr>, agelostsal <agelos.tsal@gmail.com> - 0.4.3-1%{?dist}
 - ARGO-1990 Fix runtime dependencies
 - ARGO-1862 Make argo-ams-library Python 3 ready
@@ -121,4 +127,4 @@ rm -rf %{buildroot}
 * Thu Mar 2 2017 Daniel Vrcic <dvrcic@srce.hr> - 0.1.0-2%{?dist}
 - ARGO-710 Provide examples of simple publishing and consuming
 * Fri Feb 24 2017 Daniel Vrcic <dvrcic@srce.hr> - 0.1.0-1%{?dist}
-- first version 
+- first version
