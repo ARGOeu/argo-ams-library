@@ -44,6 +44,10 @@ def main():
         print('msgid={0}, data={1}, attr={2}'.format(msgid, data, attr))
         ackids.append(id)
 
+    if ackids:
+        ams.ack_sub(args.subscription, ackids, retry=3, retrysleep=5,
+                    timeout=5)
+
     # backoff with each next retry attempt exponentially longer
     msg = AmsMessage(data='foo1', attributes={'bar1': 'baz1'}).dict()
     try:
@@ -62,5 +66,9 @@ def main():
         attr = msg.get_attr()
         print('msgid={0}, data={1}, attr={2}'.format(msgid, data, attr))
         ackids.append(id)
+
+    if ackids:
+        ams.ack_sub(args.subscription, ackids, retrybackoff=3, retrysleep=5,
+                    timeout=5)
 
 main()
