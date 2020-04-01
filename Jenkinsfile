@@ -88,9 +88,9 @@ pipeline {
             }
         }
         stage ('Upload to PyPI'){
-            //when {
-            //    branch 'master'
-            //}
+            when {
+                branch 'master'
+            }
             agent {
                 docker {
                     image 'argo.registry:5000/python3'
@@ -98,12 +98,12 @@ pipeline {
             }
             steps {
                 echo 'Build python package'
-                withCredentials(bindings: [usernamePassword(credentialsId: 'test-pypi', usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD')]) {
+                withCredentials(bindings: [usernamePassword(credentialsId: 'pypi-token', usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD')]) {
                     sh '''
                         cd ${WORKSPACE}/$PROJECT_DIR
                         pipenv install --dev
                         pipenv run python setup.py sdist bdist_wheel
-                        pipenv run python -m twine upload -u $USERNAME -p $PASSWORD --repository-url https://test.pypi.org/legacy/ dist/*
+                        pipenv run python -m twine upload -u $USERNAME -p $PASSWORD dist/*
                     '''
                 }
             }
