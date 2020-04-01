@@ -101,7 +101,7 @@ pipeline {
                 withCredentials(bindings: [usernamePassword(credentialsId: 'test-pypi', usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD')]) {
                     sh '''
                         cd ${WORKSPACE}/$PROJECT_DIR
-                        pipenv install
+                        pipenv install --dev
                         pipenv run python setup.py sdist bdist_wheel
                         pipenv run python -m twine upload -u $USERNAME -p $PASSWORD --repository-url https://test.pypi.org/legacy/ dist/*
                     '''
