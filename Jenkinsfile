@@ -30,6 +30,11 @@ pipeline {
                         '''
                         cobertura coberturaReportFile: '**/coverage.xml'
                     }
+                    post {
+                        always {
+                            cleanWs()
+                        }
+                    }
                 }
                 stage ('Test Centos 7') {
                     agent {
@@ -47,6 +52,11 @@ pipeline {
                             scl enable rh-python36 'coverage xml --omit=*usr* --omit=*.tox*'
                         '''
                         cobertura coberturaReportFile: '**/coverage.xml'
+                    }
+                    post {
+                        always {
+                            cleanWs()
+                        }
                     }
                 }
             }
