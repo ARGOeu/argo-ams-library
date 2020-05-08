@@ -68,6 +68,11 @@ pipeline {
                         }
                         archiveArtifacts artifacts: '**/*.rpm', fingerprint: true
                     }
+                    post {
+                        always {
+                            cleanWs()
+                        }
+                    }
                 }
                 stage ('Build Centos 7') {
                     agent {
@@ -83,6 +88,11 @@ pipeline {
                             sh "/home/jenkins/build-rpm.sh -w ${WORKSPACE} -b ${BRANCH_NAME} -d centos7 -p ${PROJECT_DIR} -s ${REPOKEY}"
                         }
                         archiveArtifacts artifacts: '**/*.rpm', fingerprint: true
+                    }
+                    post {
+                        always {
+                            cleanWs()
+                        }
                     }
                 }
             }
@@ -112,6 +122,20 @@ pipeline {
     post {
         always {
             cleanWs()
+        }
+        success {
+            script{
+                if ( env.BRANCH_NAME == 'master' || env.BRANCH_NAME == 'devel' ) {
+                    slackSend( message: ":rocket: New version for <$BUILD_URL|$PROJECT_DIR>:$BRANCH_NAME Job: $JOB_NAME !")
+                }
+            }
+        }
+        failure {
+            script{
+                if ( env.BRANCH_NAME == 'master' || env.BRANCH_NAME == 'devel' ) {
+                    slackSend( message: ":rain_cloud: Build Failed for <$BUILD_URL|$PROJECT_DIR>:$BRANCH_NAME Job: $JOB_NAME")
+                }
+            }
         }
     }
 }
