@@ -945,6 +945,34 @@ class ArgoMessagingService(AmsHttpRequests):
 
         return True
 
+    def pullack_sub(self, sub, num=1, return_immediately=False, retry=0,
+                    retrysleep=60, retrybackoff=None, **reqkwargs):
+
+        ackIds = list()
+        messages = list()
+        while True:
+            try:
+                for id, msg in self.pull_sub(sub, num,
+                                             return_immediately=return_immediately,
+                                             retry=retry,
+                                             retrysleep=retrysleep,
+                                             retrybackoff=retrybackoff,
+                                             **reqkwargs):
+                    ackIds.append(id)
+                    messages.append(msg)
+
+            except AmsException as e:
+                raise e
+
+            try:
+                self.ack_sub(sub, ackIds, **reqkwargs)
+                break
+            except AmsException:
+                pass
+
+        return messages
+
+
     def set_pullopt(self, key, value):
         """Function for setting pull options
 
