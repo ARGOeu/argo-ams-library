@@ -159,7 +159,10 @@ class AmsHttpRequests(object):
                     finally:
                         i += 1
                 else:
-                    raise saved_exp
+                    if saved_exp:
+                        raise saved_exp
+                    else:
+                        raise e
 
         else:
             while i <= retry + 1:
