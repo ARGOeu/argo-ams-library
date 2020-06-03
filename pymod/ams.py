@@ -947,11 +947,14 @@ class ArgoMessagingService(AmsHttpRequests):
 
     def pullack_sub(self, sub, num=1, return_immediately=False, retry=0,
                     retrysleep=60, retrybackoff=None, **reqkwargs):
+        ackIds = None
+        messages = None
 
-        ackIds = list()
-        messages = list()
         while True:
             try:
+                ackIds = list()
+                messages = list()
+
                 for id, msg in self.pull_sub(sub, num,
                                              return_immediately=return_immediately,
                                              retry=retry,
@@ -967,7 +970,8 @@ class ArgoMessagingService(AmsHttpRequests):
             try:
                 self.ack_sub(sub, ackIds, **reqkwargs)
                 break
-            except AmsException:
+            except AmsException as e:
+                log.warning('Continuing with sub_pull after sub_ack: {0}'.format(e))
                 pass
 
         return messages
