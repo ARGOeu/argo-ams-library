@@ -947,6 +947,24 @@ class ArgoMessagingService(AmsHttpRequests):
 
     def pullack_sub(self, sub, num=1, return_immediately=False, retry=0,
                     retrysleep=60, retrybackoff=None, **reqkwargs):
+        """Pull messages from subscription and acknownledge them in one call.
+
+           If enabled (retry > 0), multiple subscription pulls will be tried in
+           case of problems/glitches with the AMS service. retry* options are
+           eventually passed to _retry_make_request(). If succesfull
+           subscription pull immediately follows with failed acknownledgment
+           (e.g. network hiccup just before acknowledgement of received
+           messages), consume cycle will reset and start from begginning with
+           new subscription pull. This ensures that ack deadline time window is
+           moved to new start period, that is the time when the second pull was
+           initiated.
+
+           Args:
+               sub: str. The subscription name.
+               num: int. The number of messages to pull.
+               reqkwargs: keyword argument that will be passed to underlying
+                          python-requests library call.
+        """
         while True:
             try:
                 ackIds = list()
