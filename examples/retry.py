@@ -82,13 +82,13 @@ def main():
     try:
         msgs = ams.pullack_sub(args.subscription, args.nummsgs, retry=3,
                                retrysleep=5, timeout=5)
+        for msg in msgs:
+            data = msg.get_data()
+            msgid = msg.get_msgid()
+            attr = msg.get_attr()
+            print('msgid={0}, data={1}, attr={2}'.format(msgid, data, attr))
+
     except AmsException as e:
         print(e)
-
-    for msg in msgs:
-        data = msg.get_data()
-        msgid = msg.get_msgid()
-        attr = msg.get_attr()
-        print('msgid={0}, data={1}, attr={2}'.format(msgid, data, attr))
 
 main()
