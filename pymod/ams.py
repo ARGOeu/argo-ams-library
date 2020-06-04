@@ -954,7 +954,7 @@ class ArgoMessagingService(AmsHttpRequests):
            eventually passed to _retry_make_request(). If succesfull
            subscription pull immediately follows with failed acknownledgment
            (e.g. network hiccup just before acknowledgement of received
-           messages), consume cycle will reset and start from begginning with
+           messages), consume cycle will reset and start from beginning with
            new subscription pull. This ensures that ack deadline time window is
            moved to new start period, that is the time when the second pull was
            initiated.
@@ -993,7 +993,6 @@ class ArgoMessagingService(AmsHttpRequests):
                 break
 
         return messages
-
 
     def set_pullopt(self, key, value):
         """Function for setting pull options

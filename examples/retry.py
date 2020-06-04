@@ -71,7 +71,8 @@ def main():
         ams.ack_sub(args.subscription, ackids, retrybackoff=3, retrysleep=5,
                     timeout=5)
 
-    # static sleep between retry attempts
+    # static sleep between retry attempts. this example uses consume context
+    # method that pull and acks msgs in one call.
     msg = AmsMessage(data='foo3', attributes={'bar3': 'baz3'}).dict()
     try:
         ret = ams.publish(args.topic, msg, retry=3, retrysleep=5, timeout=5)
