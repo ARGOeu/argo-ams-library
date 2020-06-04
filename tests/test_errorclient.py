@@ -256,6 +256,30 @@ class TestErrorClient(unittest.TestCase):
         self.assertRaises(AmsTimeoutException, self.ams.list_topics)
         self.assertEqual(mock_requests_get.call_count, retry + 1)
 
+    @mock.patch('pymod.ams.requests.post')
+    def testPullAckSub(self, mock_requests_post):
+        mock_pull_response = mock.create_autospec(requests.Response)
+        mock_pull_response.status_code = 200
+        mock_pull_response.content = '{"receivedMessages":[{"ackId":"projects/TEST/subscriptions/subscription1:1221",\
+                    "message":{"messageId":"1221","attributes":{"foo":"bar"},"data":"YmFzZTY0ZW5jb2RlZA==",\
+                    "publishTime":"2016-02-24T11:55:09.786127994Z"}}]}'
+
+        mock_failedack_response = mock.create_autospec(requests.Response)
+        mock_failedack_response.status_code = 408
+        mock_failedack_response.content = '{"error": {"code": 408,\
+                                                     "message": "Ams Timeout",\
+                                                     "status": "TIMEOUT"}}'
+
+        mock_requests_post.return_value = mock_pull_response
+        # mock_requests_post.side_effect = [mock_pull_response, mock_failedack_response]
+
+        resp_pullack = self.ams.pullack_sub("subscription1", 1)
+        assert isinstance(resp_pullack, list)
+        assert isinstance(resp_pullack[0], AmsMessage)
+        self.assertEqual(resp_pullack[0].get_data(), "base64encoded")
+
+
+
 
 
 if __name__ == '__main__':

@@ -947,9 +947,6 @@ class ArgoMessagingService(AmsHttpRequests):
 
     def pullack_sub(self, sub, num=1, return_immediately=False, retry=0,
                     retrysleep=60, retrybackoff=None, **reqkwargs):
-        ackIds = None
-        messages = None
-
         while True:
             try:
                 ackIds = list()
