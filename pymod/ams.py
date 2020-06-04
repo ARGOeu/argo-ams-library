@@ -964,12 +964,15 @@ class ArgoMessagingService(AmsHttpRequests):
             except AmsException as e:
                 raise e
 
-            try:
-                self.ack_sub(sub, ackIds, **reqkwargs)
+            if messages and ackIds:
+                try:
+                    self.ack_sub(sub, ackIds, **reqkwargs)
+                    break
+                except AmsException as e:
+                    log.warning('Continuing with sub_pull after sub_ack: {0}'.format(e))
+                    pass
+            else:
                 break
-            except AmsException as e:
-                log.warning('Continuing with sub_pull after sub_ack: {0}'.format(e))
-                pass
 
         return messages
 
