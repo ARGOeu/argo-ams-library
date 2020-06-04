@@ -270,16 +270,20 @@ class TestErrorClient(unittest.TestCase):
                                                      "message": "Ams Timeout",\
                                                      "status": "TIMEOUT"}}'
 
-        mock_requests_post.return_value = mock_pull_response
-        # mock_requests_post.side_effect = [mock_pull_response, mock_failedack_response]
+        mock_successack_response = mock.create_autospec(requests.Response)
+        mock_successack_response.status_code = 200
+        mock_successack_response.content = '200 OK'
+
+        mock_requests_post.side_effect = [mock_pull_response,
+                                          mock_failedack_response,
+                                          mock_pull_response,
+                                          mock_successack_response]
 
         resp_pullack = self.ams.pullack_sub("subscription1", 1)
         assert isinstance(resp_pullack, list)
         assert isinstance(resp_pullack[0], AmsMessage)
         self.assertEqual(resp_pullack[0].get_data(), "base64encoded")
-
-
-
+        self.assertEqual(resp_pullack[0].get_msgid(), "1221")
 
 
 if __name__ == '__main__':
