@@ -71,6 +71,8 @@ class AmsHttpRequests(object):
                                  "sub_get": ["get", set([404, 401, 403])],
                                  "topic_publish": ["post", set([413, 401,
                                                                 403])],
+                                 "sub_mod_offset": ["post", set([400, 401, 403,
+                                                                 404])],
                                  "sub_pushconfig": ["post", set([400, 401, 403,
                                                                  404])],
                                  "auth_x509": ["post", set([400, 401, 403,
