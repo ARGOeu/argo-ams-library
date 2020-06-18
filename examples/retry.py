@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
 
 from argparse import ArgumentParser
 from argo_ams_library import ArgoMessagingService, AmsMessage, AmsException
@@ -44,8 +44,12 @@ def main():
         print('msgid={0}, data={1}, attr={2}'.format(msgid, data, attr))
         ackids.append(id)
 
+    if ackids:
+        ams.ack_sub(args.subscription, ackids, retry=3, retrysleep=5,
+                    timeout=5)
+
     # backoff with each next retry attempt exponentially longer
-    msg = AmsMessage(data='foo1', attributes={'bar1': 'baz1'}).dict()
+    msg = AmsMessage(data='foo2', attributes={'bar2': 'baz2'}).dict()
     try:
         ret = ams.publish(args.topic, msg, retry=3, retrybackoff=5, timeout=5)
         print(ret)
@@ -62,5 +66,29 @@ def main():
         attr = msg.get_attr()
         print('msgid={0}, data={1}, attr={2}'.format(msgid, data, attr))
         ackids.append(id)
+
+    if ackids:
+        ams.ack_sub(args.subscription, ackids)
+
+    # static sleep between retry attempts. this example uses consume context
+    # method that pull and acks msgs in one call.
+    msg = AmsMessage(data='foo3', attributes={'bar3': 'baz3'}).dict()
+    try:
+        ret = ams.publish(args.topic, msg, retry=3, retrysleep=5, timeout=5)
+        print(ret)
+    except AmsException as e:
+        print(e)
+
+    try:
+        msgs = ams.pullack_sub(args.subscription, args.nummsgs, retry=3,
+                               retrysleep=5, timeout=5)
+        for msg in msgs:
+            data = msg.get_data()
+            msgid = msg.get_msgid()
+            attr = msg.get_attr()
+            print('msgid={0}, data={1}, attr={2}'.format(msgid, data, attr))
+
+    except AmsException as e:
+        print(e)
 
 main()
