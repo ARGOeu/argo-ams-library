@@ -68,8 +68,7 @@ def main():
         ackids.append(id)
 
     if ackids:
-        ams.ack_sub(args.subscription, ackids, retrybackoff=3, retrysleep=5,
-                    timeout=5)
+        ams.ack_sub(args.subscription, ackids)
 
     # static sleep between retry attempts. this example uses consume context
     # method that pull and acks msgs in one call.
