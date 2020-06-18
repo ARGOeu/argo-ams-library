@@ -140,6 +140,22 @@ class TestErrorClient(unittest.TestCase):
                 self.assertEqual(e.msg, 'While trying the [topic_get]: Unauthorized')
                 self.assertEqual(e.status, 'UNAUTHORIZED')
 
+    def testModifyOffset(self):
+        @urlmatch(netloc="localhost", path="/v1/projects/TEST/subscriptions/subscription1:modifyOffset",
+                  method='POST')
+        def error_modoffset(url, request):
+            assert url.path == "/v1/projects/TEST/subscriptions/subscription1:modifyOffset"
+            return response(400, '{"error": {"message": "Offset out of bounds", \
+                                             "code": 400, \
+                                             "status": "INVALID_ARGUMENT"}}')
+        with HTTMock(error_modoffset):
+            try:
+                resp = self.ams.modifyoffset_sub("subscription1", 1)
+            except AmsServiceException as e:
+                self.assertEqual(e.code, 400)
+                self.assertEqual(e.status, 'INVALID_ARGUMENT')
+                self.assertEqual(e.msg, "While trying the [sub_mod_offset]: Offset out of bounds")
+
     @mock.patch('pymod.ams.requests.get')
     def testRetryConnectionProblems(self, mock_requests_get):
         mock_requests_get.side_effect = [requests.exceptions.ConnectionError,
