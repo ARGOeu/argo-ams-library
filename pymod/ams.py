@@ -916,8 +916,7 @@ class ArgoMessagingService(AmsHttpRequests):
 
         return list(map(lambda m: (m['ackId'], AmsMessage(b64enc=False, **m['message'])), msgs))
 
-    def ack_sub(self, sub, ids, retry=0, retrysleep=60, retrybackoff=None,
-                **reqkwargs):
+    def ack_sub(self, sub, ids, **reqkwargs):
         """Acknownledgment of received messages
 
            Messages retrieved from a pull subscription can be acknowledged by
@@ -940,8 +939,7 @@ class ArgoMessagingService(AmsHttpRequests):
         # Compose url
         url = route[1].format(self.endpoint, self.token, self.project, "", sub)
         method = getattr(self, 'do_{0}'.format(route[0]))
-        method(url, msg_body, "sub_ack", retry=retry, retrysleep=retrysleep,
-               retrybackoff=retrybackoff, **reqkwargs)
+        method(url, msg_body, "sub_ack", **reqkwargs)
 
         return True
 
