@@ -6,7 +6,7 @@
 
 Name:           argo-ams-library
 Summary:        %{sum}
-Version:        0.5.1
+Version:        0.5.2
 Release:        1%{?dist}
 
 Group:          Development/Libraries
@@ -95,6 +95,9 @@ rm -rf %{buildroot}
 
 
 %changelog
+* Wed Jul 8 2020 Daniel Vrcic <dvrcic@srce.hr> - 0.5.2-1%{?dist}
+- ARGO-2479 Modify subscription offset method fails
+- ARGO-2360 Fix ack_sub retry loop
 * Mon Feb 10 2020 Daniel Vrcic <dvrcic@srce.hr> - 0.5.1-1%{?dist}
 - ARGO-2182 ams-lib does not retry on topic publish
 * Wed Dec 4 2019 Daniel Vrcic <dvrcic@srce.hr> - 0.5.0-1%{?dist}
