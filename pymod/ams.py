@@ -925,9 +925,7 @@ class ArgoMessagingService(AmsHttpRequests):
            sending message with an array of ackIDs. The service will retrieve
            the ackID corresponding to the highest message offset and will
            consider that message and all previous messages as acknowledged by
-           the consumer. If enabled (retry > 0), multiple acknowledgement
-           will be tried in case of problems/glitches with the AMS service.
-           retry* options are eventually passed to _retry_make_request()
+           the consumer.
 
            Args:
               sub: str. The subscription name.
