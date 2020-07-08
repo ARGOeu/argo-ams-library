@@ -140,6 +140,22 @@ class TestErrorClient(unittest.TestCase):
                 self.assertEqual(e.msg, 'While trying the [topic_get]: Unauthorized')
                 self.assertEqual(e.status, 'UNAUTHORIZED')
 
+    def testModifyOffset(self):
+        @urlmatch(netloc="localhost", path="/v1/projects/TEST/subscriptions/subscription1:modifyOffset",
+                  method='POST')
+        def error_modoffset(url, request):
+            assert url.path == "/v1/projects/TEST/subscriptions/subscription1:modifyOffset"
+            return response(400, '{"error": {"message": "Offset out of bounds", \
+                                             "code": 400, \
+                                             "status": "INVALID_ARGUMENT"}}')
+        with HTTMock(error_modoffset):
+            try:
+                resp = self.ams.modifyoffset_sub("subscription1", 1)
+            except AmsServiceException as e:
+                self.assertEqual(e.code, 400)
+                self.assertEqual(e.status, 'INVALID_ARGUMENT')
+                self.assertEqual(e.msg, "While trying the [sub_mod_offset]: Offset out of bounds")
+
     @mock.patch('pymod.ams.requests.get')
     def testRetryConnectionProblems(self, mock_requests_get):
         mock_requests_get.side_effect = [requests.exceptions.ConnectionError,
@@ -256,6 +272,34 @@ class TestErrorClient(unittest.TestCase):
         self.assertRaises(AmsTimeoutException, self.ams.list_topics)
         self.assertEqual(mock_requests_get.call_count, retry + 1)
 
+    @mock.patch('pymod.ams.requests.post')
+    def testPullAckSub(self, mock_requests_post):
+        mock_pull_response = mock.create_autospec(requests.Response)
+        mock_pull_response.status_code = 200
+        mock_pull_response.content = '{"receivedMessages":[{"ackId":"projects/TEST/subscriptions/subscription1:1221",\
+                    "message":{"messageId":"1221","attributes":{"foo":"bar"},"data":"YmFzZTY0ZW5jb2RlZA==",\
+                    "publishTime":"2016-02-24T11:55:09.786127994Z"}}]}'
+
+        mock_failedack_response = mock.create_autospec(requests.Response)
+        mock_failedack_response.status_code = 408
+        mock_failedack_response.content = '{"error": {"code": 408,\
+                                                     "message": "Ams Timeout",\
+                                                     "status": "TIMEOUT"}}'
+
+        mock_successack_response = mock.create_autospec(requests.Response)
+        mock_successack_response.status_code = 200
+        mock_successack_response.content = '200 OK'
+
+        mock_requests_post.side_effect = [mock_pull_response,
+                                          mock_failedack_response,
+                                          mock_pull_response,
+                                          mock_successack_response]
+
+        resp_pullack = self.ams.pullack_sub("subscription1", 1)
+        assert isinstance(resp_pullack, list)
+        assert isinstance(resp_pullack[0], AmsMessage)
+        self.assertEqual(resp_pullack[0].get_data(), "base64encoded")
+        self.assertEqual(resp_pullack[0].get_msgid(), "1221")
 
 
 if __name__ == '__main__':

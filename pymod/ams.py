@@ -71,6 +71,8 @@ class AmsHttpRequests(object):
                                  "sub_get": ["get", set([404, 401, 403])],
                                  "topic_publish": ["post", set([413, 401,
                                                                 403])],
+                                 "sub_mod_offset": ["post", set([400, 401, 403,
+                                                                 404])],
                                  "sub_pushconfig": ["post", set([400, 401, 403,
                                                                  404])],
                                  "auth_x509": ["post", set([400, 401, 403,
@@ -159,7 +161,10 @@ class AmsHttpRequests(object):
                     finally:
                         i += 1
                 else:
-                    raise saved_exp
+                    if saved_exp:
+                        raise saved_exp
+                    else:
+                        raise e
 
         else:
             while i <= retry + 1:
@@ -913,17 +918,14 @@ class ArgoMessagingService(AmsHttpRequests):
 
         return list(map(lambda m: (m['ackId'], AmsMessage(b64enc=False, **m['message'])), msgs))
 
-    def ack_sub(self, sub, ids, retry=0, retrysleep=60, retrybackoff=None,
-                **reqkwargs):
+    def ack_sub(self, sub, ids, **reqkwargs):
         """Acknownledgment of received messages
 
            Messages retrieved from a pull subscription can be acknowledged by
            sending message with an array of ackIDs. The service will retrieve
            the ackID corresponding to the highest message offset and will
            consider that message and all previous messages as acknowledged by
-           the consumer. If enabled (retry > 0), multiple acknowledgement
-           will be tried in case of problems/glitches with the AMS service.
-           retry* options are eventually passed to _retry_make_request()
+           the consumer.
 
            Args:
               sub: str. The subscription name.
@@ -937,10 +939,59 @@ class ArgoMessagingService(AmsHttpRequests):
         # Compose url
         url = route[1].format(self.endpoint, self.token, self.project, "", sub)
         method = getattr(self, 'do_{0}'.format(route[0]))
-        method(url, msg_body, "sub_ack", retry=retry, retrysleep=retrysleep,
-               retrybackoff=retrybackoff, **reqkwargs)
+        method(url, msg_body, "sub_ack", **reqkwargs)
 
         return True
+
+    def pullack_sub(self, sub, num=1, return_immediately=False, retry=0,
+                    retrysleep=60, retrybackoff=None, **reqkwargs):
+        """Pull messages from subscription and acknownledge them in one call.
+
+           If enabled (retry > 0), multiple subscription pulls will be tried in
+           case of problems/glitches with the AMS service. retry* options are
+           eventually passed to _retry_make_request().
+
+           If succesfull subscription pull immediately follows with failed
+           acknownledgment (e.g. network hiccup just before acknowledgement of
+           received messages), consume cycle will reset and start from
+           beginning with new subscription pull. This ensures that ack deadline
+           time window is moved to new start period, that is the time when the
+           second pull was initiated.
+
+           Args:
+               sub: str. The subscription name.
+               num: int. The number of messages to pull.
+               reqkwargs: keyword argument that will be passed to underlying
+                          python-requests library call.
+        """
+        while True:
+            try:
+                ackIds = list()
+                messages = list()
+
+                for id, msg in self.pull_sub(sub, num,
+                                             return_immediately=return_immediately,
+                                             retry=retry,
+                                             retrysleep=retrysleep,
+                                             retrybackoff=retrybackoff,
+                                             **reqkwargs):
+                    ackIds.append(id)
+                    messages.append(msg)
+
+            except AmsException as e:
+                raise e
+
+            if messages and ackIds:
+                try:
+                    self.ack_sub(sub, ackIds, **reqkwargs)
+                    break
+                except AmsException as e:
+                    log.warning('Continuing with sub_pull after sub_ack: {0}'.format(e))
+                    pass
+            else:
+                break
+
+        return messages
 
     def set_pullopt(self, key, value):
         """Function for setting pull options

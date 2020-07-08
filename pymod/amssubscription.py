@@ -70,7 +70,40 @@ class AmsSubscription(object):
                [(ackId, AmsMessage)]: List of tuples with ackId and AmsMessage instance
         """
 
-        return self.init.pull_sub(self.name, num=num, return_immediately=return_immediately, **reqkwargs)
+        return self.init.pull_sub(self.name, num=num,
+                                  return_immediately=return_immediately,
+                                  **reqkwargs)
+
+    def pullack(self, num=1, retry=0, retrysleep=60, retrybackoff=None,
+                return_immediately=False, **reqkwargs):
+        """Pull messages from subscription and acknownledge them in one call.
+
+          If succesfull subscription pull immediately follows with failed
+          acknownledgment (e.g. network hiccup just before acknowledgement of
+          received messages), consume cycle will reset and start from
+          begginning with new subscription pull.
+
+           Kwargs:
+               num (int): Number of messages to pull
+               retry: int. Number of request retries before giving up. Default
+                           is 0 meaning no further request retry will be made
+                           after first unsuccesfull request.
+               retrysleep: int. Static number of seconds to sleep before next
+                           request attempt
+               retrybackoff: int. Backoff factor to apply between each request
+                             attempts
+               return_immediately (boolean): If True and if stream of messages is empty,
+                                             subscriber call will not block and wait for
+                                             messages
+               reqkwargs: keyword argument that will be passed to underlying
+                          python-requests library call.
+           Return:
+               [AmsMessage1, AmsMessage2]: List of AmsMessage instances
+        """
+
+        return self.init.pullack_sub(self.name, num=num,
+                                     return_immediately=return_immediately,
+                                     **reqkwargs)
 
     def time_to_offset(self, timestamp, **reqkwargs):
         """

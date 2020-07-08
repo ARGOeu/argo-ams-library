@@ -180,7 +180,6 @@ class TestSubscription(unittest.TestCase):
                                                  "min": 0})
             self.assertRaises(AmsException, sub2.offsets, offset='bogus', move_to=79)
 
-
     def testDelete(self):
         # Mock response for DELETE topic request
         @urlmatch(netloc="localhost", path="/v1/projects/TEST/subscriptions/subscription1",
