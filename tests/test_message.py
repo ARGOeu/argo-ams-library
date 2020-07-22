@@ -17,6 +17,8 @@ class TestMessage(unittest.TestCase):
         self.message_send_onlyattr = AmsMessage(attributes={'foo': 'bar'})
         self.message_send_onlydata = AmsMessage(data='baz')
         self.message_unicode = AmsMessage(data='ùňĭćőđĕ')
+        if sys.version_info >= (3, ):
+            self.message_unicode_py3 = AmsMessage(data='ùňĭćőđĕḃẏṫєṡ'.encode('utf-8'))
 
         self.message_recv = AmsMessage(b64enc=False, attributes={'foo': 'bar'},
                                        data='YmF6', messageId='1',
@@ -43,6 +45,9 @@ class TestMessage(unittest.TestCase):
             self.assertEqual(self.message_unicode.get_data(), 'ùňĭćőđĕ')
         else:
             self.assertEqual(self.message_unicode.get_data(), 'ùňĭćőđĕ'.encode('utf-8'))
+
+        if sys.version_info >= (3, ):
+            self.assertEqual(self.message_unicode_py3.get_data(), 'ùňĭćőđĕḃẏṫєṡ'.encode('utf-8'))
 
         self.message_send.set_data('baz')
         if sys.version_info < (3, ):

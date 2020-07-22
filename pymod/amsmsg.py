@@ -59,7 +59,10 @@ class AmsMessage(Callable):
                 if sys.version_info < (3, ):
                     self._data = b64encode(data)
                 else:
-                    self._data = str(b64encode(bytearray(data, 'utf-8')), 'utf-8')
+                    if isinstance(data, bytes):
+                        self._data = str(b64encode(data), 'utf-8')
+                    else:
+                        self._data = str(b64encode(bytearray(data, 'utf-8')), 'utf-8')
             except Exception as e:
                 raise AmsMessageException('b64encode() {0}'.format(str(e)))
         elif data:
