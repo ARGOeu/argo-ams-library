@@ -298,7 +298,10 @@ class TestErrorClient(unittest.TestCase):
         resp_pullack = self.ams.pullack_sub("subscription1", 1)
         assert isinstance(resp_pullack, list)
         assert isinstance(resp_pullack[0], AmsMessage)
-        self.assertEqual(resp_pullack[0].get_data(), "base64encoded")
+        if sys.version_info < (3, ):
+            self.assertEqual(resp_pullack[0].get_data(), "base64encoded")
+        else:
+            self.assertEqual(resp_pullack[0].get_data(), b"base64encoded")
         self.assertEqual(resp_pullack[0].get_msgid(), "1221")
 
 
