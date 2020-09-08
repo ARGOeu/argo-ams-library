@@ -6,7 +6,7 @@
 
 Name:           argo-ams-library
 Summary:        %{sum}
-Version:        0.5.2
+Version:        0.5.3
 Release:        1%{?dist}
 
 Group:          Development/Libraries
@@ -95,6 +95,8 @@ rm -rf %{buildroot}
 
 
 %changelog
+* Tue Sep 8 2020 Daniel Vrcic <dvrcic@srce.hr> - 0.5.3-1%{?dist}
+- ARGO-2530 bytes handling in Py3
 * Wed Jul 8 2020 Daniel Vrcic <dvrcic@srce.hr> - 0.5.2-1%{?dist}
 - ARGO-2479 Modify subscription offset method fails
 - ARGO-2360 Fix ack_sub retry loop

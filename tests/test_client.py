@@ -54,7 +54,10 @@ class TestClient(unittest.TestCase):
             resp_pull = self.ams.pull_sub("subscription1", 1)
             ack_id, msg = resp_pull[0]
             assert ack_id == "projects/TEST/subscriptions/subscription1:1221"
-            assert msg.get_data() == "base64encoded"
+            if sys.version_info < (3, ):
+                assert msg.get_data() == "base64encoded"
+            else:
+                assert msg.get_data() == b"base64encoded"
             assert msg.get_msgid() == "1221"
             # Note: Maybe ack_sub should return a boolean
             resp_ack = self.ams.ack_sub("subscription1", ["1221"])

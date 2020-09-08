@@ -1,5 +1,6 @@
 import unittest
 import json
+import sys
 
 import datetime
 from httmock import urlmatch, HTTMock, response
@@ -98,7 +99,10 @@ class TestSubscription(unittest.TestCase):
             ack_id, msg = resp_pull[0]
 
             self.assertEqual(ack_id, "projects/TEST/subscriptions/subscription1:1221")
-            self.assertEqual(msg.get_data(), "base64encoded")
+            if sys.version_info < (3, ):
+                self.assertEqual(msg.get_data(), "base64encoded")
+            else:
+                self.assertEqual(msg.get_data(), b"base64encoded")
             self.assertEqual(msg.get_msgid(), "1221")
             resp_ack = sub.ack(["1221"])
             self.assertEqual(resp_ack, True)
