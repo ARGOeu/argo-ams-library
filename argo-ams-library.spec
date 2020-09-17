@@ -76,18 +76,18 @@ AutoReq: no
 
 %install
 rm -rf %{buildroot}
-%{py_install "--record=INSTALLED_FILES" }
-%{py3_install "--record=INSTALLED_FILES" }
+%{py_install "--record=INSTALLED_FILES_PY2" }
+%{py3_install "--record=INSTALLED_FILES_PY3" }
 
 
-%files -n python%{python3_pkgversion}-%{name} -f INSTALLED_FILES
+%files -n python%{python3_pkgversion}-%{name} -f INSTALLED_FILES_PY3
 %doc examples/ README.md
 %defattr(-,root,root,-)
 %{python3_sitelib}/*
 %if 0%{?el7}
-%files -n python-%{name} -f INSTALLED_FILES
+%files -n python-%{name} -f INSTALLED_FILES_PY2
 %else
-%files -n python2-%{name} -f INSTALLED_FILES
+%files -n python2-%{name} -f INSTALLED_FILES_PY2
 %endif
 %doc examples/ README.md
 %defattr(-,root,root,-)
