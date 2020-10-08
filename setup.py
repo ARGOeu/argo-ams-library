@@ -2,7 +2,7 @@ from setuptools import setup
 from os import path
 import glob
 
-NAME='argo-ams-library'
+NAME = 'argo-ams-library'
 
 this_directory = path.abspath(path.dirname(__file__))
 with open(path.join(this_directory, 'README.md')) as f:
