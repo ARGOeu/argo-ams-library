@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.5.4] - 2020-10-08
+
+### FIXED
+
+ARGO-2592 ams-library py2 RPM also packages py3 specific modules
+
 ## [0.5.3] - 2020-09-08
 
 ### FIXED

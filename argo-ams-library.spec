@@ -6,7 +6,7 @@
 
 Name:           argo-ams-library
 Summary:        %{sum}
-Version:        0.5.3
+Version:        0.5.4
 Release:        1%{?dist}
 
 Group:          Development/Libraries
@@ -76,18 +76,18 @@ AutoReq: no
 
 %install
 rm -rf %{buildroot}
-%{py_install "--record=INSTALLED_FILES" }
-%{py3_install "--record=INSTALLED_FILES" }
+%{py_install "--record=INSTALLED_FILES_PY2" }
+%{py3_install "--record=INSTALLED_FILES_PY3" }
 
 
-%files -n python%{python3_pkgversion}-%{name} -f INSTALLED_FILES
+%files -n python%{python3_pkgversion}-%{name} -f INSTALLED_FILES_PY3
 %doc examples/ README.md
 %defattr(-,root,root,-)
 %{python3_sitelib}/*
 %if 0%{?el7}
-%files -n python-%{name} -f INSTALLED_FILES
+%files -n python-%{name} -f INSTALLED_FILES_PY2
 %else
-%files -n python2-%{name} -f INSTALLED_FILES
+%files -n python2-%{name} -f INSTALLED_FILES_PY2
 %endif
 %doc examples/ README.md
 %defattr(-,root,root,-)
@@ -95,6 +95,8 @@ rm -rf %{buildroot}
 
 
 %changelog
+* Thu Oct 8 2020 Daniel Vrcic <dvrcic@srce.hr> - 0.5.4-1%{?dist}
+- ARGO-2592 ams-library py2 RPM also packages py3 specific modules
 * Tue Sep 8 2020 Daniel Vrcic <dvrcic@srce.hr> - 0.5.3-1%{?dist}
 - ARGO-2530 bytes handling in Py3
 * Wed Jul 8 2020 Daniel Vrcic <dvrcic@srce.hr> - 0.5.2-1%{?dist}
