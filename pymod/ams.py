@@ -29,29 +29,30 @@ class AmsHttpRequests(object):
        library. service error handling is implemented according to HTTP
        status codes returned by service and the balancer.
     """
-    def __init__(self, endpoint):
+    def __init__(self, endpoint, authn_port, token="", cert="", key=""):
         self.endpoint = endpoint
+        self.authn_port = authn_port
         # Create route list
-        self.routes = {"topic_list": ["get", "https://{0}/v1/projects/{2}/topics?key={1}"],
-                       "topic_get": ["get", "https://{0}/v1/projects/{2}/topics/{3}?key={1}"],
-                       "topic_publish": ["post", "https://{0}/v1/projects/{2}/topics/{3}:publish?key={1}"],
-                       "topic_create": ["put", "https://{0}/v1/projects/{2}/topics/{3}?key={1}"],
-                       "topic_delete": ["delete", "https://{0}/v1/projects/{2}/topics/{3}?key={1}"],
-                       "topic_getacl": ["get", "https://{0}/v1/projects/{2}/topics/{3}:acl?key={1}"],
-                       "topic_modifyacl": ["post", "https://{0}/v1/projects/{2}/topics/{3}:modifyAcl?key={1}"],
-                       "sub_create": ["put", "https://{0}/v1/projects/{2}/subscriptions/{4}?key={1}"],
-                       "sub_delete": ["delete", "https://{0}/v1/projects/{2}/subscriptions/{4}?key={1}"],
-                       "sub_list": ["get", "https://{0}/v1/projects/{2}/subscriptions?key={1}"],
-                       "sub_get": ["get", "https://{0}/v1/projects/{2}/subscriptions/{4}?key={1}"],
-                       "sub_pull": ["post", "https://{0}/v1/projects/{2}/subscriptions/{4}:pull?key={1}"],
-                       "sub_ack": ["post", "https://{0}/v1/projects/{2}/subscriptions/{4}:acknowledge?key={1}"],
-                       "sub_pushconfig": ["post", "https://{0}/v1/projects/{2}/subscriptions/{4}:modifyPushConfig?key={1}"],
-                       "sub_getacl": ["get", "https://{0}/v1/projects/{2}/subscriptions/{3}:acl?key={1}"],
-                       "sub_modifyacl": ["post", "https://{0}/v1/projects/{2}/subscriptions/{3}:modifyAcl?key={1}"],
-                       "sub_offsets": ["get", "https://{0}/v1/projects/{2}/subscriptions/{3}:offsets?key={1}"],
-                       "sub_mod_offset": ["post", "https://{0}/v1/projects/{2}/subscriptions/{3}:modifyOffset?key={1}"],
+        self.routes = {"topic_list": ["get", "https://{0}/v1/projects/{1}/topics"],
+                       "topic_get": ["get", "https://{0}/v1/projects/{1}/topics/{2}"],
+                       "topic_publish": ["post", "https://{0}/v1/projects/{1}/topics/{2}:publish"],
+                       "topic_create": ["put", "https://{0}/v1/projects/{1}/topics/{2}"],
+                       "topic_delete": ["delete", "https://{0}/v1/projects/{1}/topics/{2}"],
+                       "topic_getacl": ["get", "https://{0}/v1/projects/{1}/topics/{2}:acl"],
+                       "topic_modifyacl": ["post", "https://{0}/v1/projects/{1}/topics/{2}:modifyAcl"],
+                       "sub_create": ["put", "https://{0}/v1/projects/{1}/subscriptions/{2}"],
+                       "sub_delete": ["delete", "https://{0}/v1/projects/{1}/subscriptions/{2}"],
+                       "sub_list": ["get", "https://{0}/v1/projects/{1}/subscriptions"],
+                       "sub_get": ["get", "https://{0}/v1/projects/{1}/subscriptions/{2}"],
+                       "sub_pull": ["post", "https://{0}/v1/projects/{1}/subscriptions/{2}:pull"],
+                       "sub_ack": ["post", "https://{0}/v1/projects/{1}/subscriptions/{2}:acknowledge"],
+                       "sub_pushconfig": ["post", "https://{0}/v1/projects/{1}/subscriptions/{2}:modifyPushConfig"],
+                       "sub_getacl": ["get", "https://{0}/v1/projects/{1}/subscriptions/{2}:acl"],
+                       "sub_modifyacl": ["post", "https://{0}/v1/projects/{1}/subscriptions/{2}:modifyAcl"],
+                       "sub_offsets": ["get", "https://{0}/v1/projects/{1}/subscriptions/{2}:offsets"],
+                       "sub_mod_offset": ["post", "https://{0}/v1/projects/{1}/subscriptions/{2}:modifyOffset"],
                        "auth_x509": ["get", "https://{0}:{1}/v1/service-types/ams/hosts/{0}:authx509"],
-                       "sub_timeToOffset": ["get", "https://{0}/v1/projects/{2}/subscriptions/{3}:timeToOffset?key={1}&time={4}"]
+                       "sub_timeToOffset": ["get", "https://{0}/v1/projects/{1}/subscriptions/{2}:timeToOffset?time={3}"]
                        }
 
         # HTTP error status codes returned by AMS according to:
@@ -86,6 +87,72 @@ class AmsHttpRequests(object):
         self.balancer_errors_route = {"sub_ack": ["post", set([500, 502, 503, 504])],
                                       "sub_pull": ["post", set([500, 502, 503, 504])],
                                       "topic_publish": ["post", set([500, 502, 503, 504])]}
+
+        # determine the token to be used
+        token = token
+        self.assign_token(token, cert, key)
+
+    def assign_token(self, token, cert, key):
+        """Assign a token to the ams object
+
+           Args:
+               token(str): a valid ams token
+               cert(str): a path to a valid certificate file
+               key(str): a path to the associated key file for the provided certificate
+        """
+
+        # check if a token has been provided
+        if token != "":
+            self.token = token
+            return
+
+        try:
+            # otherwise use the provided certificate to retrieve it
+            self.token = self.auth_via_cert(cert, key)
+        except AmsServiceException as e:
+            # if the request send to authn didn't contain an x509 cert, that means that there was also no token provided
+            # when initializing the ArgoMessagingService object, since we only try to authenticate through authn
+            # when no token was provided
+
+            if e.msg == 'While trying the [auth_x509]: No certificate provided.':
+                refined_msg = "No certificate provided. No token provided."
+                errormsg = self._error_dict(refined_msg, e.code)
+                raise AmsServiceException(json=errormsg, request="auth_x509")
+            raise e
+
+    def auth_via_cert(self, cert, key, **reqkwargs):
+        """Retrieve an ams token based on the provided certificate
+
+            Args:
+                cert(str): a path to a valid certificate file
+                key(str): a path to the associated key file for the provided certificate
+
+           Kwargs:
+               reqkwargs: keyword argument that will be passed to underlying
+                          python-requests library call.
+        """
+        if cert == "" and key == "":
+            errord = self._error_dict("No certificate provided.", 400)
+            raise AmsServiceException(json=errord, request="auth_x509")
+
+        # create the certificate tuple needed by the requests library
+        reqkwargs = {"cert": (cert, key)}
+
+        route = self.routes["auth_x509"]
+
+        # Compose url
+        url = route[1].format(self.endpoint, self.authn_port)
+        method = getattr(self, 'do_{0}'.format(route[0]))
+
+        try:
+            r = method(url, "auth_x509", **reqkwargs)
+            # if the `token` field was not found in the response, raise an error
+            if "token" not in r:
+                errord = self._error_dict("Token was not found in the response. Response: " + str(r), 500)
+                raise AmsServiceException(json=errord, request="auth_x509")
+            return r["token"]
+        except (AmsServiceException, AmsConnectionException) as e:
+            raise e
 
     def _error_dict(self, response_content, status):
         error_dict = dict()
@@ -191,6 +258,21 @@ class AmsHttpRequests(object):
         decoded = None
         try:
             # the get request based on requests.
+
+            # populate all requests with the x-api-key header
+            # except the authn mapping call
+            if route_name != "auth_x509":
+                # if there is no defined headers dict in the reqkwargs, introduce it
+                if "headers" not in reqkwargs:
+                    headers = {
+                        "x-api-key": self.token
+                    }
+                    reqkwargs["headers"] = headers
+                else:
+                    # if the there are already other headers defined, just append the x-api-key one
+                    reqkwargs["headers"]["x-api-key"] = self.token
+
+
             reqmethod = getattr(requests, m)
             r = reqmethod(url, data=body, **reqkwargs)
 
@@ -277,7 +359,7 @@ class AmsHttpRequests(object):
                           python-requests library call.
         """
         # try to send a PUT request to the messaging service.
-        # if a connection problem araises a Connection error exception is raised.
+        # if a connection problem arises a Connection error exception is raised.
         try:
             return self._retry_make_request(url, body=body,
                                             route_name=route_name, **reqkwargs)
@@ -346,79 +428,13 @@ class ArgoMessagingService(AmsHttpRequests):
        calls that are wrapped in series of methods.
     """
     def __init__(self, endpoint, token="", project="", cert="", key="", authn_port=8443):
-        super(ArgoMessagingService, self).__init__(endpoint)
-        self.authn_port = authn_port
-        self.token = ""
-        self.endpoint = endpoint
+        super(ArgoMessagingService, self).__init__(endpoint, authn_port, token, cert, key)
         self.project = project
-        self.assign_token(token, cert, key)
         self.pullopts = {"maxMessages": "1",
                          "returnImmediately": "false"}
         # Containers for topic and subscription objects
         self.topics = OrderedDict()
         self.subs = OrderedDict()
-
-    def assign_token(self, token, cert, key):
-        """Assign a token to the ams object
-
-           Args:
-               token(str): a valid ams token
-               cert(str): a path to a valid certificate file
-               key(str): a path to the associated key file for the provided certificate
-        """
-
-        # check if a token has been provided
-        if token != "":
-            self.token = token
-            return
-
-        try:
-            # otherwise use the provided certificate to retrieve it
-            self.token = self.auth_via_cert(cert, key)
-        except AmsServiceException as e:
-            # if the request send to authn didn't contain an x509 cert, that means that there was also no token provided
-            # when initializing the ArgoMessagingService object, since we only try to authenticate through authn
-            # when no token was provided
-
-            if e.msg == 'While trying the [auth_x509]: No certificate provided.':
-                refined_msg = "No certificate provided. No token provided."
-                errormsg = self._error_dict(refined_msg, e.code)
-                raise AmsServiceException(json=errormsg, request="auth_x509")
-            raise e
-
-    def auth_via_cert(self, cert, key, **reqkwargs):
-        """Retrieve an ams token based on the provided certificate
-
-            Args:
-                cert(str): a path to a valid certificate file
-                key(str): a path to the associated key file for the provided certificate
-
-           Kwargs:
-               reqkwargs: keyword argument that will be passed to underlying
-                          python-requests library call.
-        """
-        if cert == "" and key == "":
-            errord = self._error_dict("No certificate provided.", 400)
-            raise AmsServiceException(json=errord, request="auth_x509")
-
-        # create the certificate tuple needed by the requests library
-        reqkwargs = {"cert": (cert, key)}
-
-        route = self.routes["auth_x509"]
-
-        # Compose url
-        url = route[1].format(self.endpoint, self.authn_port)
-        method = getattr(self, 'do_{0}'.format(route[0]))
-
-        try:
-            r = method(url, "auth_x509", **reqkwargs)
-            # if the `token` field was not found in the response, raise an error
-            if "token" not in r:
-                errord = self._error_dict("Token was not found in the response. Response: " + str(r), 500)
-                raise AmsServiceException(json=errord, request="auth_x509")
-            return r["token"]
-        except (AmsServiceException, AmsConnectionException) as e:
-            raise e
 
     def _create_sub_obj(self, s, topic):
         self.subs.update({s['name']: AmsSubscription(s['name'], topic,
@@ -450,7 +466,7 @@ class ArgoMessagingService(AmsHttpRequests):
 
         route = self.routes["topic_getacl"]
         # Compose url
-        url = route[1].format(self.endpoint, self.token, self.project, topic)
+        url = route[1].format(self.endpoint, self.project, topic)
         method = getattr(self, 'do_{0}'.format(route[0]))
 
         r = method(url, "topic_getacl", **reqkwargs)
@@ -479,7 +495,7 @@ class ArgoMessagingService(AmsHttpRequests):
 
         route = self.routes["topic_modifyacl"]
         # Compose url
-        url = route[1].format(self.endpoint, self.token, self.project, topic)
+        url = route[1].format(self.endpoint, self.project, topic)
         method = getattr(self, 'do_{0}'.format(route[0]))
 
         r = None
@@ -510,7 +526,7 @@ class ArgoMessagingService(AmsHttpRequests):
 
         route = self.routes["sub_getacl"]
         # Compose url
-        url = route[1].format(self.endpoint, self.token, self.project, sub)
+        url = route[1].format(self.endpoint, self.project, sub)
         method = getattr(self, 'do_{0}'.format(route[0]))
 
         r = method(url, "sub_getacl", **reqkwargs)
@@ -536,7 +552,7 @@ class ArgoMessagingService(AmsHttpRequests):
         route = self.routes["sub_offsets"]
 
         # Compose url
-        url = route[1].format(self.endpoint, self.token, self.project, sub)
+        url = route[1].format(self.endpoint, self.project, sub)
         method = getattr(self, 'do_{0}'.format(route[0]))
         r = method(url, "sub_offsets", **reqkwargs)
         try:
@@ -570,7 +586,7 @@ class ArgoMessagingService(AmsHttpRequests):
                 time_in_string = timestamp.strftime("%Y-%m-%d %H:%M:%S.000Z")
 
         # Compose url
-        url = route[1].format(self.endpoint, self.token, self.project, sub, time_in_string)
+        url = route[1].format(self.endpoint, self.project, sub, time_in_string)
 
         try:
             r = method(url, "sub_timeToOffset", **reqkwargs)
@@ -596,7 +612,7 @@ class ArgoMessagingService(AmsHttpRequests):
             move_to = int(move_to)
 
         # Compose url
-        url = route[1].format(self.endpoint, self.token, self.project, sub)
+        url = route[1].format(self.endpoint, self.project, sub)
 
         # Request body
         data = {"offset": move_to}
@@ -622,7 +638,7 @@ class ArgoMessagingService(AmsHttpRequests):
 
         route = self.routes["sub_modifyacl"]
         # Compose url
-        url = route[1].format(self.endpoint, self.token, self.project, sub)
+        url = route[1].format(self.endpoint, self.project, sub)
         method = getattr(self, 'do_{0}'.format(route[0]))
 
         r = None
@@ -658,7 +674,7 @@ class ArgoMessagingService(AmsHttpRequests):
         msg_body = json.dumps(push_dict)
         route = self.routes["sub_pushconfig"]
         # Compose url
-        url = route[1].format(self.endpoint, self.token, self.project, "", sub)
+        url = route[1].format(self.endpoint, self.project, sub)
         method = getattr(self, 'do_{0}'.format(route[0]))
         p = method(url, msg_body, "sub_pushconfig", **reqkwargs)
 
@@ -711,7 +727,7 @@ class ArgoMessagingService(AmsHttpRequests):
         """
         route = self.routes["topic_list"]
         # Compose url
-        url = route[1].format(self.endpoint, self.token, self.project)
+        url = route[1].format(self.endpoint, self.project)
         method = getattr(self, 'do_{0}'.format(route[0]))
 
         r = method(url, "topic_list", **reqkwargs)
@@ -755,7 +771,7 @@ class ArgoMessagingService(AmsHttpRequests):
         """
         route = self.routes["topic_get"]
         # Compose url
-        url = route[1].format(self.endpoint, self.token, self.project, topic)
+        url = route[1].format(self.endpoint, self.project, topic)
         method = getattr(self, 'do_{0}'.format(route[0]))
 
         r = method(url, "topic_get", **reqkwargs)
@@ -804,7 +820,7 @@ class ArgoMessagingService(AmsHttpRequests):
 
         route = self.routes["topic_publish"]
         # Compose url
-        url = route[1].format(self.endpoint, self.token, self.project, topic)
+        url = route[1].format(self.endpoint, self.project, topic)
         method = getattr(self, 'do_{0}'.format(route[0]))
 
         return method(url, msg_body, "topic_publish", retry=retry,
@@ -820,7 +836,7 @@ class ArgoMessagingService(AmsHttpRequests):
         """
         route = self.routes["sub_list"]
         # Compose url
-        url = route[1].format(self.endpoint, self.token, self.project)
+        url = route[1].format(self.endpoint, self.project)
         method = getattr(self, 'do_{0}'.format(route[0]))
 
         r = method(url, "sub_list", **reqkwargs)
@@ -847,7 +863,7 @@ class ArgoMessagingService(AmsHttpRequests):
         """
         route = self.routes["sub_get"]
         # Compose url
-        url = route[1].format(self.endpoint, self.token, self.project, "", sub)
+        url = route[1].format(self.endpoint, self.project, sub)
         method = getattr(self, 'do_{0}'.format(route[0]))
 
         r = method(url, "sub_get", **reqkwargs)
@@ -906,7 +922,7 @@ class ArgoMessagingService(AmsHttpRequests):
 
         route = self.routes["sub_pull"]
         # Compose url
-        url = route[1].format(self.endpoint, self.token, self.project, "", sub)
+        url = route[1].format(self.endpoint, self.project, sub)
         method = getattr(self, 'do_{0}'.format(route[0]))
         r = method(url, msg_body, "sub_pull", retry=retry,
                    retrysleep=retrysleep, retrybackoff=retrybackoff,
@@ -937,7 +953,7 @@ class ArgoMessagingService(AmsHttpRequests):
 
         route = self.routes["sub_ack"]
         # Compose url
-        url = route[1].format(self.endpoint, self.token, self.project, "", sub)
+        url = route[1].format(self.endpoint, self.project, sub)
         method = getattr(self, 'do_{0}'.format(route[0]))
         method(url, msg_body, "sub_ack", **reqkwargs)
 
@@ -1044,7 +1060,7 @@ class ArgoMessagingService(AmsHttpRequests):
 
         route = self.routes["sub_create"]
         # Compose url
-        url = route[1].format(self.endpoint, self.token, self.project, "", sub)
+        url = route[1].format(self.endpoint, self.project, sub)
         method = getattr(self, 'do_{0}'.format(route[0]))
 
         r = method(url, msg_body, "sub_create", **reqkwargs)
@@ -1073,7 +1089,7 @@ class ArgoMessagingService(AmsHttpRequests):
         """
         route = self.routes["sub_delete"]
         # Compose url
-        url = route[1].format(self.endpoint, self.token, self.project, "", sub)
+        url = route[1].format(self.endpoint, self.project, sub)
         method = getattr(self, 'do_{0}'.format(route[0]))
 
         r = method(url, "sub_delete", **reqkwargs)
@@ -1119,7 +1135,7 @@ class ArgoMessagingService(AmsHttpRequests):
         """
         route = self.routes["topic_create"]
         # Compose url
-        url = route[1].format(self.endpoint, self.token, self.project, topic)
+        url = route[1].format(self.endpoint, self.project, topic)
         method = getattr(self, 'do_{0}'.format(route[0]))
 
         r = method(url, '', "topic_create", **reqkwargs)
@@ -1142,7 +1158,7 @@ class ArgoMessagingService(AmsHttpRequests):
         """
         route = self.routes["topic_delete"]
         # Compose url
-        url = route[1].format(self.endpoint, self.token, self.project, topic)
+        url = route[1].format(self.endpoint, self.project, topic)
         method = getattr(self, 'do_{0}'.format(route[0]))
 
         r = method(url, "topic_delete", **reqkwargs)
