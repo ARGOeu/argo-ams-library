@@ -1,20 +1,26 @@
 # Changelog
 
+## [0.5.5] - 2021-04-15
+
+### Added 
+
+ARGO-2768 ams-library: support for AMS authorization header
+
 ## [0.5.4] - 2020-10-08
 
-### FIXED
+### Fixed
 
 ARGO-2592 ams-library py2 RPM also packages py3 specific modules
 
 ## [0.5.3] - 2020-09-08
 
-### FIXED
+### Fixed
 
 * ARGO-2530 bytes handling in Py3
 
 ## [0.5.2] - 2020-07-08
 
-### FIXED 
+### Fixed 
 
 * ARGO-2479 Modify subscription offset method fails
 * ARGO-2360 Fix ack_sub retry loop

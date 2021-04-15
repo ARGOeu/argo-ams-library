@@ -85,7 +85,7 @@ class SubMocks(object):
     @urlmatch(**get_sub_timeTooffet_urlmatch)
     def timetooffset_sub_mock(self, url, request):
         assert url.path == "/v1/projects/TEST/subscriptions/subscription1:timeToOffset"
-        assert url.query.split("&")[1] == "time=2019-09-02T13:39:11.500Z"
+        assert url.query == "time=2019-09-02T13:39:11.500Z"
         # Return the offset for a subscription1
         return response(200, '{"offset": 44}', None, None, 5, request)
 

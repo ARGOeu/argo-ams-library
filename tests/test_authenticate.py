@@ -51,6 +51,7 @@ class TestAuthenticate(unittest.TestCase):
         self.assertEqual(ams.token, "some_token")
 
     # tests the successful retrieval of a token
+    # and the proper usage of the retrieved token in the x-api-key header
     def test_auth_via_cert_success(self):
 
         auth_via_cert_urlmatch = dict(netloc="localhost",
@@ -63,9 +64,21 @@ class TestAuthenticate(unittest.TestCase):
             assert url.path == "/v1/service-types/ams/hosts/localhost:authx509"
             return response(200, '{"token":"success_token"}', None, None, 5, request)
 
+        # Mock response for GET subscriptions offsets
+        # check that the x-api-key header is both present and holds the correct value
+        @urlmatch(netloc="localhost",
+                  path="/v1/projects/TEST/subscriptions/subscription1:offsets",
+                  method="GET")
+        def get_sub_offsets(url, request):
+            assert url.path == "/v1/projects/TEST/subscriptions/subscription1:offsets"
+            assert request.headers["x-api-key"] == "success_token"
+            return response(200, '{"max": 79, "min": 0, "current": 78}', None, None, 5, request)
+
+
         # Execute ams client with mocked response
-        with HTTMock(auth_via_cert_success):
+        with HTTMock(auth_via_cert_success, get_sub_offsets):
             ams = ArgoMessagingService(endpoint="localhost", project="TEST", cert="/path/cert", key="/path/key")
+            ams.getoffsets_sub("subscription1")
             self.assertEqual(ams.token, "success_token")
 
     # tests the case where the response doesn't contain the `token` field
