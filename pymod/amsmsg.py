@@ -2,7 +2,10 @@ import sys
 import json
 import inspect
 from base64 import b64encode, b64decode
-from collections import Callable
+try:
+    from collections.abc import Callable
+except ImportError:
+    from collections import Callable
 from .amsexceptions import AmsMessageException
 
 class AmsMessage(Callable):
