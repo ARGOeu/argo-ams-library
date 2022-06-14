@@ -42,9 +42,8 @@ pipeline {
                         echo 'Building Rpm...'
                         sh '''
                             cd ${WORKSPACE}/$PROJECT_DIR
-                            coverage run -m unittest2 discover -v
-                            scl enable python27 rh-python36 'tox'
-                            scl enable rh-python36 'coverage xml --omit=*usr* --omit=*.tox*'
+                            coverage run -m unittest discover -v
+                            coverage xml --omit=*usr* --omit=*.tox*
                         '''
                         cobertura coberturaReportFile: '**/coverage.xml'
                     }

@@ -74,7 +74,6 @@ class TestAuthenticate(unittest.TestCase):
             assert request.headers["x-api-key"] == "success_token"
             return response(200, '{"max": 79, "min": 0, "current": 78}', None, None, 5, request)
 
-
         # Execute ams client with mocked response
         with HTTMock(auth_via_cert_success, get_sub_offsets):
             ams = ArgoMessagingService(endpoint="localhost", project="TEST", cert="/path/cert", key="/path/key")
@@ -108,6 +107,7 @@ class TestAuthenticate(unittest.TestCase):
                 else:
                     response_dict = "{'other_field': 'success_token'}"
                 self.assertEqual(e.msg, "While trying the [auth_x509]: Token was not found in the response. Response: " + response_dict)
+
 
 if __name__ == "__main__":
     unittest.main()
