@@ -62,7 +62,7 @@ class AmsUserProject(object):
 
 class AmsUser(object):
 
-    def __init__(self, uuid="", name="", projects=None, firstname="", lastname="", organisation="", description="",
+    def __init__(self, uuid="", name="", projects=None, firstname="", lastname="", organization="", description="",
                  token="", email="", service_roles=None, created_on="", created_by="", modified_on=""):
         """
 
@@ -79,7 +79,7 @@ class AmsUser(object):
         :param projects: (AmsUserProject[]) list of projects the user belongs to in AMS
         :param firstname: (str) firstname of the user
         :param lastname:  (str) lastname of the user
-        :param organisation: (str) organisation of the user
+        :param organization: (str) organisation of the user
         :param description: (str) description of the user
         :param token: (str) user access token for the AMS
         :param email: (str) user email
@@ -108,7 +108,7 @@ class AmsUser(object):
         self.projects = projects
         self.firstname = firstname
         self.lastname = lastname
-        self.organisation = organisation
+        self.organization = organization
         self.description = description
         self.token = token
         self.email = email
@@ -146,8 +146,8 @@ class AmsUser(object):
         if self.description != "":
             user_dict["description"] = self.description
 
-        if self.organisation != "":
-            user_dict["organisation"] = self.organisation
+        if self.organization != "":
+            user_dict["organization"] = self.organization
 
         if self.email != "":
             user_dict["email"] = self.email
@@ -203,7 +203,7 @@ class AmsUser(object):
         if "last_name" in user_dict:
             self.lastname = user_dict["last_name"]
 
-        if "organisation" in user_dict:
-            self.organisation = user_dict["organisation"]
+        if "organization" in user_dict:
+            self.organization = user_dict["organization"]
 
         return self

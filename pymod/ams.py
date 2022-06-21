@@ -63,6 +63,7 @@ class AmsHttpRequests(object):
 
             # user api calls
             "user_create": ["post", "https://{0}/v1/users/{1}"],
+            "user_get": ["get", "https://{0}/v1/users/{1}"],
 
             "auth_x509": ["get", "https://{0}:{1}/v1/service-types/ams/hosts/{0}:authx509"],
         }
@@ -86,6 +87,7 @@ class AmsHttpRequests(object):
             "sub_timeToOffset": ["get", set([400, 401, 403, 404, 409])],
 
             "user_create": ["post", set([400, 401, 403, 404, 409])],
+            "user_get": ["post", set([400, 401, 403, 404])],
 
             "auth_x509": ["post", set([400, 401, 403, 404])]}
 
@@ -338,7 +340,7 @@ class AmsHttpRequests(object):
     def do_get(self, url, route_name, **reqkwargs):
         """Method supports all the GET requests.
 
-           Used for (topics, subscriptions, messages).
+           Used for (topics, subscriptions, users, messages).
 
            Args:
                url: str. The final messaging service endpoint
@@ -380,7 +382,7 @@ class AmsHttpRequests(object):
                 retrybackoff=None, **reqkwargs):
         """Method supports all the POST requests.
 
-           Used for (topics, subscriptions, messages).
+           Used for (topics, subscriptions, users, messages).
 
            Args:
                url: str. The final messaging service endpoint
@@ -1064,6 +1066,24 @@ class ArgoMessagingService(AmsHttpRequests):
             url = route[1].format(self.endpoint, user.name)
             method = getattr(self, 'do_{0}'.format(route[0]))
             r = method(url, user.to_json(), "user_create", **reqkwargs)
+            return AmsUser().load_from_dict(r)
+        except AmsException as e:
+            raise e
+
+    def get_user(self, name, **reqkwargs):
+        """
+        Retrieves the respective user using the provided username with a GET request
+
+        :param name: (str) the username of the user to be retrieved
+        :param reqkwargs:  keyword arguments that will be passed to underlying
+               python-requests library call.
+        :return: (AmsUser) the ams user
+        """
+        try:
+            route = self.routes["user_get"]
+            url = route[1].format(self.endpoint, name)
+            method = getattr(self, 'do_{0}'.format(route[0]))
+            r = method(url, "user_get", **reqkwargs)
             return AmsUser().load_from_dict(r)
         except AmsException as e:
             raise e

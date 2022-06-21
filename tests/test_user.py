@@ -16,25 +16,31 @@ class TestUser(unittest.TestCase):
         project2 = AmsUserProject(project="test-aggr-project", roles=["publisher"])
         self.default_user = AmsUser(name="test-lib", email="lol@gmail.com",
                                     firstname="first", lastname="last",
-                                    description="desc", organisation="org",
+                                    description="desc", organization="org",
                                     modified_on="now", created_on="now", created_by="admin", token="token", uuid="u1",
                                     projects=[project, project2], service_roles=["service_admin"])
+
+        self.user_json = """{"projects": [
+                    {"project": "e2epush", "roles": ["consumer"], "topics": ["t1"], "subscriptions": ["s1"]},
+                    {"project": "test-aggr-project", "roles": ["publisher"]}], "name": "test-user_create",
+                    "first_name": "first", "last_name": "last", "description": "desc", "organization": "org",
+                    "email": "lol@gmail.com", "service_roles": ["service_admin"], "token": "token", "uuid": "u1",
+                    "modified_on": "now", "created_on": "now", "created_by": "admin", "name": "test-lib"}"""
 
     create_user_urlmatch = dict(netloc="localhost",
                                 path="/v1/users/test-user-create",
                                 method='POST')
 
+    get_user_urlmatch = dict(netloc="localhost",
+                                path="/v1/users/test-user-create",
+                                method='GET')
+
     def testCreateUser(self):
         @urlmatch(**self.create_user_urlmatch)
         def create_user_mock(url, request):
             self.assertEqual("/v1/users/test-user-create", url.path)
-            user_json = """{"projects": [
-                {"project": "e2epush", "roles": ["consumer"], "topics": ["t1"], "subscriptions": ["s1"]},
-                {"project": "test-aggr-project", "roles": ["publisher"]}],
-                "first_name": "first", "last_name": "last", "description": "desc", "organisation": "org",
-                "email": "lol@gmail.com", "service_roles": ["service_admin"], "token": "token", "uuid": "u1",
-                "modified_on": "now", "created_on": "now", "created_by": "admin", "name": "test-lib"}"""
-            return response(200, user_json, None, None, 5, request)
+            self.assertEqual("POST", request.method)
+            return response(200, self.user_json, None, None, 5, request)
 
         # Execute ams client with mocked response
         with HTTMock(create_user_mock):
@@ -51,7 +57,39 @@ class TestUser(unittest.TestCase):
             self.assertEqual(self.default_user.firstname, created_user.firstname)
             self.assertEqual(self.default_user.lastname, created_user.lastname)
             self.assertEqual(self.default_user.description, created_user.description)
-            self.assertEqual(self.default_user.organisation, created_user.organisation)
+            self.assertEqual(self.default_user.organization, created_user.organization)
+            self.assertEqual(self.default_user.service_roles, created_user.service_roles)
+            self.assertEqual(self.default_user.projects[0].project, created_user.projects[0].project)
+            self.assertEqual(self.default_user.projects[0].roles, created_user.projects[0].roles)
+            self.assertEqual(self.default_user.projects[0].subscriptions, created_user.projects[0].subscriptions)
+            self.assertEqual(self.default_user.projects[0].topics, created_user.projects[0].topics)
+            self.assertEqual(self.default_user.projects[1].project, created_user.projects[1].project)
+            self.assertEqual(self.default_user.projects[1].roles, created_user.projects[1].roles)
+            self.assertEqual(self.default_user.projects[1].subscriptions, created_user.projects[1].subscriptions)
+            self.assertEqual(self.default_user.projects[1].topics, created_user.projects[1].topics)
+
+    def testGetUser(self):
+        @urlmatch(**self.get_user_urlmatch)
+        def get_user_mock(url, request):
+            self.assertEqual("/v1/users/test-user-create", url.path)
+            self.assertEqual("GET", request.method)
+            return response(200, self.user_json, None, None, 5, request)
+
+        # Execute ams client with mocked response
+        with HTTMock(get_user_mock):
+            created_user = self.ams.get_user(name="test-user-create")
+
+            self.assertEqual(self.default_user.name, created_user.name)
+            self.assertEqual(self.default_user.email, created_user.email)
+            self.assertEqual(self.default_user.uuid, created_user.uuid)
+            self.assertEqual(self.default_user.token, created_user.token)
+            self.assertEqual(self.default_user.modified_on, created_user.modified_on)
+            self.assertEqual(self.default_user.created_by, created_user.created_by)
+            self.assertEqual(self.default_user.created_on, created_user.created_on)
+            self.assertEqual(self.default_user.firstname, created_user.firstname)
+            self.assertEqual(self.default_user.lastname, created_user.lastname)
+            self.assertEqual(self.default_user.description, created_user.description)
+            self.assertEqual(self.default_user.organization, created_user.organization)
             self.assertEqual(self.default_user.service_roles, created_user.service_roles)
             self.assertEqual(self.default_user.projects[0].project, created_user.projects[0].project)
             self.assertEqual(self.default_user.projects[0].roles, created_user.projects[0].roles)
@@ -99,12 +137,12 @@ class TestUser(unittest.TestCase):
         project2 = AmsUserProject(project="test-aggr-project", roles=["publisher"], subscriptions=["s1"])
         user = AmsUser(name="test-lib", email="lol@gmail.com",
                        firstname="first", lastname="last",
-                       description="desc", organisation="org",
+                       description="desc", organization="org",
                        projects=[project, project2], service_roles=["service_admin"])
         user_json = user.to_json()
         self.assertTrue('"first_name": "first"' in user_json)
         self.assertTrue('"last_name": "last"' in user_json)
-        self.assertTrue('"organisation": "org"' in user_json)
+        self.assertTrue('"organization": "org"' in user_json)
         self.assertTrue('"description": "desc"' in user_json)
         self.assertTrue('"email": "lol@gmail.com"' in user_json)
         self.assertTrue('"service_roles": ["service_admin"]' in user_json)
@@ -122,7 +160,7 @@ class TestUser(unittest.TestCase):
         user_json = {"projects": [
             {"project": "e2epush", "roles": ["consumer"], "topics": ["t1"], "subscriptions": ["s1"]},
             {"project": "test-aggr-project", "roles": ["publisher"]}],
-            "first_name": "first", "last_name": "last", "description": "desc", "organisation": "org",
+            "first_name": "first", "last_name": "last", "description": "desc", "organization": "org",
             "email": "lol@gmail.com", "service_roles": ["service_admin"], "token": "token", "uuid": "u1",
             "modified_on": "now", "created_on": "now", "created_by": "admin", "name": "test-lib"
         }
@@ -139,7 +177,7 @@ class TestUser(unittest.TestCase):
         self.assertEqual(self.default_user.firstname, loaded_user.firstname)
         self.assertEqual(self.default_user.lastname, loaded_user.lastname)
         self.assertEqual(self.default_user.description, loaded_user.description)
-        self.assertEqual(self.default_user.organisation, loaded_user.organisation)
+        self.assertEqual(self.default_user.organization, loaded_user.organization)
         self.assertEqual(self.default_user.service_roles, loaded_user.service_roles)
         self.assertEqual(self.default_user.projects[0].project, loaded_user.projects[0].project)
         self.assertEqual(self.default_user.projects[0].roles, loaded_user.projects[0].roles)
