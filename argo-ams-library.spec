@@ -6,7 +6,7 @@
 
 Name:           argo-ams-library
 Summary:        %{sum}
-Version:        0.5.5
+Version:        0.5.6
 Release:        1%{?dist}
 
 Group:          Development/Libraries
@@ -95,6 +95,11 @@ rm -rf %{buildroot}
 
 
 %changelog
+* Tue Jun 21 2022 agelostsal <agelos.tsal@gmail.com> - 0.5.6-1%{?dist}
+- AM-233 ams-library: support for project_member_get api call
+- AM-230 ams-library: support for project_member_add api call
+- AM-229 ams-library: support for user_get api call
+- AM-226 ams-library: support for user_create api call
 * Thu Apr 15 2021 agelostsal <agelos.tsal@gmail.com> - 0.5.5-1%{?dist}
 - ARGO-2768 ams-library: support for AMS authorization header
 * Thu Oct 8 2020 Daniel Vrcic <dvrcic@srce.hr> - 0.5.4-1%{?dist}

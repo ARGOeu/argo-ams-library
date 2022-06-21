@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.5.6] - 2022-06-21
+
+### Added 
+
+AM-233 ams-library: support for project_member_get api call
+AM-230 ams-library: support for project_member_add api call
+AM-229 ams-library: support for user_get api call
+AM-226 ams-library: support for user_create api call
+
 ## [0.5.5] - 2021-04-15
 
 ### Added 
