@@ -1095,11 +1095,12 @@ class ArgoMessagingService(AmsHttpRequests):
         except AmsException as e:
             raise e
 
-    def add_project_member(self, project, username, roles=None, **reqkwargs):
+    def add_project_member(self, username, project=None, roles=None, **reqkwargs):
         """
         Assigns an existing user to the provided project with a POST request
 
-        :param (str) project: the name of the project
+        :param (str) project: the name of the project.If no
+        project is supplied, the declared global project will be used instead
         :param (str) username: the name of user
         :param (str[]) roles: project roles for the user
         :param reqkwargs:  keyword argument that will be passed to underlying
@@ -1109,6 +1110,9 @@ class ArgoMessagingService(AmsHttpRequests):
 
         if roles is None or not isinstance(roles, list):
             roles = []
+
+        if project is None:
+            project = self.project
 
         body = {
                 "project": project,
@@ -1124,17 +1128,21 @@ class ArgoMessagingService(AmsHttpRequests):
         except AmsException as e:
             raise e
 
-    def get_project_member(self, project, username, **reqkwargs):
+    def get_project_member(self, username, project=None, **reqkwargs):
         """
         Retrieves the respective project member using the provided username with a GET request
 
         :param username: (str) the username of the user to be retrieved
-        :param project: (str) the name of the project the user belongs to
+        :param project: (str) the name of the project the user belongs to.If no
+        project is supplied, the declared global project will be used instead
         :param reqkwargs:  keyword arguments that will be passed to underlying
                python-requests library call.
         :return: (AmsUser) the ams user
         """
         try:
+            if project is None:
+                project = self.project
+
             route = self.routes["project_get_member"]
             url = route[1].format(self.endpoint, project, username)
             method = getattr(self, 'do_{0}'.format(route[0]))
