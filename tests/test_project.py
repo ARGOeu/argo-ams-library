@@ -10,7 +10,7 @@ class TestProject(unittest.TestCase):
 
     def setUp(self):
         self.ams = ArgoMessagingService(endpoint="localhost", token="s3cr3t",
-                                        project="TEST")
+                                        project="test-proj")
 
         self.member_json = """{"projects": [
                     {"project": "test-proj", "roles": ["consumer"], "topics": [], "subscriptions": []}] ,
@@ -45,23 +45,27 @@ class TestProject(unittest.TestCase):
         # Execute ams client with mocked response
         with HTTMock(add_member_mock):
             added_member = self.ams.add_project_member(project="test-proj", username="test-member", roles=["consumer"])
+            # test case where the global service project is used
+            added_member_with_service_project = self.ams.add_project_member( username="test-member", roles=["consumer"])
 
-            self.assertEqual(self.default_user.name, added_member.name)
-            self.assertEqual(self.default_user.email, added_member.email)
-            self.assertEqual(self.default_user.uuid, added_member.uuid)
-            self.assertEqual(self.default_user.token, added_member.token)
-            self.assertEqual(self.default_user.modified_on, added_member.modified_on)
-            self.assertEqual(self.default_user.created_by, added_member.created_by)
-            self.assertEqual(self.default_user.created_on, added_member.created_on)
-            self.assertEqual(self.default_user.firstname, added_member.firstname)
-            self.assertEqual(self.default_user.lastname, added_member.lastname)
-            self.assertEqual(self.default_user.description, added_member.description)
-            self.assertEqual(self.default_user.organization, added_member.organization)
-            self.assertEqual(self.default_user.service_roles, added_member.service_roles)
-            self.assertEqual(self.default_user.projects[0].project, added_member.projects[0].project)
-            self.assertEqual(self.default_user.projects[0].roles, added_member.projects[0].roles)
-            self.assertEqual(self.default_user.projects[0].subscriptions, added_member.projects[0].subscriptions)
-            self.assertEqual(self.default_user.projects[0].topics, added_member.projects[0].topics)
+            added_members = [added_member, added_member_with_service_project]
+            for added_member in added_members:
+                self.assertEqual(self.default_user.name, added_member.name)
+                self.assertEqual(self.default_user.email, added_member.email)
+                self.assertEqual(self.default_user.uuid, added_member.uuid)
+                self.assertEqual(self.default_user.token, added_member.token)
+                self.assertEqual(self.default_user.modified_on, added_member.modified_on)
+                self.assertEqual(self.default_user.created_by, added_member.created_by)
+                self.assertEqual(self.default_user.created_on, added_member.created_on)
+                self.assertEqual(self.default_user.firstname, added_member.firstname)
+                self.assertEqual(self.default_user.lastname, added_member.lastname)
+                self.assertEqual(self.default_user.description, added_member.description)
+                self.assertEqual(self.default_user.organization, added_member.organization)
+                self.assertEqual(self.default_user.service_roles, added_member.service_roles)
+                self.assertEqual(self.default_user.projects[0].project, added_member.projects[0].project)
+                self.assertEqual(self.default_user.projects[0].roles, added_member.projects[0].roles)
+                self.assertEqual(self.default_user.projects[0].subscriptions, added_member.projects[0].subscriptions)
+                self.assertEqual(self.default_user.projects[0].topics, added_member.projects[0].topics)
 
     def testGetMember(self):
         @urlmatch(**self.get_member_urlmatch)
@@ -73,20 +77,24 @@ class TestProject(unittest.TestCase):
         # Execute ams client with mocked response
         with HTTMock(get_member_mock):
             added_member = self.ams.get_project_member(project="test-proj", username="test-member")
+            # test case where the global service project is used
+            added_member_with_service_project = self.ams.get_project_member(username="test-member")
+            added_members = [added_member, added_member_with_service_project]
 
-            self.assertEqual(self.default_user.name, added_member.name)
-            self.assertEqual(self.default_user.email, added_member.email)
-            self.assertEqual(self.default_user.uuid, added_member.uuid)
-            self.assertEqual(self.default_user.token, added_member.token)
-            self.assertEqual(self.default_user.modified_on, added_member.modified_on)
-            self.assertEqual(self.default_user.created_by, added_member.created_by)
-            self.assertEqual(self.default_user.created_on, added_member.created_on)
-            self.assertEqual(self.default_user.firstname, added_member.firstname)
-            self.assertEqual(self.default_user.lastname, added_member.lastname)
-            self.assertEqual(self.default_user.description, added_member.description)
-            self.assertEqual(self.default_user.organization, added_member.organization)
-            self.assertEqual(self.default_user.service_roles, added_member.service_roles)
-            self.assertEqual(self.default_user.projects[0].project, added_member.projects[0].project)
-            self.assertEqual(self.default_user.projects[0].roles, added_member.projects[0].roles)
-            self.assertEqual(self.default_user.projects[0].subscriptions, added_member.projects[0].subscriptions)
-            self.assertEqual(self.default_user.projects[0].topics, added_member.projects[0].topics)
+            for added_member in added_members:
+                self.assertEqual(self.default_user.name, added_member.name)
+                self.assertEqual(self.default_user.email, added_member.email)
+                self.assertEqual(self.default_user.uuid, added_member.uuid)
+                self.assertEqual(self.default_user.token, added_member.token)
+                self.assertEqual(self.default_user.modified_on, added_member.modified_on)
+                self.assertEqual(self.default_user.created_by, added_member.created_by)
+                self.assertEqual(self.default_user.created_on, added_member.created_on)
+                self.assertEqual(self.default_user.firstname, added_member.firstname)
+                self.assertEqual(self.default_user.lastname, added_member.lastname)
+                self.assertEqual(self.default_user.description, added_member.description)
+                self.assertEqual(self.default_user.organization, added_member.organization)
+                self.assertEqual(self.default_user.service_roles, added_member.service_roles)
+                self.assertEqual(self.default_user.projects[0].project, added_member.projects[0].project)
+                self.assertEqual(self.default_user.projects[0].roles, added_member.projects[0].roles)
+                self.assertEqual(self.default_user.projects[0].subscriptions, added_member.projects[0].subscriptions)
+                self.assertEqual(self.default_user.projects[0].topics, added_member.projects[0].topics)
