@@ -1,4 +1,5 @@
 import logging
+
 try:
     from logging import NullHandler
 except ImportError:
@@ -14,3 +15,4 @@ from .amsexceptions import (AmsServiceException, AmsBalancerException,
 from .amsmsg import AmsMessage
 from .amstopic import AmsTopic
 from .amssubscription import AmsSubscription
+from .amsuser import AmsUser, AmsUserProject

@@ -1,5 +1,6 @@
 from .amsexceptions import AmsException
 
+
 class AmsTopic(object):
     """Abstraction of AMS Topic
 
@@ -18,10 +19,10 @@ class AmsTopic(object):
         self.name = self._build_name(self.fullname)
 
     def delete(self):
-        """Delete subscription
+        """Delete topic
 
            Return:
-               True: succesfull topic deletion
+               True: successfull topic deletion
         """
 
         return self.init.delete_topic(self.name)

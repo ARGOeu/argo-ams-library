@@ -12,6 +12,7 @@ from pymod import ArgoMessagingService
 from .amsmocks import SubMocks
 from .amsmocks import TopicMocks
 
+
 class TestTopic(unittest.TestCase):
     def setUp(self):
         self.ams = ArgoMessagingService(endpoint="localhost", token="s3cr3t",
@@ -79,7 +80,7 @@ class TestTopic(unittest.TestCase):
             obj2 = next(resp)
             assert isinstance(obj1, AmsSubscription)
             assert isinstance(obj2, AmsSubscription)
-            if sys.version_info < (3, ):
+            if sys.version_info < (3,):
                 self.assertRaises(StopIteration, resp.next)
             else:
                 self.assertRaises(StopIteration, resp.__next__)
