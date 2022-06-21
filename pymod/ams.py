@@ -67,6 +67,7 @@ class AmsHttpRequests(object):
 
             # project api calls
             "project_add_member": ["post", "https://{0}/v1/projects/{1}/members/{2}:add"],
+            "project_get_member": ["get", "https://{0}/v1/projects/{1}/members/{2}"],
 
             "auth_x509": ["get", "https://{0}:{1}/v1/service-types/ams/hosts/{0}:authx509"],
         }
@@ -93,6 +94,7 @@ class AmsHttpRequests(object):
             "user_get": ["post", set([400, 401, 403, 404])],
 
             "project_add_member": ["post", set([400, 401, 403, 404, 409])],
+            "project_get_member": ["get", set([400, 401, 403, 404])],
 
             "auth_x509": ["post", set([400, 401, 403, 404])]}
 
@@ -1118,6 +1120,25 @@ class ArgoMessagingService(AmsHttpRequests):
             url = route[1].format(self.endpoint, project, username)
             method = getattr(self, 'do_{0}'.format(route[0]))
             r = method(url, json.dumps(body), "project_add_member", **reqkwargs)
+            return AmsUser().load_from_dict(r)
+        except AmsException as e:
+            raise e
+
+    def get_project_member(self, project, username, **reqkwargs):
+        """
+        Retrieves the respective project member using the provided username with a GET request
+
+        :param username: (str) the username of the user to be retrieved
+        :param project: (str) the name of the project the user belongs to
+        :param reqkwargs:  keyword arguments that will be passed to underlying
+               python-requests library call.
+        :return: (AmsUser) the ams user
+        """
+        try:
+            route = self.routes["project_get_member"]
+            url = route[1].format(self.endpoint, project, username)
+            method = getattr(self, 'do_{0}'.format(route[0]))
+            r = method(url, "project_get_member", **reqkwargs)
             return AmsUser().load_from_dict(r)
         except AmsException as e:
             raise e
