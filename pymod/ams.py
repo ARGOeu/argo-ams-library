@@ -65,6 +65,9 @@ class AmsHttpRequests(object):
             "user_create": ["post", "https://{0}/v1/users/{1}"],
             "user_get": ["get", "https://{0}/v1/users/{1}"],
 
+            # project api calls
+            "project_add_member": ["post", "https://{0}/v1/projects/{1}/members/{2}:add"],
+
             "auth_x509": ["get", "https://{0}:{1}/v1/service-types/ams/hosts/{0}:authx509"],
         }
 
@@ -88,6 +91,8 @@ class AmsHttpRequests(object):
 
             "user_create": ["post", set([400, 401, 403, 404, 409])],
             "user_get": ["post", set([400, 401, 403, 404])],
+
+            "project_add_member": ["post", set([400, 401, 403, 404, 409])],
 
             "auth_x509": ["post", set([400, 401, 403, 404])]}
 
@@ -1084,6 +1089,35 @@ class ArgoMessagingService(AmsHttpRequests):
             url = route[1].format(self.endpoint, name)
             method = getattr(self, 'do_{0}'.format(route[0]))
             r = method(url, "user_get", **reqkwargs)
+            return AmsUser().load_from_dict(r)
+        except AmsException as e:
+            raise e
+
+    def add_project_member(self, project, username, roles=None, **reqkwargs):
+        """
+        Assigns an existing user to the provided project with a POST request
+
+        :param (str) project: the name of the project
+        :param (str) username: the name of user
+        :param (str[]) roles: project roles for the user
+        :param reqkwargs:  keyword argument that will be passed to underlying
+                          python-requests library call.
+        :return: (AmsUser) the assigned user object
+        """
+
+        if roles is None or not isinstance(roles, list):
+            roles = []
+
+        body = {
+                "project": project,
+                "roles": roles
+        }
+
+        try:
+            route = self.routes["project_add_member"]
+            url = route[1].format(self.endpoint, project, username)
+            method = getattr(self, 'do_{0}'.format(route[0]))
+            r = method(url, json.dumps(body), "project_add_member", **reqkwargs)
             return AmsUser().load_from_dict(r)
         except AmsException as e:
             raise e
