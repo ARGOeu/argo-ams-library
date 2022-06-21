@@ -13,6 +13,7 @@ from .amsexceptions import (AmsServiceException, AmsConnectionException,
 from .amsmsg import AmsMessage
 from .amstopic import AmsTopic
 from .amssubscription import AmsSubscription
+from .amsuser import AmsUser
 
 try:
     from collections import OrderedDict
@@ -29,67 +30,71 @@ class AmsHttpRequests(object):
        library. service error handling is implemented according to HTTP
        status codes returned by service and the balancer.
     """
+
     def __init__(self, endpoint, authn_port, token="", cert="", key=""):
         self.endpoint = endpoint
         self.authn_port = authn_port
+        self.token = token
+
         # Create route list
-        self.routes = {"topic_list": ["get", "https://{0}/v1/projects/{1}/topics"],
-                       "topic_get": ["get", "https://{0}/v1/projects/{1}/topics/{2}"],
-                       "topic_publish": ["post", "https://{0}/v1/projects/{1}/topics/{2}:publish"],
-                       "topic_create": ["put", "https://{0}/v1/projects/{1}/topics/{2}"],
-                       "topic_delete": ["delete", "https://{0}/v1/projects/{1}/topics/{2}"],
-                       "topic_getacl": ["get", "https://{0}/v1/projects/{1}/topics/{2}:acl"],
-                       "topic_modifyacl": ["post", "https://{0}/v1/projects/{1}/topics/{2}:modifyAcl"],
-                       "sub_create": ["put", "https://{0}/v1/projects/{1}/subscriptions/{2}"],
-                       "sub_delete": ["delete", "https://{0}/v1/projects/{1}/subscriptions/{2}"],
-                       "sub_list": ["get", "https://{0}/v1/projects/{1}/subscriptions"],
-                       "sub_get": ["get", "https://{0}/v1/projects/{1}/subscriptions/{2}"],
-                       "sub_pull": ["post", "https://{0}/v1/projects/{1}/subscriptions/{2}:pull"],
-                       "sub_ack": ["post", "https://{0}/v1/projects/{1}/subscriptions/{2}:acknowledge"],
-                       "sub_pushconfig": ["post", "https://{0}/v1/projects/{1}/subscriptions/{2}:modifyPushConfig"],
-                       "sub_getacl": ["get", "https://{0}/v1/projects/{1}/subscriptions/{2}:acl"],
-                       "sub_modifyacl": ["post", "https://{0}/v1/projects/{1}/subscriptions/{2}:modifyAcl"],
-                       "sub_offsets": ["get", "https://{0}/v1/projects/{1}/subscriptions/{2}:offsets"],
-                       "sub_mod_offset": ["post", "https://{0}/v1/projects/{1}/subscriptions/{2}:modifyOffset"],
-                       "auth_x509": ["get", "https://{0}:{1}/v1/service-types/ams/hosts/{0}:authx509"],
-                       "sub_timeToOffset": ["get", "https://{0}/v1/projects/{1}/subscriptions/{2}:timeToOffset?time={3}"]
-                       }
+        self.routes = {
+            # topic api calls
+            "topic_list": ["get", "https://{0}/v1/projects/{1}/topics"],
+            "topic_get": ["get", "https://{0}/v1/projects/{1}/topics/{2}"],
+            "topic_publish": ["post", "https://{0}/v1/projects/{1}/topics/{2}:publish"],
+            "topic_create": ["put", "https://{0}/v1/projects/{1}/topics/{2}"],
+            "topic_delete": ["delete", "https://{0}/v1/projects/{1}/topics/{2}"],
+            "topic_getacl": ["get", "https://{0}/v1/projects/{1}/topics/{2}:acl"],
+            "topic_modifyacl": ["post", "https://{0}/v1/projects/{1}/topics/{2}:modifyAcl"],
+
+            # subscription api calls
+            "sub_create": ["put", "https://{0}/v1/projects/{1}/subscriptions/{2}"],
+            "sub_delete": ["delete", "https://{0}/v1/projects/{1}/subscriptions/{2}"],
+            "sub_list": ["get", "https://{0}/v1/projects/{1}/subscriptions"],
+            "sub_get": ["get", "https://{0}/v1/projects/{1}/subscriptions/{2}"],
+            "sub_pull": ["post", "https://{0}/v1/projects/{1}/subscriptions/{2}:pull"],
+            "sub_ack": ["post", "https://{0}/v1/projects/{1}/subscriptions/{2}:acknowledge"],
+            "sub_pushconfig": ["post", "https://{0}/v1/projects/{1}/subscriptions/{2}:modifyPushConfig"],
+            "sub_getacl": ["get", "https://{0}/v1/projects/{1}/subscriptions/{2}:acl"],
+            "sub_modifyacl": ["post", "https://{0}/v1/projects/{1}/subscriptions/{2}:modifyAcl"],
+            "sub_offsets": ["get", "https://{0}/v1/projects/{1}/subscriptions/{2}:offsets"],
+            "sub_mod_offset": ["post", "https://{0}/v1/projects/{1}/subscriptions/{2}:modifyOffset"],
+            "sub_timeToOffset": ["get", "https://{0}/v1/projects/{1}/subscriptions/{2}:timeToOffset?time={3}"],
+
+            # user api calls
+            "user_create": ["post", "https://{0}/v1/users/{1}"],
+
+            "auth_x509": ["get", "https://{0}:{1}/v1/service-types/ams/hosts/{0}:authx509"],
+        }
 
         # HTTP error status codes returned by AMS according to:
         # http://argoeu.github.io/messaging/v1/api_errors/
-        self.ams_errors_route = {"topic_create": ["put", set([409, 401, 403])],
-                                 "topic_list": ["get", set([400, 401, 403,
-                                                            404])],
-                                 "topic_delete": ["delete", set([401, 403,
-                                                                 404])],
-                                 "sub_create": ["put", set([400, 409, 408, 401,
-                                                            403])],
-                                 "sub_ack": ["post", set([408, 400, 401, 403,
-                                                          404])],
-                                 "topic_get": ["get", set([404, 401, 403])],
-                                 "topic_modifyacl": ["post", set([400, 401,
-                                                                  403, 404])],
-                                 "sub_get": ["get", set([404, 401, 403])],
-                                 "topic_publish": ["post", set([413, 401,
-                                                                403])],
-                                 "sub_mod_offset": ["post", set([400, 401, 403,
-                                                                 404])],
-                                 "sub_pushconfig": ["post", set([400, 401, 403,
-                                                                 404])],
-                                 "auth_x509": ["post", set([400, 401, 403,
-                                                            404])],
-                                 "sub_pull": ["post", set([400, 401, 403,
-                                                           404])],
-                                 "sub_timeToOffset": ["get", set([400, 401,
-                                                                  403, 404,
-                                                                  409])]}
+        self.ams_errors_route = {
+            "topic_create": ["put", set([409, 401, 403])],
+            "topic_list": ["get", set([400, 401, 403, 404])],
+            "topic_delete": ["delete", set([401, 403, 404])],
+            "topic_get": ["get", set([404, 401, 403])],
+            "topic_modifyacl": ["post", set([400, 401, 403, 404])],
+            "topic_publish": ["post", set([413, 401, 403])],
+
+            "sub_create": ["put", set([400, 409, 408, 401, 403])],
+            "sub_get": ["get", set([404, 401, 403])],
+            "sub_mod_offset": ["post", set([400, 401, 403, 404])],
+            "sub_ack": ["post", set([408, 400, 401, 403, 404])],
+            "sub_pushconfig": ["post", set([400, 401, 403, 404])],
+            "sub_pull": ["post", set([400, 401, 403, 404])],
+            "sub_timeToOffset": ["get", set([400, 401, 403, 404, 409])],
+
+            "user_create": ["post", set([400, 401, 403, 404, 409])],
+
+            "auth_x509": ["post", set([400, 401, 403, 404])]}
+
         # https://cbonte.github.io/haproxy-dconv/1.8/configuration.html#1.3
         self.balancer_errors_route = {"sub_ack": ["post", set([500, 502, 503, 504])],
                                       "sub_pull": ["post", set([500, 502, 503, 504])],
                                       "topic_publish": ["post", set([500, 502, 503, 504])]}
 
         # determine the token to be used
-        token = token
         self.assign_token(token, cert, key)
 
     def assign_token(self, token, cert, key):
@@ -103,7 +108,6 @@ class AmsHttpRequests(object):
 
         # check if a token has been provided
         if token != "":
-            self.token = token
             return
 
         try:
@@ -158,8 +162,8 @@ class AmsHttpRequests(object):
         error_dict = dict()
 
         try:
-            if (response_content and sys.version_info < (3, 6, ) and
-                isinstance(response_content, bytes)):
+            if (response_content and sys.version_info < (3, 6,) and
+                    isinstance(response_content, bytes)):
                 response_content = response_content.decode()
             error_dict = json.loads(response_content) if response_content else {}
         except ValueError:
@@ -222,9 +226,13 @@ class AmsHttpRequests(object):
                         saved_exp = e
                         time.sleep(sleep_secs)
                         if timeout:
-                            log.warning('Backoff retry #{0} after {1} seconds, connection timeout set to {2} seconds - {3}: {4}'.format(i, sleep_secs, timeout, self.endpoint, e))
+                            log.warning(
+                                'Backoff retry #{0} after {1} seconds, connection timeout set to {2} seconds - {3}: {4}'.format(
+                                    i, sleep_secs, timeout, self.endpoint, e))
                         else:
-                            log.warning('Backoff retry #{0} after {1} seconds - {2}: {3}'.format(i, sleep_secs, self.endpoint, e))
+                            log.warning(
+                                'Backoff retry #{0} after {1} seconds - {2}: {3}'.format(i, sleep_secs, self.endpoint,
+                                                                                         e))
                     finally:
                         i += 1
                 else:
@@ -243,9 +251,12 @@ class AmsHttpRequests(object):
                     else:
                         time.sleep(retrysleep)
                         if timeout:
-                            log.warning('Retry #{0} after {1} seconds, connection timeout set to {2} seconds - {3}: {4}'.format(i, retrysleep, timeout, self.endpoint, e))
+                            log.warning(
+                                'Retry #{0} after {1} seconds, connection timeout set to {2} seconds - {3}: {4}'.format(
+                                    i, retrysleep, timeout, self.endpoint, e))
                         else:
-                            log.warning('Retry #{0} after {1} seconds - {2}: {3}'.format(i, retrysleep, self.endpoint, e))
+                            log.warning(
+                                'Retry #{0} after {1} seconds - {2}: {3}'.format(i, retrysleep, self.endpoint, e))
                 finally:
                     i += 1
 
@@ -272,15 +283,14 @@ class AmsHttpRequests(object):
                     # if the there are already other headers defined, just append the x-api-key one
                     reqkwargs["headers"]["x-api-key"] = self.token
 
-
             reqmethod = getattr(requests, m)
             r = reqmethod(url, data=body, **reqkwargs)
 
             content = r.content
             status_code = r.status_code
 
-            if (content and sys.version_info < (3, 6, ) and isinstance(content,
-                                                                       bytes)):
+            if (content and sys.version_info < (3, 6,) and isinstance(content,
+                                                                      bytes)):
                 content = content.decode()
 
             if status_code == 200:
@@ -427,6 +437,7 @@ class ArgoMessagingService(AmsHttpRequests):
        Class abstract Argo Messaging Service by covering all available HTTP API
        calls that are wrapped in series of methods.
     """
+
     def __init__(self, endpoint, token="", project="", cert="", key="", authn_port=8443):
         super(ArgoMessagingService, self).__init__(endpoint, authn_port, token, cert, key)
         self.project = project
@@ -1032,6 +1043,30 @@ class ArgoMessagingService(AmsHttpRequests):
                str. The value of the pull option
         """
         return self.pullopts[key]
+
+    def create_user(self, user, **reqkwargs):
+
+        """This function creates a new user with a POST request
+
+           Args:
+               user: AmsUser. The user to be created.
+               reqkwargs: keyword argument that will be passed to underlying
+               python-requests library call.
+           Return:
+               object (AmsUser)
+        """
+
+        if not isinstance(user, AmsUser):
+            raise ValueError("user has to be of type AmsUser")
+
+        try:
+            route = self.routes["user_create"]
+            url = route[1].format(self.endpoint, user.name)
+            method = getattr(self, 'do_{0}'.format(route[0]))
+            r = method(url, user.to_json(), "user_create", **reqkwargs)
+            return AmsUser().load_from_dict(r)
+        except AmsException as e:
+            raise e
 
     def create_sub(self, sub, topic, ackdeadline=10, push_endpoint=None,
                    retry_policy_type='linear', retry_policy_period=300, retobj=False, **reqkwargs):

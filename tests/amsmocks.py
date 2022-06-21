@@ -28,8 +28,8 @@ class SubMocks(object):
                                      path="/v1/projects/TEST/subscriptions/subscription1:modifyOffset",
                                      method="POST")
     get_sub_timeTooffet_urlmatch = dict(netloc="localhost",
-                                   path="/v1/projects/TEST/subscriptions/subscription1:timeToOffset",
-                                   method="GET")
+                                        path="/v1/projects/TEST/subscriptions/subscription1:timeToOffset",
+                                        method="GET")
 
     # Mock response for GET subscription request
     @urlmatch(**get_sub_urlmatch)
@@ -112,29 +112,32 @@ class SubMocks(object):
 
 class ErrorMocks(object):
     create_topic_urlmatch = dict(netloc="localhost",
-                                path="/v1/projects/TEST/topics/topic1",
-                                method='PUT')
+                                 path="/v1/projects/TEST/topics/topic1",
+                                 method='PUT')
     create_subscription_urlmatch = dict(netloc="localhost",
                                         path="/v1/projects/TEST/subscriptions/subscription1",
                                         method="PUT")
     delete_topic_urlmatch = dict(netloc="localhost",
-                                path="/v1/projects/TEST/topics/topic1",
-                                method='DELETE')
+                                 path="/v1/projects/TEST/topics/topic1",
+                                 method='DELETE')
 
     # Mock ALREADY_EXIST error response for PUT topic request
     @urlmatch(**create_topic_urlmatch)
     def create_topic_alreadyexist_mock(self, url, request):
-        return response(409, '{"error":{"code": 409,"message":"Topic already exists","status":"ALREADY_EXIST"}}', None, None, 5, request)
+        return response(409, '{"error":{"code": 409,"message":"Topic already exists","status":"ALREADY_EXIST"}}', None,
+                        None, 5, request)
 
     # Mock NOT_FOUND error response for DELETE topic request
     @urlmatch(**delete_topic_urlmatch)
     def delete_topic_notfound_mock(self, url, request):
-        return response(404, '{"error":{"code": 404,"message":"Topic does not exist","status":"NOT_FOUND"}}', None, None, 5, request)
+        return response(404, '{"error":{"code": 404,"message":"Topic does not exist","status":"NOT_FOUND"}}', None,
+                        None, 5, request)
 
     # Mock ALREADY_EXIST error response for PUT subscription request
     @urlmatch(**create_subscription_urlmatch)
     def create_subscription_alreadyexist_mock(self, url, request):
-        return response(409, '{"error":{"code": 409,"message":"Subscription already exists","status":"ALREADY_EXIST"}}', None, None, 5, request)
+        return response(409, '{"error":{"code": 409,"message":"Subscription already exists","status":"ALREADY_EXIST"}}',
+                        None, None, 5, request)
 
 
 class TopicMocks(object):
@@ -142,8 +145,8 @@ class TopicMocks(object):
                               path="/v1/projects/TEST/topics/topic1",
                               method='GET')
     create_topic_urlmatch = dict(netloc="localhost",
-                                path="/v1/projects/TEST/topics/topic1",
-                                method='PUT')
+                                 path="/v1/projects/TEST/topics/topic1",
+                                 method='PUT')
     has_topic_urlmatch = dict(netloc="localhost",
                               path="/v1/projects/TEST/topics/topic1",
                               method="GET")
