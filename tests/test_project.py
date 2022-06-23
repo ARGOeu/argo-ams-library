@@ -38,7 +38,6 @@ class TestProject(unittest.TestCase):
         def add_member_mock(url, request):
             self.assertEqual("/v1/projects/test-proj/members/test-member:add", url.path)
             self.assertEqual("POST", request.method)
-            self.assertTrue('"project": "test-proj"' in request.body)
             self.assertTrue('"roles": ["consumer"]' in request.body)
             return response(200, self.member_json, None, None, 5, request)
 
