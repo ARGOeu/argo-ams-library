@@ -1115,7 +1115,6 @@ class ArgoMessagingService(AmsHttpRequests):
             project = self.project
 
         body = {
-                "project": project,
                 "roles": roles
         }
 
