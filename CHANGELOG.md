@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.5.7] - 2022-06-22
+
+### Fixed
+
+AM-249 ams-library: bug fix regarding sub and topic acl methods #137
+
 ## [0.5.6] - 2022-06-21
 
 ### Added 
