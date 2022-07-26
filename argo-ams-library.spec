@@ -6,7 +6,7 @@
 
 Name:           argo-ams-library
 Summary:        %{sum}
-Version:        0.5.6
+Version:        0.5.7
 Release:        1%{?dist}
 
 Group:          Development/Libraries
@@ -95,6 +95,8 @@ rm -rf %{buildroot}
 
 
 %changelog
+* Wed Jun 22 2022 agelostsal <agelos.tsal@gmail.com> - 0.5.7-1%{?dist}
+- AM-249 ams-library: bug fix regarding sub and topic acl methods
 * Tue Jun 21 2022 agelostsal <agelos.tsal@gmail.com> - 0.5.6-1%{?dist}
 - AM-233 ams-library: support for project_member_get api call
 - AM-230 ams-library: support for project_member_add api call

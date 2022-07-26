@@ -482,7 +482,7 @@ class ArgoMessagingService(AmsHttpRequests):
                           python-requests library call.
         """
 
-        topicobj = self.get_topic(topic, retobj=True)
+        topicobj = self.get_topic(topic, retobj=True, **reqkwargs)
 
         route = self.routes["topic_getacl"]
         # Compose url
@@ -511,7 +511,7 @@ class ArgoMessagingService(AmsHttpRequests):
                           python-requests library call.
         """
 
-        topicobj = self.get_topic(topic, retobj=True)
+        topicobj = self.get_topic(topic, retobj=True, **reqkwargs)
 
         route = self.routes["topic_modifyacl"]
         # Compose url
@@ -542,7 +542,7 @@ class ArgoMessagingService(AmsHttpRequests):
                           python-requests library call.
         """
 
-        subobj = self.get_sub(sub, retobj=True)
+        subobj = self.get_sub(sub, retobj=True, **reqkwargs)
 
         route = self.routes["sub_getacl"]
         # Compose url
@@ -654,7 +654,7 @@ class ArgoMessagingService(AmsHttpRequests):
                           python-requests library call.
         """
 
-        subobj = self.get_sub(sub, retobj=True)
+        subobj = self.get_sub(sub, retobj=True, **reqkwargs)
 
         route = self.routes["sub_modifyacl"]
         # Compose url
@@ -1115,7 +1115,6 @@ class ArgoMessagingService(AmsHttpRequests):
             project = self.project
 
         body = {
-                "project": project,
                 "roles": roles
         }
 
