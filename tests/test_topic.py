@@ -96,8 +96,12 @@ class TestTopic(unittest.TestCase):
 
         # Execute ams client with mocked response
         with HTTMock(delete_topic, self.topicmocks.create_topic_mock, self.topicmocks.has_topic_mock):
+            # create topic
             topic = self.ams.topic('topic1')
-            self.assertTrue(topic.delete())
+            self.assertTrue("/projects/TEST/topics/topic1" in self.ams.topics.keys())
+            # delete topic and check that it is removed
+            self.ams.delete_topic(topic="topic1")
+            self.assertFalse("/projects/TEST/subscriptions/subscription1" in self.ams.topics.keys())
 
     def testAcl(self):
         # Mock response for GET topic request
