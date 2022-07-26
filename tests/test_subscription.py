@@ -196,12 +196,8 @@ class TestSubscription(unittest.TestCase):
                      self.submocks.create_subscription_mock,
                      self.topicmocks.get_topic_mock, self.submocks.get_sub_mock):
             topic = self.ams.topic('topic1')
-            # create sub
             sub = topic.subscription('subscription1')
-            self.assertTrue("/projects/TEST/subscriptions/subscription1" in self.ams.subs.keys())
-            # delete sub and check that it is removed
-            self.ams.delete_sub(sub="subscription1")
-            self.assertFalse("/projects/TEST/subscriptions/subscription1" in self.ams.subs.keys())
+            self.assertTrue(sub.delete())
 
     def testAcl(self):
         # Mock response for GET topic request
