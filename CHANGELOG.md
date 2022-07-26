@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.5.8] - 2022-07-26
+
+### Fixed
+
+AM-264 argo-ams-library: Delete topic and sub doesn't use the x-api-key token
+
 ## [0.5.7] - 2022-06-22
 
 ### Fixed
