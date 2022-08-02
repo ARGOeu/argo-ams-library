@@ -411,7 +411,8 @@ class AmsHttpRequests(object):
         except AmsException as e:
             raise e
 
-    def do_delete(self, url, route_name, **reqkwargs):
+    def do_delete(self, url, route_name, retry=0, retrysleep=60,
+                retrybackoff=None, **reqkwargs):
         """Delete method that is used to make the appropriate request.
 
            Used for (topics, subscriptions).
@@ -422,22 +423,15 @@ class AmsHttpRequests(object):
                reqkwargs: keyword argument that will be passed to underlying python-requests library call.
         """
         # try to send a delete request to the messaging service.
-        # if a connection problem araises a Connection error exception is raised.
+
         try:
-            # the delete request based on requests.
-            r = requests.delete(url, **reqkwargs)
-
-            # JSON error returned by AMS
-            if r.status_code != 200:
-                errormsg = self._error_dict(r.content, r.status_code)
-                raise AmsServiceException(json=errormsg, request=route_name)
-
-            else:
-                return True
-
-        except (requests.exceptions.ConnectionError,
-                requests.exceptions.Timeout) as e:
-            raise AmsConnectionException(e, route_name)
+            return self._retry_make_request(url, body=None,
+                                            route_name=route_name, retry=retry,
+                                            retrysleep=retrysleep,
+                                            retrybackoff=retrybackoff,
+                                            **reqkwargs)
+        except AmsException as e:
+            raise e
 
 
 class ArgoMessagingService(AmsHttpRequests):

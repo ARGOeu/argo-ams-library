@@ -1,12 +1,13 @@
 from setuptools import setup
 from os import path
-import glob
+import sys
 
 NAME = 'argo-ams-library'
 
 this_directory = path.abspath(path.dirname(__file__))
 with open(path.join(this_directory, 'README.md')) as f:
     long_description = f.read()
+
 
 def get_ver():
     try:
@@ -17,6 +18,13 @@ def get_ver():
     except IOError:
         print("Make sure that %s is in directory" % (NAME + '.spec'))
         raise SystemExit(1)
+
+
+REQUIREMENTS = []
+if sys.version_info[0] == 2:
+    REQUIREMENTS = ['requests==2.20.0'],
+else:
+    REQUIREMENTS = ['requests'],
 
 setup(
     name=NAME,
@@ -46,5 +54,5 @@ setup(
     url='https://github.com/ARGOeu/argo-ams-library',
     package_dir={'argo_ams_library': 'pymod/'},
     packages=['argo_ams_library'],
-    install_requires=['requests==2.20']
+    install_requires=REQUIREMENTS
 )

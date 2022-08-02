@@ -6,7 +6,7 @@
 
 Name:           argo-ams-library
 Summary:        %{sum}
-Version:        0.5.7
+Version:        0.5.9
 Release:        1%{?dist}
 
 Group:          Development/Libraries
@@ -95,6 +95,10 @@ rm -rf %{buildroot}
 
 
 %changelog
+* Tue Aug 2 2022 agelostsal <agelos.tsal@gmail.com> - 0.5.9-1%{?dist}
+- Different requests version for various  python versions
+* Tue Jul 26 2022 agelostsal <agelos.tsal@gmail.com> - 0.5.8-1%{?dist}
+- AM-264 argo-ams-library: Delete topic and sub doesn't use the x-api-key token
 * Wed Jun 22 2022 agelostsal <agelos.tsal@gmail.com> - 0.5.7-1%{?dist}
 - AM-249 ams-library: bug fix regarding sub and topic acl methods
 * Tue Jun 21 2022 agelostsal <agelos.tsal@gmail.com> - 0.5.6-1%{?dist}
