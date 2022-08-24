@@ -61,6 +61,12 @@ class AmsHttpRequests(object):
             "sub_mod_offset": ["post", "https://{0}/v1/projects/{1}/subscriptions/{2}:modifyOffset"],
             "sub_timeToOffset": ["get", "https://{0}/v1/projects/{1}/subscriptions/{2}:timeToOffset?time={3}"],
 
+            # miscellaneous api calls about metrics,version,status
+            "api_status": ["get", "https://{0}/v1/status"],
+            "api_metrics": ["get", "https://{0}/v1/metrics"],
+            "api_va_metrics": ["get", "https://{0}/v1/metrics/va_metrics"],
+            "api_version": ["get", "https://{0}/v1/version"],
+
             # user api calls
             "user_create": ["post", "https://{0}/v1/users/{1}"],
             "user_get": ["get", "https://{0}/v1/users/{1}"],
@@ -92,6 +98,11 @@ class AmsHttpRequests(object):
 
             "user_create": ["post", set([400, 401, 403, 404, 409])],
             "user_get": ["post", set([400, 401, 403, 404])],
+
+            "api_status": ["get", set([401, 403])],
+            "api_metrics": ["get", set([401, 403])],
+            "api_va_metrics": ["get", set([400, 401, 403, 404])],
+            "api_version": ["get", set([401, 403])],
 
             "project_add_member": ["post", set([400, 401, 403, 404, 409])],
             "project_get_member": ["get", set([400, 401, 403, 404])],
@@ -358,7 +369,9 @@ class AmsHttpRequests(object):
         # try to send a GET request to the messaging service.
         # if a connection problem araises a Connection error exception is raised.
         try:
-            return self._retry_make_request(url, route_name=route_name,
+            return self._retry_make_request(url,
+                                            body=None,
+                                            route_name=route_name,
                                             **reqkwargs)
         except AmsException as e:
             raise e
@@ -412,7 +425,7 @@ class AmsHttpRequests(object):
             raise e
 
     def do_delete(self, url, route_name, retry=0, retrysleep=60,
-                retrybackoff=None, **reqkwargs):
+                  retrybackoff=None, **reqkwargs):
         """Delete method that is used to make the appropriate request.
 
            Used for (topics, subscriptions).
@@ -1109,7 +1122,7 @@ class ArgoMessagingService(AmsHttpRequests):
             project = self.project
 
         body = {
-                "roles": roles
+            "roles": roles
         }
 
         try:
@@ -1279,3 +1292,85 @@ class ArgoMessagingService(AmsHttpRequests):
             self._delete_topic_obj({'name': topic_fullname})
 
         return r
+
+    def status(self, **reqkwargs):
+        """
+        Retrieves the status of the service
+
+        :param reqkwargs: keyword arguments that will be passed to underlying
+               python-requests library call.
+        """
+        try:
+            route = self.routes["api_status"]
+            url = route[1].format(self.endpoint)
+            method = getattr(self, 'do_{0}'.format(route[0]))
+            r = method(url, "api_status", **reqkwargs)
+            return r
+        except AmsException as e:
+            raise e
+
+    def metrics(self, **reqkwargs):
+        """
+        Retrieves the operational metrics of the service
+
+        :param reqkwargs: keyword arguments that will be passed to underlying
+               python-requests library call.
+        """
+        try:
+            route = self.routes["api_metrics"]
+            url = route[1].format(self.endpoint)
+            method = getattr(self, 'do_{0}'.format(route[0]))
+            r = method(url, "api_metrics", **reqkwargs)
+            return r
+        except AmsException as e:
+            raise e
+
+    def version(self, **reqkwargs):
+        """
+        Retrieves the version information about the service
+
+        :param reqkwargs: keyword arguments that will be passed to underlying
+               python-requests library call.
+        """
+        try:
+            route = self.routes["api_version"]
+            url = route[1].format(self.endpoint)
+            method = getattr(self, 'do_{0}'.format(route[0]))
+            r = method(url, "api_version", **reqkwargs)
+            return r
+        except AmsException as e:
+            raise e
+
+    def va_metrics(self, projects=None, start_date=None, end_date=None, **reqkwargs):
+        """
+        Retrieves va report metrics for the given projects and the given time period
+        :param projects: (str[]) filter based on the given projects
+        :param start_date: (datetime.datetime time period starting date
+        :param end_date: (datetime.datetime) time period end date
+        :param reqkwargs: keyword arguments that will be passed to underlying
+               python-requests library call.
+        """
+
+        url_params = {}
+
+        if projects is None or not isinstance(projects, list):
+            projects = []
+
+        if start_date is not None and isinstance(start_date, datetime.datetime):
+            url_params["start_date"] = start_date.strftime("%Y-%m-%d")
+
+        if end_date is not None and isinstance(end_date, datetime.datetime):
+            url_params["end_date"] = end_date.strftime("%Y-%m-%d")
+
+        if len(projects) > 0:
+            url_params["projects"] = ",".join(projects)
+
+        try:
+            route = self.routes["api_va_metrics"]
+            url = route[1].format(self.endpoint)
+            method = getattr(self, 'do_{0}'.format(route[0]))
+            reqkwargs["params"] = url_params
+            r = method(url, "api_va_metrics", **reqkwargs)
+            return r
+        except AmsException as e:
+            raise e
