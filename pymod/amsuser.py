@@ -207,3 +207,17 @@ class AmsUser(object):
             self.organization = user_dict["organization"]
 
         return self
+
+
+class AmsUserPage(object):
+
+    def __init__(self, users, total_size, next_page_token):
+        """
+        Initialise a user page
+        :param users: (AmsUser[]) list of AmsUser objects
+        :param total_size: (int) the total amount of available users in the service
+        :param next_page_token:  (str) token that will be used to retrieve the next user page
+        """
+        self.users = users
+        self.total_size = total_size
+        self.next_page_token = next_page_token
