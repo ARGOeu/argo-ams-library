@@ -66,6 +66,7 @@ class AmsHttpRequests(object):
             "api_metrics": ["get", "https://{0}/v1/metrics"],
             "api_va_metrics": ["get", "https://{0}/v1/metrics/va_metrics"],
             "api_version": ["get", "https://{0}/v1/version"],
+            "api_usage_report": ["get", "https://{0}/v1/users/usageReport"],
 
             # user api calls
             "user_create": ["post", "https://{0}/v1/users/{1}"],
@@ -82,6 +83,10 @@ class AmsHttpRequests(object):
             "project_add_member": ["post", "https://{0}/v1/projects/{1}/members/{2}:add"],
             "project_get_member": ["get", "https://{0}/v1/projects/{1}/members/{2}"],
             "project_remove_member": ["post", "https://{0}/v1/projects/{1}/members/{2}:remove"],
+            "project_create": ["post", "https://{0}/v1/projects/{1}"],
+            "project_update": ["put", "https://{0}/v1/projects/{1}"],
+            "project_get": ["get", "https://{0}/v1/projects/{1}"],
+            "project_delete": ["delete", "https://{0}/v1/projects/{1}"],
 
             "auth_x509": ["get", "https://{0}:{1}/v1/service-types/ams/hosts/{0}:authx509"],
         }
@@ -118,10 +123,15 @@ class AmsHttpRequests(object):
             "api_metrics": ["get", set([401, 403])],
             "api_va_metrics": ["get", set([400, 401, 403, 404])],
             "api_version": ["get", set([401, 403])],
+            "api_usage_report": ["get", set([400, 401, 403])],
 
             "project_add_member": ["post", set([400, 401, 403, 404, 409])],
             "project_get_member": ["get", set([400, 401, 403, 404])],
             "project_remove_member": ["get", set([401, 403, 404])],
+            "project_create": ["post", set([400, 401, 403, 409])],
+            "project_update": ["put", set([400, 401, 403, 404, 409])],
+            "project_get": ["get", set([401, 403, 404])],
+            "project_delete": ["delete", set([401, 403, 404])],
 
             "auth_x509": ["post", set([400, 401, 403, 404])]}
 
@@ -1371,6 +1381,87 @@ class ArgoMessagingService(AmsHttpRequests):
         except AmsException as e:
             raise e
 
+    def create_project(self, name, description, **reqkwargs):
+        """
+        Create a new project using the provided name and description with a POST request
+
+        :param name: (str) the name of the project
+        :param description: (str) the description of the project
+        :param reqkwargs:  keyword arguments that will be passed to underlying
+               python-requests library call.
+        """
+        body = {
+            "description": description
+        }
+        try:
+            route = self.routes["project_create"]
+            url = route[1].format(self.endpoint, name)
+            method = getattr(self, 'do_{0}'.format(route[0]))
+            r = method(url, json.dumps(body), "project_create", **reqkwargs)
+            return r
+        except AmsException as e:
+            raise e
+
+    def update_project(self, name, description="", updated_name="", **reqkwargs):
+        """
+        Create a new project using the provided name and description with a POST request
+
+        :param name: (str) the name of the project
+        :param description: (str) the description of the project
+        :param updated_name: (str) updated name
+        :param reqkwargs:  keyword arguments that will be passed to underlying
+               python-requests library call.
+        """
+        body = {}
+        if description != "":
+            body["description"] = description
+
+        if updated_name != "":
+            body["name"] = updated_name
+
+        try:
+            route = self.routes["project_update"]
+            url = route[1].format(self.endpoint, name)
+            method = getattr(self, 'do_{0}'.format(route[0]))
+            r = method(url, json.dumps(body), "project_update", **reqkwargs)
+            return r
+        except AmsException as e:
+            raise e
+
+    def get_project(self, name, **reqkwargs):
+        """
+        Retrieve a project using the provided name with a GET request
+
+        :param name: (str) the name of the project
+        :param reqkwargs:  keyword arguments that will be passed to underlying
+               python-requests library call.
+        """
+        try:
+            route = self.routes["project_get"]
+            url = route[1].format(self.endpoint, name)
+            method = getattr(self, 'do_{0}'.format(route[0]))
+            r = method(url, "project_get", **reqkwargs)
+            return r
+        except AmsException as e:
+            raise e
+
+    def delete_project(self, name, **reqkwargs):
+        """
+        Delete a project using the provided name with a DELETE request
+
+        :param name: (str) the name of the project
+        :param reqkwargs:  keyword arguments that will be passed to underlying
+               python-requests library call.
+        """
+        try:
+            route = self.routes["project_delete"]
+            url = route[1].format(self.endpoint, name)
+            method = getattr(self, 'do_{0}'.format(route[0]))
+            r = method(url, "project_delete", **reqkwargs)
+            return r
+        except AmsException as e:
+            raise e
+
     def create_sub(self, sub, topic, ackdeadline=10, push_endpoint=None,
                    retry_policy_type='linear', retry_policy_period=300, retobj=False, **reqkwargs):
         """This function creates a new subscription in a project with a PUT request
@@ -1585,6 +1676,42 @@ class ArgoMessagingService(AmsHttpRequests):
             method = getattr(self, 'do_{0}'.format(route[0]))
             reqkwargs["params"] = url_params
             r = method(url, "api_va_metrics", **reqkwargs)
+            return r
+        except AmsException as e:
+            raise e
+
+    def usage_report(self, projects=None, start_date=None, end_date=None, **reqkwargs):
+        """
+        Retrieves va report metrics for the given projects and the given time period
+        alongside the service's operational metrics.
+        The api call will retrieve all projects that the requesting user is a project admin for.
+        :param projects: (str[]) filter based on the given projects
+        :param start_date: (datetime.datetime time period starting date
+        :param end_date: (datetime.datetime) time period end date
+        :param reqkwargs: keyword arguments that will be passed to underlying
+               python-requests library call.
+        """
+
+        url_params = {}
+
+        if projects is None or not isinstance(projects, list):
+            projects = []
+
+        if start_date is not None and isinstance(start_date, datetime.datetime):
+            url_params["start_date"] = start_date.strftime("%Y-%m-%d")
+
+        if end_date is not None and isinstance(end_date, datetime.datetime):
+            url_params["end_date"] = end_date.strftime("%Y-%m-%d")
+
+        if len(projects) > 0:
+            url_params["projects"] = ",".join(projects)
+
+        try:
+            route = self.routes["api_usage_report"]
+            url = route[1].format(self.endpoint)
+            method = getattr(self, 'do_{0}'.format(route[0]))
+            reqkwargs["params"] = url_params
+            r = method(url, "api_usage_report", **reqkwargs)
             return r
         except AmsException as e:
             raise e

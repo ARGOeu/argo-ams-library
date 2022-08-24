@@ -19,6 +19,13 @@ class TestProject(unittest.TestCase):
                     "email": "lol@gmail.com", "service_roles": [], "token": "token", "uuid": "u1",
                     "modified_on": "now", "created_on": "now", "created_by": "admin"}"""
 
+        self.project_json = """
+            {
+                "project": "test-project",
+                "description": "nice project"
+            }
+        """
+
         project = AmsUserProject(project="test-proj", roles=["consumer"])
         self.default_user = AmsUser(name="test-member", email="lol@gmail.com",
                                     firstname="first", lastname="last",
@@ -37,6 +44,22 @@ class TestProject(unittest.TestCase):
     remove_member_urlmatch = dict(netloc="localhost",
                                   path="/v1/projects/test-proj/members/test-member:remove",
                                   method='POST')
+
+    create_project_urlmatch = dict(netloc="localhost",
+                                   path="/v1/projects/test-project",
+                                   method='POST')
+
+    update_project_urlmatch = dict(netloc="localhost",
+                                   path="/v1/projects/test-project",
+                                   method='PUT')
+
+    get_project_urlmatch = dict(netloc="localhost",
+                                path="/v1/projects/test-project",
+                                method='GET')
+
+    delete_project_urlmatch = dict(netloc="localhost",
+                                   path="/v1/projects/test-project",
+                                   method='DELETE')
 
     def testAddMember(self):
         @urlmatch(**self.add_member_urlmatch)
@@ -113,6 +136,59 @@ class TestProject(unittest.TestCase):
         # Execute ams client with mocked response
         with HTTMock(remove_member_mock):
             self.ams.remove_project_member(project="test-proj", username="test-member")
+
+    def testCreateProject(self):
+        @urlmatch(**self.create_project_urlmatch)
+        def create_project_mock(url, request):
+            self.assertEqual("/v1/projects/test-project", url.path)
+            self.assertEqual("POST", request.method)
+            self.assertTrue('"description": "nice project"' in request.body)
+            return response(200, self.project_json, None, None, 5, request)
+
+        # Execute ams client with mocked response
+        with HTTMock(create_project_mock):
+            r = self.ams.create_project(name="test-project", description="nice project")
+            self.assertEqual("test-project", r["project"])
+            self.assertEqual("nice project", r["description"])
+               
+    def testUpdateProject(self):
+        @urlmatch(**self.update_project_urlmatch)
+        def update_project_mock(url, request):
+            self.assertEqual("/v1/projects/test-project", url.path)
+            self.assertEqual("PUT", request.method)
+            self.assertTrue('"description": "nice project"' in request.body)
+            self.assertTrue('"name": "updated"' in request.body)
+            return response(200, self.project_json, None, None, 5, request)
+
+        # Execute ams client with mocked response
+        with HTTMock(update_project_mock):
+            r = self.ams.update_project(name="test-project", description="nice project", updated_name="updated")
+            self.assertEqual("test-project", r["project"])
+            self.assertEqual("nice project", r["description"])
+
+    def testGetProject(self):
+        @urlmatch(**self.get_project_urlmatch)
+        def get_project_mock(url, request):
+            self.assertEqual("/v1/projects/test-project", url.path)
+            self.assertEqual("GET", request.method)
+            return response(200, self.project_json, None, None, 5, request)
+
+        # Execute ams client with mocked response
+        with HTTMock(get_project_mock):
+            r = self.ams.get_project(name="test-project")
+            self.assertEqual("test-project", r["project"])
+            self.assertEqual("nice project", r["description"])
+
+    def testDeleteProject(self):
+        @urlmatch(**self.delete_project_urlmatch)
+        def delete_project_mock(url, request):
+            self.assertEqual("/v1/projects/test-project", url.path)
+            self.assertEqual("DELETE", request.method)
+            return response(200, None, None, None, 5, request)
+
+        # Execute ams client with mocked response
+        with HTTMock(delete_project_mock):
+            self.ams.delete_project(name="test-project")
 
 
 if __name__ == '__main__':
