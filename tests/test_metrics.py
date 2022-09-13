@@ -1,5 +1,4 @@
 import datetime
-import sys
 import unittest
 
 from httmock import urlmatch, response, HTTMock

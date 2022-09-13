@@ -29,9 +29,14 @@ class TestProject(unittest.TestCase):
     add_member_urlmatch = dict(netloc="localhost",
                                path="/v1/projects/test-proj/members/test-member:add",
                                method='POST')
+
     get_member_urlmatch = dict(netloc="localhost",
                                path="/v1/projects/test-proj/members/test-member",
                                method='GET')
+
+    remove_member_urlmatch = dict(netloc="localhost",
+                                  path="/v1/projects/test-proj/members/test-member:remove",
+                                  method='POST')
 
     def testAddMember(self):
         @urlmatch(**self.add_member_urlmatch)
@@ -45,7 +50,7 @@ class TestProject(unittest.TestCase):
         with HTTMock(add_member_mock):
             added_member = self.ams.add_project_member(project="test-proj", username="test-member", roles=["consumer"])
             # test case where the global service project is used
-            added_member_with_service_project = self.ams.add_project_member( username="test-member", roles=["consumer"])
+            added_member_with_service_project = self.ams.add_project_member(username="test-member", roles=["consumer"])
 
             added_members = [added_member, added_member_with_service_project]
             for added_member in added_members:
@@ -97,3 +102,18 @@ class TestProject(unittest.TestCase):
                 self.assertEqual(self.default_user.projects[0].roles, added_member.projects[0].roles)
                 self.assertEqual(self.default_user.projects[0].subscriptions, added_member.projects[0].subscriptions)
                 self.assertEqual(self.default_user.projects[0].topics, added_member.projects[0].topics)
+
+    def testRemoveMember(self):
+        @urlmatch(**self.remove_member_urlmatch)
+        def remove_member_mock(url, request):
+            self.assertEqual("/v1/projects/test-proj/members/test-member:remove", url.path)
+            self.assertEqual("POST", request.method)
+            return response(200, self.member_json, None, None, 5, request)
+
+        # Execute ams client with mocked response
+        with HTTMock(remove_member_mock):
+            self.ams.remove_project_member(project="test-proj", username="test-member")
+
+
+if __name__ == '__main__':
+    unittest.main()

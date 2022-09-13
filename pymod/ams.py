@@ -13,7 +13,7 @@ from .amsexceptions import (AmsServiceException, AmsConnectionException,
 from .amsmsg import AmsMessage
 from .amstopic import AmsTopic
 from .amssubscription import AmsSubscription
-from .amsuser import AmsUser
+from .amsuser import AmsUser, AmsUserPage
 
 try:
     from collections import OrderedDict
@@ -69,11 +69,19 @@ class AmsHttpRequests(object):
 
             # user api calls
             "user_create": ["post", "https://{0}/v1/users/{1}"],
+            "user_update": ["put", "https://{0}/v1/users/{1}"],
             "user_get": ["get", "https://{0}/v1/users/{1}"],
+            "user_get_by_token": ["get", "https://{0}/v1/users:byToken/{1}"],
+            "user_get_by_uuid": ["get", "https://{0}/v1/users:byUUID/{1}"],
+            "user_get_profile": ["get", "https://{0}/v1/users/profile"],
+            "users_list": ["get", "https://{0}/v1/users"],
+            "user_delete": ["delete", "https://{0}/v1/users/{1}"],
+            "user_refresh_token": ["post", "https://{0}/v1/users/{1}:refreshToken"],
 
             # project api calls
             "project_add_member": ["post", "https://{0}/v1/projects/{1}/members/{2}:add"],
             "project_get_member": ["get", "https://{0}/v1/projects/{1}/members/{2}"],
+            "project_remove_member": ["post", "https://{0}/v1/projects/{1}/members/{2}:remove"],
 
             "auth_x509": ["get", "https://{0}:{1}/v1/service-types/ams/hosts/{0}:authx509"],
         }
@@ -97,7 +105,14 @@ class AmsHttpRequests(object):
             "sub_timeToOffset": ["get", set([400, 401, 403, 404, 409])],
 
             "user_create": ["post", set([400, 401, 403, 404, 409])],
-            "user_get": ["post", set([400, 401, 403, 404])],
+            "user_update": ["post", set([400, 401, 403, 404, 409])],
+            "user_get": ["get", set([400, 401, 403, 404])],
+            "user_get_by_token": ["get", set([400, 401, 403, 404])],
+            "user_get_by_uuid": ["get", set([400, 401, 403, 404])],
+            "user_get_profile": ["get", set([400, 401, 403, 404])],
+            "users_list": ["get", set([401, 403])],
+            "user_delete": ["delete", set([401, 403, 404])],
+            "user_refresh_token": ["post", set([401, 403, 404])],
 
             "api_status": ["get", set([401, 403])],
             "api_metrics": ["get", set([401, 403])],
@@ -106,6 +121,7 @@ class AmsHttpRequests(object):
 
             "project_add_member": ["post", set([400, 401, 403, 404, 409])],
             "project_get_member": ["get", set([400, 401, 403, 404])],
+            "project_remove_member": ["get", set([401, 403, 404])],
 
             "auth_x509": ["post", set([400, 401, 403, 404])]}
 
@@ -1062,7 +1078,8 @@ class ArgoMessagingService(AmsHttpRequests):
 
     def create_user(self, user, **reqkwargs):
 
-        """This function creates a new user with a POST request
+        """
+        This function creates a new user with a POST request
 
            Args:
                user: AmsUser. The user to be created.
@@ -1084,6 +1101,69 @@ class ArgoMessagingService(AmsHttpRequests):
         except AmsException as e:
             raise e
 
+    def update_user(self, name,
+                    first_name="",
+                    last_name="",
+                    description="",
+                    organization="",
+                    username="",
+                    email="",
+                    service_roles=None,
+                    projects=None,
+                    **reqkwargs):
+
+        """
+        Update the respective user using the provided username with a PUT request
+
+        :param last_name: (str) the last name of the user
+        :param first_name: (str) the first name of the user
+        :param description: (str) user description
+        :param organization: (str) user organisation
+        :param username: (str) new username
+        :param email: (str) the email the user
+        :param service_roles: (str[]) new service roles
+        :param projects: (AmsUserProject[]) new projects and roles
+        :param name: (str) the username of the user to be updated
+        :param reqkwargs:  keyword arguments that will be passed to underlying
+               python-requests library call.
+        :return: (AmsUser) the ams user
+        """
+
+        body = {}
+
+        if first_name != "":
+            body["first_name"] = first_name
+
+        if last_name != "":
+            body["last_name"] = last_name
+
+        if description != "":
+            body["description"] = description
+
+        if organization != "":
+            body["organization"] = organization
+
+        if username != "":
+            body["name"] = username
+
+        if email != "":
+            body["email"] = email
+
+        if len(service_roles) > 0:
+            body["service_roles"] = service_roles
+
+        if len(projects) > 0:
+            body["projects"] = [{"project": x.project, "roles": x.roles} for x in projects]
+
+        try:
+            route = self.routes["user_update"]
+            url = route[1].format(self.endpoint, name)
+            method = getattr(self, 'do_{0}'.format(route[0]))
+            r = method(url, json.dumps(body), "user_update", **reqkwargs)
+            return AmsUser().load_from_dict(r)
+        except AmsException as e:
+            raise e
+
     def get_user(self, name, **reqkwargs):
         """
         Retrieves the respective user using the provided username with a GET request
@@ -1098,6 +1178,121 @@ class ArgoMessagingService(AmsHttpRequests):
             url = route[1].format(self.endpoint, name)
             method = getattr(self, 'do_{0}'.format(route[0]))
             r = method(url, "user_get", **reqkwargs)
+            return AmsUser().load_from_dict(r)
+        except AmsException as e:
+            raise e
+
+    def get_user_by_token(self, token, **reqkwargs):
+        """
+        Retrieves the respective user using the provided token with a GET request
+
+        :param token: (str) the token of the user to be retrieved
+        :param reqkwargs:  keyword arguments that will be passed to underlying
+               python-requests library call.
+        :return: (AmsUser) the ams user
+        """
+        try:
+            route = self.routes["user_get_by_token"]
+            url = route[1].format(self.endpoint, token)
+            method = getattr(self, 'do_{0}'.format(route[0]))
+            r = method(url, "user_get_by_token", **reqkwargs)
+            return AmsUser().load_from_dict(r)
+        except AmsException as e:
+            raise e
+
+    def get_user_by_uuid(self, uuid, **reqkwargs):
+        """
+        Retrieves the respective user using the provided uuid with a GET request
+
+        :param uuid: (str) the uuid of the user to be retrieved
+        :param reqkwargs:  keyword arguments that will be passed to underlying
+               python-requests library call.
+        :return: (AmsUser) the ams user
+        """
+        try:
+            route = self.routes["user_get_by_uuid"]
+            url = route[1].format(self.endpoint, uuid)
+            method = getattr(self, 'do_{0}'.format(route[0]))
+            r = method(url, "user_get_by_uuid", **reqkwargs)
+            return AmsUser().load_from_dict(r)
+        except AmsException as e:
+            raise e
+
+    def get_user_profile(self, **reqkwargs):
+        """
+        Retrieves the respective user using the provided token in the ams object with a GET request
+        :param reqkwargs:  keyword arguments that will be passed to underlying
+               python-requests library call.
+        :return: (AmsUser) the ams user
+        """
+        try:
+            route = self.routes["user_get_profile"]
+            url = route[1].format(self.endpoint)
+            method = getattr(self, 'do_{0}'.format(route[0]))
+            r = method(url, "user_get_profile", **reqkwargs)
+            return AmsUser().load_from_dict(r)
+        except AmsException as e:
+            raise e
+
+    def list_users(self, details=True, page_size=0, next_page_token="", **reqkwargs):
+        """
+        Retrieves the respective user using the provided token in the ams object with a GET request
+        :param next_page_token: (str) next page token in case of paginated retrieval
+        :param page_size: (int) size of each page
+        :param details: (bool) whether to include project details per user
+        :param reqkwargs:  keyword arguments that will be passed to underlying
+               python-requests library call.
+        :return: (AmsUserPage) a page containing AmsUser objects and pagination details
+        """
+        try:
+            url_params = {
+                "details": details,
+                "pageSize": page_size,
+                "nextPageToken": next_page_token
+            }
+            route = self.routes["users_list"]
+            url = route[1].format(self.endpoint)
+            method = getattr(self, 'do_{0}'.format(route[0]))
+            reqkwargs["params"] = url_params
+            r = method(url, "users_list", **reqkwargs)
+            return AmsUserPage(
+                users=[AmsUser().load_from_dict(x) for x in r["users"]],
+                total_size=r["totalSize"],
+                next_page_token=r["nextPageToken"]
+            )
+        except AmsException as e:
+            raise e
+
+    def delete_user(self, name, **reqkwargs):
+        """
+        Deletes the respective user using the provided username with a DELETE request
+
+        :param name: (str) the username of the user to be retrieved
+        :param reqkwargs:  keyword arguments that will be passed to underlying
+               python-requests library call.
+        """
+        try:
+            route = self.routes["user_delete"]
+            url = route[1].format(self.endpoint, name)
+            method = getattr(self, 'do_{0}'.format(route[0]))
+            r = method(url, "user_delete", **reqkwargs)
+        except AmsException as e:
+            raise e
+
+    def refresh_user_token(self, name, **reqkwargs):
+        """
+        Refresh the token for the respective user using the provided username with a POST request
+
+        :param name: (str) the username of the user to be retrieved
+        :param reqkwargs:  keyword arguments that will be passed to underlying
+               python-requests library call.
+       :return: (AmsUser) the ams user
+        """
+        try:
+            route = self.routes["user_refresh_token"]
+            url = route[1].format(self.endpoint, name)
+            method = getattr(self, 'do_{0}'.format(route[0]))
+            r = method(url, None, "user_refresh_token", **reqkwargs)
             return AmsUser().load_from_dict(r)
         except AmsException as e:
             raise e
@@ -1154,6 +1349,25 @@ class ArgoMessagingService(AmsHttpRequests):
             method = getattr(self, 'do_{0}'.format(route[0]))
             r = method(url, "project_get_member", **reqkwargs)
             return AmsUser().load_from_dict(r)
+        except AmsException as e:
+            raise e
+
+    def remove_project_member(self, username, project, **reqkwargs):
+        """
+        Removes an existing user from the provided project with a POST request
+
+        :param username: (str) the name of user
+        :param project: (Str) the name of the project
+        :param reqkwargs:  keyword argument that will be passed to underlying
+                          python-requests library call.
+        """
+
+        try:
+            route = self.routes["project_remove_member"]
+            url = route[1].format(self.endpoint, project, username)
+            method = getattr(self, 'do_{0}'.format(route[0]))
+            r = method(url, None, "project_remove_member", **reqkwargs)
+            return r
         except AmsException as e:
             raise e
 
