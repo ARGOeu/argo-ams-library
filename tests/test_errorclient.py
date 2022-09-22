@@ -158,7 +158,7 @@ class TestErrorClient(unittest.TestCase):
 
     @mock.patch('pymod.ams.requests.get')
     def testRetryConnectionProblems(self, mock_requests_get):
-        mock_requests_get.side_effect = [requests.exceptions.ConnectionError,
+        mock_requests_get.side_effect = [requests.exceptions.ReadTimeout,
                                          requests.exceptions.ConnectionError,
                                          requests.exceptions.ConnectionError,
                                          requests.exceptions.ConnectionError]

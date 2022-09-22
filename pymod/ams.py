@@ -375,7 +375,9 @@ class AmsHttpRequests(object):
                                                                 status_code),
                                           request=route_name)
 
-        except (requests.exceptions.ConnectionError, socket.error) as e:
+        except (requests.exceptions.ConnectionError,
+                requests.exceptions.ReadTimeout,
+                socket.error) as e:
             raise AmsConnectionException(e, route_name)
 
         else:
