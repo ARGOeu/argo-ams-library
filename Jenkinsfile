@@ -13,7 +13,7 @@ pipeline {
     stages {
         stage ('Test'){
             parallel {
-                
+
                 stage ('Test Centos 7') {
                     agent {
                         docker {
@@ -25,7 +25,7 @@ pipeline {
                         echo 'Building Rpm...'
                         sh '''
                             cd ${WORKSPACE}/$PROJECT_DIR
-                            coverage run -m unittest discover -v
+                            tox -p
                             coverage xml --omit=*usr* --omit=*.tox*
                         '''
                         cobertura coberturaReportFile: '**/coverage.xml'
@@ -35,7 +35,7 @@ pipeline {
         }
         stage ('Build'){
             parallel {
-                
+
                 stage ('Build Centos 7') {
                     agent {
                         docker {
