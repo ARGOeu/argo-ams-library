@@ -25,7 +25,8 @@ pipeline {
                         echo 'Building Rpm...'
                         sh '''
                             cd ${WORKSPACE}/$PROJECT_DIR
-							PY310V=$(pyenv versions | grep ams-py310 | awk '{print $2}')
+                            source /etc/profile.d/pyenv.sh
+							PY310V=$(pyenv versions | grep ams-py310)
 							pyenv local 3.7.15 3.8.15 3.9.15 ${PY310V}
                             tox -p
                             coverage xml --omit=*usr* --omit=*.tox*
@@ -37,7 +38,6 @@ pipeline {
         }
         stage ('Build'){
             parallel {
-
                 stage ('Build Centos 7') {
                     agent {
                         docker {
