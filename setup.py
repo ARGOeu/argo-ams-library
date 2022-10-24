@@ -48,6 +48,10 @@ setup(
         "Programming Language :: Python :: 2.7",
         "Programming Language :: Python :: 3.4",
         "Programming Language :: Python :: 3.6",
+        "Programming Language :: Python :: 3.7",
+        "Programming Language :: Python :: 3.8",
+        "Programming Language :: Python :: 3.9",
+        "Programming Language :: Python :: 3.10",
         "Intended Audience :: Developers",
         "Topic :: Software Development :: Libraries :: Python Modules"
     ],
