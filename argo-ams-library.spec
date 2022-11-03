@@ -6,7 +6,7 @@
 
 Name:           argo-ams-library
 Summary:        %{sum}
-Version:        0.5.9
+Version:        0.6.0
 Release:        1%{?dist}
 
 Group:          Development/Libraries
