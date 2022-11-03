@@ -6,7 +6,7 @@
 
 Name:           argo-ams-library
 Summary:        %{sum}
-Version:        0.5.9
+Version:        0.6.0
 Release:        1%{?dist}
 
 Group:          Development/Libraries
@@ -21,21 +21,6 @@ BuildArch:      noarch
 %{desc}
 
 
-%if 0%{?el6}
-
-%package -n python2-%{name}
-Obsoletes:     argo-ams-library
-Provides:      argo-ams-library
-Summary:       %{sum}
-BuildRequires: python2-devel    python2-setuptools
-Requires:      python2-requests
-AutoReq: no
-%description -n python2-%{name}
-%{desc}
-%{?python_provide:%python_provide python2-%{name}}
-
-%else
-
 %package -n python-%{name}
 Obsoletes:     argo-ams-library
 Provides:      argo-ams-library
@@ -47,19 +32,12 @@ AutoReq: no
 %{desc}
 %{?python_provide:%python_provide python-%{name}}
 
-%endif
 
 %package -n python%{python3_pkgversion}-%{name}
 Summary: %{sum}
-%if 0%{?el6}
-BuildRequires: python34-devel    python34-setuptools
-Requires:      python34-requests
-AutoReq: no
-%else
 BuildRequires: python36-devel    python36-setuptools
 Requires:      python36-requests
 AutoReq: no
-%endif
 %description -n python%{python3_pkgversion}-%{name}
 %{desc}
 %{?python_provide:%python_provide python3-%{name}}
@@ -95,6 +73,14 @@ rm -rf %{buildroot}
 
 
 %changelog
+* Thu Nov 3 2022 Daniel Vrcic <dvrcic@srce.hr>, agelostsal <agelos.tsal@gmail.com> - 0.6.0-1%{?dist}
+- AM-143 Add support for requests ReadTimeOut exception
+- AM-228 Add user management fuctionality to AMS-library
+- AM-227 ams-library: add support for miscellaneous api calls
+- AM-225 AMS Library Support for more API Calls
+- ARGO-4050 Update tox to run unit tests against recent Python versions
+- ARGO-4088 Fix ams-library test execute with local pyenv load
+- remove Centos 6 RPM build from spec
 * Tue Aug 2 2022 agelostsal <agelos.tsal@gmail.com> - 0.5.9-1%{?dist}
 - Different requests version for various  python versions
 * Tue Jul 26 2022 agelostsal <agelos.tsal@gmail.com> - 0.5.8-1%{?dist}

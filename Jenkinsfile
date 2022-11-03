@@ -13,7 +13,6 @@ pipeline {
     stages {
         stage ('Test'){
             parallel {
-
                 stage ('Test Centos 7') {
                     agent {
                         docker {
@@ -25,11 +24,11 @@ pipeline {
                         echo 'Building Rpm...'
                         sh '''
                             cd ${WORKSPACE}/$PROJECT_DIR
-                            rm .python-version &>/dev/null
+                            rm -f .python-version &>/dev/null
                             source $HOME/pyenv.sh
                             PY310V=$(pyenv versions | grep ams-py310)
                             pyenv local 3.7.15 3.8.15 3.9.15 ${PY310V// /}
-                            tox -p
+                            tox
                             coverage xml --omit=*usr* --omit=*.tox*
                         '''
                         cobertura coberturaReportFile: '**/coverage.xml'
