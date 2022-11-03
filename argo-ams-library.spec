@@ -21,21 +21,6 @@ BuildArch:      noarch
 %{desc}
 
 
-%if 0%{?el6}
-
-%package -n python2-%{name}
-Obsoletes:     argo-ams-library
-Provides:      argo-ams-library
-Summary:       %{sum}
-BuildRequires: python2-devel    python2-setuptools
-Requires:      python2-requests
-AutoReq: no
-%description -n python2-%{name}
-%{desc}
-%{?python_provide:%python_provide python2-%{name}}
-
-%else
-
 %package -n python-%{name}
 Obsoletes:     argo-ams-library
 Provides:      argo-ams-library
@@ -47,19 +32,12 @@ AutoReq: no
 %{desc}
 %{?python_provide:%python_provide python-%{name}}
 
-%endif
 
 %package -n python%{python3_pkgversion}-%{name}
 Summary: %{sum}
-%if 0%{?el6}
-BuildRequires: python34-devel    python34-setuptools
-Requires:      python34-requests
-AutoReq: no
-%else
 BuildRequires: python36-devel    python36-setuptools
 Requires:      python36-requests
 AutoReq: no
-%endif
 %description -n python%{python3_pkgversion}-%{name}
 %{desc}
 %{?python_provide:%python_provide python3-%{name}}
