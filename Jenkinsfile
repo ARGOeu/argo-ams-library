@@ -13,24 +13,6 @@ pipeline {
     stages {
         stage ('Test'){
             parallel {
-                stage ('Test Centos 6') {
-                    agent {
-                        docker {
-                            image 'argo.registry:5000/epel-6-ams'
-                            args '-u jenkins:jenkins'
-                        }
-                    }
-                    steps {
-                        echo 'Building Rpm...'
-                        sh '''
-                            cd ${WORKSPACE}/$PROJECT_DIR
-                            coverage run -m unittest2 discover -v
-                            scl enable python27 rh-python36 'tox'
-                            scl enable rh-python36 'coverage xml --omit=*usr* --omit=*.tox*'
-                        '''
-                        cobertura coberturaReportFile: '**/coverage.xml'
-                    }
-                }
                 stage ('Test Centos 7') {
                     agent {
                         docker {
@@ -42,7 +24,11 @@ pipeline {
                         echo 'Building Rpm...'
                         sh '''
                             cd ${WORKSPACE}/$PROJECT_DIR
-                            coverage run -m unittest discover -v
+                            rm -f .python-version &>/dev/null
+                            source $HOME/pyenv.sh
+                            PY310V=$(pyenv versions | grep ams-py310)
+                            pyenv local 3.7.15 3.8.15 3.9.15 ${PY310V// /}
+                            tox
                             coverage xml --omit=*usr* --omit=*.tox*
                         '''
                         cobertura coberturaReportFile: '**/coverage.xml'
@@ -52,27 +38,6 @@ pipeline {
         }
         stage ('Build'){
             parallel {
-                stage ('Build Centos 6') {
-                    agent {
-                        docker {
-                            image 'argo.registry:5000/epel-6-ams'
-                            args '-u jenkins:jenkins'
-                        }
-                    }
-                    steps {
-                        echo 'Building Rpm...'
-                        withCredentials(bindings: [sshUserPrivateKey(credentialsId: 'jenkins-rpm-repo', usernameVariable: 'REPOUSER', \
-                                                                    keyFileVariable: 'REPOKEY')]) {
-                            sh "/home/jenkins/build-rpm.sh -w ${WORKSPACE} -b ${BRANCH_NAME} -d centos6 -p ${PROJECT_DIR} -s ${REPOKEY}"
-                        }
-                        archiveArtifacts artifacts: '**/*.rpm', fingerprint: true
-                    }
-                    post {
-                        always {
-                            cleanWs()
-                        }
-                    }
-                }
                 stage ('Build Centos 7') {
                     agent {
                         docker {

@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.6.0] - 2022-11-03
+
+### Added
+
+* AM-143 Add support for requests ReadTimeOut exception
+* AM-228 Add user management fuctionality to AMS-library
+* AM-227 ams-library: add support for miscellaneous api calls
+* AM-225 AMS Library Support for more API Calls
+* ARGO-4050 Update tox to run unit tests against recent Python versions
+
+### Fixed
+
+* ARGO-4088 Fix ams-library test execute with local pyenv load
+
 ## [0.5.9] - 2022-08-02
 
 ### Fixed
@@ -20,7 +34,7 @@ AM-249 ams-library: bug fix regarding sub and topic acl methods #137
 
 ## [0.5.6] - 2022-06-21
 
-### Added 
+### Added
 
 AM-233 ams-library: support for project_member_get api call
 AM-230 ams-library: support for project_member_add api call
@@ -29,7 +43,7 @@ AM-226 ams-library: support for user_create api call
 
 ## [0.5.5] - 2021-04-15
 
-### Added 
+### Added
 
 ARGO-2768 ams-library: support for AMS authorization header
 
@@ -47,7 +61,7 @@ ARGO-2592 ams-library py2 RPM also packages py3 specific modules
 
 ## [0.5.2] - 2020-07-08
 
-### Fixed 
+### Fixed
 
 * ARGO-2479 Modify subscription offset method fails
 * ARGO-2360 Fix ack_sub retry loop
@@ -62,13 +76,13 @@ ARGO-2592 ams-library py2 RPM also packages py3 specific modules
 
 ## [0.5.0] - 2019-12-19
 
-### Added 
+### Added
 
 * ARGO-1481 Connection retry logic in ams-library
 
 ## [0.4.3] - 2019-11-08
 
-### Added 
+### Added
 
 * ARGO-1862 Make argo-ams-library Python 3 ready
 * ARGO-1841 Update the ams library to include the new timeToOffset functionality
@@ -86,7 +100,7 @@ ARGO-2592 ams-library py2 RPM also packages py3 specific modules
 
 ## [0.4.0-1] - 2018-05-09
 
-### Added 
+### Added
 
 * Extend ams library to support offset manipulation
 * Introduce AmsHttpRequests class
@@ -101,7 +115,7 @@ ARGO-2592 ams-library py2 RPM also packages py3 specific modules
 * Handle 404 for topic and subscription calls
 * Handle JSON error message propagated through AMS
 
-### Fixed 
+### Fixed
 
 * set for error codes and pass request args for iters
 * Status msg attach to AmsServiceException if exist
