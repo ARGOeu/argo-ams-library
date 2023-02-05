@@ -41,6 +41,10 @@ class TestProject(unittest.TestCase):
                                path="/v1/projects/test-proj/members/test-member",
                                method='GET')
 
+    create_member_urlmatch = dict(netloc="localhost",
+                                  path="/v1/projects/test-proj/members/test-member",
+                                  method='POST')
+
     remove_member_urlmatch = dict(netloc="localhost",
                                   path="/v1/projects/test-proj/members/test-member:remove",
                                   method='POST')
@@ -94,21 +98,24 @@ class TestProject(unittest.TestCase):
                 self.assertEqual(self.default_user.projects[0].subscriptions, added_member.projects[0].subscriptions)
                 self.assertEqual(self.default_user.projects[0].topics, added_member.projects[0].topics)
 
-    def testGetMember(self):
-        @urlmatch(**self.get_member_urlmatch)
-        def get_member_mock(url, request):
+    def testCreateMember(self):
+        @urlmatch(**self.create_member_urlmatch)
+        def create_member_mock(url, request):
             self.assertEqual("/v1/projects/test-proj/members/test-member", url.path)
-            self.assertEqual("GET", request.method)
+            self.assertEqual("POST", request.method)
             return response(200, self.member_json, None, None, 5, request)
 
         # Execute ams client with mocked response
-        with HTTMock(get_member_mock):
-            added_member = self.ams.get_project_member(project="test-proj", username="test-member")
+        with HTTMock(create_member_mock):
+            created_member = self.ams.create_project_member(project="test-proj",
+                                                            username="test-member",
+                                                            email="lol@gmail.com")
             # test case where the global service project is used
-            added_member_with_service_project = self.ams.get_project_member(username="test-member")
-            added_members = [added_member, added_member_with_service_project]
+            created_member_with_service_project = self.ams.create_project_member(username="test-member",
+                                                                                 email="lol@gmail.com")
+            created_members = [created_member, created_member_with_service_project]
 
-            for added_member in added_members:
+            for added_member in created_members:
                 self.assertEqual(self.default_user.name, added_member.name)
                 self.assertEqual(self.default_user.email, added_member.email)
                 self.assertEqual(self.default_user.uuid, added_member.uuid)
@@ -150,7 +157,7 @@ class TestProject(unittest.TestCase):
             r = self.ams.create_project(name="test-project", description="nice project")
             self.assertEqual("test-project", r["project"])
             self.assertEqual("nice project", r["description"])
-               
+
     def testUpdateProject(self):
         @urlmatch(**self.update_project_urlmatch)
         def update_project_mock(url, request):

@@ -6,7 +6,7 @@
 
 Name:           argo-ams-library
 Summary:        %{sum}
-Version:        0.6.0
+Version:        0.6.1
 Release:        1%{?dist}
 
 Group:          Development/Libraries
@@ -73,6 +73,8 @@ rm -rf %{buildroot}
 
 
 %changelog
+* Mon Feb 6 2023 agelostsal <agelos.tsal@gmail.com> - 0.6.1-1%{?dist}
+- AM-314 Add projects:createUser functionality to ams library
 * Thu Nov 3 2022 Daniel Vrcic <dvrcic@srce.hr>, agelostsal <agelos.tsal@gmail.com> - 0.6.0-1%{?dist}
 - AM-143 Add support for requests ReadTimeOut exception
 - AM-228 Add user management fuctionality to AMS-library
