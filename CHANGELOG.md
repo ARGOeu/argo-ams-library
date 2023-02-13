@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.6.1] - 2023-02-06
+
+### Added
+
+* AM-314 Add projects:createUser functionality to ams library
+
 ## [0.6.0] - 2022-11-03
 
 ### Added
