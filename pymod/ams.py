@@ -13,7 +13,7 @@ from .amsexceptions import (AmsServiceException, AmsConnectionException,
 from .amsmsg import AmsMessage
 from .amstopic import AmsTopic
 from .amssubscription import AmsSubscription
-from .amsuser import AmsUser, AmsUserPage
+from .amsuser import AmsUser, AmsUserPage, AmsUserProject
 
 try:
     from collections import OrderedDict
@@ -82,6 +82,7 @@ class AmsHttpRequests(object):
             # project api calls
             "project_add_member": ["post", "https://{0}/v1/projects/{1}/members/{2}:add"],
             "project_get_member": ["get", "https://{0}/v1/projects/{1}/members/{2}"],
+            "project_create_member": ["post", "https://{0}/v1/projects/{1}/members/{2}"],
             "project_remove_member": ["post", "https://{0}/v1/projects/{1}/members/{2}:remove"],
             "project_create": ["post", "https://{0}/v1/projects/{1}"],
             "project_update": ["put", "https://{0}/v1/projects/{1}"],
@@ -127,6 +128,7 @@ class AmsHttpRequests(object):
 
             "project_add_member": ["post", set([400, 401, 403, 404, 409])],
             "project_get_member": ["get", set([400, 401, 403, 404])],
+            "project_create_member": ["post", set([400, 401, 403, 404, 409])],
             "project_remove_member": ["get", set([401, 403, 404])],
             "project_create": ["post", set([400, 401, 403, 409])],
             "project_update": ["put", set([400, 401, 403, 404, 409])],
@@ -1337,6 +1339,42 @@ class ArgoMessagingService(AmsHttpRequests):
             url = route[1].format(self.endpoint, project, username)
             method = getattr(self, 'do_{0}'.format(route[0]))
             r = method(url, json.dumps(body), "project_add_member", **reqkwargs)
+            return AmsUser().load_from_dict(r)
+        except AmsException as e:
+            raise e
+
+    def create_project_member(self, username, project=None, roles=None, email=None, **reqkwargs):
+
+        """
+        This function creates a new user with a POST request under the given project
+
+        :param (str) project: the name of the project.If no
+        project is supplied, the declared global project will be used instead
+        :param (str) username: the name of the user
+        :param (str) email: the email of the user
+        :param (str[]) roles: project roles for the user
+
+        :return: (AmsUser) the assigned user object
+        """
+
+        if roles is None or not isinstance(roles, list):
+            roles = []
+
+        if project is None:
+            project = self.project
+
+        user = AmsUser(
+            projects=[AmsUserProject(project=project, roles=roles)]
+        )
+
+        if email is not None:
+            user.email = email
+
+        try:
+            route = self.routes["project_create_member"]
+            url = route[1].format(self.endpoint, project, username)
+            method = getattr(self, 'do_{0}'.format(route[0]))
+            r = method(url, user.to_json(), "project_create_member", **reqkwargs)
             return AmsUser().load_from_dict(r)
         except AmsException as e:
             raise e
