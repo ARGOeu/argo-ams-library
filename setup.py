@@ -22,7 +22,7 @@ def get_ver():
 
 REQUIREMENTS = []
 if sys.version_info[0] == 2:
-    REQUIREMENTS = ['requests==2.20.0'],
+    REQUIREMENTS = ['requests==2.20.0', 'certifi<2020.4.5.2'],
 else:
     REQUIREMENTS = ['requests'],
 
