@@ -10,7 +10,7 @@
 Name:           argo-ams-library
 Summary:        %{sum}
 Version:        0.6.1
-Release:        20231113153455.397c720.el8
+Release:        1%{?dist}
 
 Group:          Development/Libraries
 License:        ASL 2.0

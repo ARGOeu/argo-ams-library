@@ -13,4 +13,4 @@ MANIFEST
 coverage.xml
 .coverage
 .idea
-./build-rpm.sh
+*-rpm.sh
