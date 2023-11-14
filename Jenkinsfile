@@ -186,29 +186,23 @@ pipeline {
                 }
             }
         }
-        // stage ('Build'){
-        //     parallel {
-        //         stage ('Build Rocky 9') {
-        //             agent {
-        //                 docker {
-        //                     image 'localhost:5000/rocky83:latest'
-        //                     args '-u jenkins:jenkins'
-        //                 }
-        //             }
-        //             steps {
-        //                 echo 'Building Rpm...'
-        //                 cp argo-ams-library-r9.spec argo-ams-library.spec
-        //                 sh "/home/jenkins/build-rpm.sh -w ${WORKSPACE} -b ${BRANCH_NAME} -d centos7 -p ${PROJECT_DIR}"
-        //                 archiveArtifacts artifacts: '**/*.rpm', fingerprint: true
-        //             }
-        //             post {
-        //                 always {
-        //                     cleanWs()
-        //                 }
-        //             }
-        //         }
-        //     }
-        // }
+        stage ('Build'){
+            parallel {
+                stage ('Build Rocky 9') {
+                    agent {
+                        docker {
+                            image 'localhost:5000/rocky-9:latest'
+                            args '-u jenkins:jenkins'
+                        }
+                    }
+                    steps {
+                        echo 'Building Rpm...'
+                        sh 'make clean'
+                        sh 'make workspace=${WORKSPACE} branch_name=${GIT_BRANCH} rpm'
+                    }
+                }
+            }
+        }
         stage("deploy") {
             steps {
                 echo 'Hello World'
