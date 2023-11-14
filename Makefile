@@ -42,13 +42,12 @@ rpm: dist
 	rpmbuild -ta ${PKGNAME}-${PKGVERSION}.tar.gz
 	rm -f ${workspace}/*.rpm
 	cp /home/jenkins/rpmbuild/RPMS/**/*.rpm ${workspace}/
-	rm -f /home/jenkins/rpmbuild/RPMS/noarch/*.rpm
 
 # Upload artifacts to rpm-repo if branch is master or devel
 ifeq ($(filter $(branch_name),master main devel develop),$(branch_name))
 	echo "Uploading rpm for $(release_env) ..."
-	scp -o StrictHostKeyChecking=no $(workspace)/*.rpm dhudjek@archive-ams.cro-ngi.hr:./repos/ARGO/$(release_env)/$(distribution)/
-	ssh -o StrictHostKeyChecking=no dhudjek@archive-ams.cro-ngi.hr createrepo --update ./repos/ARGO/${release_env}/${distribution}/
+	scp -i $(secretkey) -o StrictHostKeyChecking=no $(workspace)/*.rpm dhudjek@archive-ams.cro-ngi.hr:./repos/ARGO/$(release_env)/$(distribution)/
+	ssh -i $(secretkey) -o StrictHostKeyChecking=no dhudjek@archive-ams.cro-ngi.hr createrepo --update ./repos/ARGO/${release_env}/${distribution}/
 endif
 
 
