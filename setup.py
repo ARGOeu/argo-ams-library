@@ -1,5 +1,6 @@
 from setuptools import setup
 from os import path
+import sys
 
 NAME = 'argo-ams-library'
 
@@ -19,7 +20,11 @@ def get_ver():
         raise SystemExit(1)
 
 
-REQUIREMENTS = ['requests'],
+REQUIREMENTS = []
+if sys.version_info[0] == 2:
+    REQUIREMENTS = ['requests==2.20.0'],
+else:
+    REQUIREMENTS = ['requests'],
 
 setup(
     name=NAME,
@@ -49,7 +54,7 @@ setup(
         "Intended Audience :: Developers",
         "Topic :: Software Development :: Libraries :: Python Modules"
     ],
-    url='https://github.com/deksa89/argo-ams-library.git',
+    url='https://github.com/ARGOeu/argo-ams-library',
     package_dir={'argo_ams_library': 'pymod/'},
     packages=['argo_ams_library'],
     install_requires=REQUIREMENTS
