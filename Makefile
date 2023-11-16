@@ -3,8 +3,10 @@ PKGNAME=argo-ams-library
 branch_name ?= default
 workspace ?= default
 secretkey ?= default
-GIT_COMMIT_DATE := $(shell date +%Y%m%d%H%M%S)
-GIT_COMMIT_HASH := $(shell git rev-parse HEAD | cut -c1-7)
+# GIT_COMMIT_DATE := $(shell date +%Y%m%d%H%M%S)
+# GIT_COMMIT_HASH := $(shell git rev-parse HEAD | cut -c1-7)
+git_commit_date ?= default
+git_commit_hash ?= default
 ID := $(shell grep '^ID=' /etc/os-release | awk -F= '{print $$2}' | tr -d '"')
 OS_VERSION := $(shell grep VERSION_ID /etc/os-release | cut -d= -f2 | cut -d. -f1 | tr -d '"')
 distribution := $(ID)$(OS_VERSION)
@@ -56,7 +58,7 @@ endif
 
 dist:
 ifneq ($(filter $(branch_name),master main),$(branch_name))
-	sed -i 's/^Release.*/Release:        $(GIT_COMMIT_DATE).$(GIT_COMMIT_HASH).$(dist)/' ${workspace}/${specfile}
+	sed -i 's/^Release.*/Release:        $(git_commit_date).$(git_commit_hash).$(dist)/' ${workspace}/${specfile}
 endif 
 	rm -rf dist
 	cp ${specfile} argo-ams-library.spec
