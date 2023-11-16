@@ -71,8 +71,8 @@ pipeline {
                             sh '''
                                 cd ${WORKSPACE}/$PROJECT_DIR
                                 make clean
-                                make workspace=${WORKSPACE}/$PROJECT_DIR branch_name=${GIT_BRANCH} rpm
-                                make secretkey=${SSH_PRIVATE_KEY} workspace=${WORKSPACE}/$PROJECT_DIR branch_name=${GIT_BRANCH} upload
+                                make git_commit_date=${GIT_COMMIT_DATE} git_commit_hash=${GIT_COMMIT_HASH} workspace=${WORKSPACE}/$PROJECT_DIR branch_name=${GIT_BRANCH} rpm
+                                make git_commit_date=${GIT_COMMIT_DATE} git_commit_hash=${GIT_COMMIT_HASH} secretkey=${SSH_PRIVATE_KEY} workspace=${WORKSPACE}/$PROJECT_DIR branch_name=${GIT_BRANCH} upload
                             '''
                         }
                         archiveArtifacts artifacts: '**/*.rpm', fingerprint: true
@@ -97,8 +97,8 @@ pipeline {
                             sh '''
                                 cd ${WORKSPACE}/$PROJECT_DIR
                                 make clean
-                                make workspace=${WORKSPACE}/$PROJECT_DIR branch_name=${GIT_BRANCH} rpm
-                                make secretkey=${SSH_PRIVATE_KEY} workspace=${WORKSPACE}/$PROJECT_DIR branch_name=${GIT_BRANCH} upload
+                                make git_commit_date=${GIT_COMMIT_DATE} git_commit_hash=${GIT_COMMIT_HASH} workspace=${WORKSPACE}/$PROJECT_DIR branch_name=${GIT_BRANCH} rpm
+                                make git_commit_date=${GIT_COMMIT_DATE} git_commit_hash=${GIT_COMMIT_HASH} secretkey=${SSH_PRIVATE_KEY} workspace=${WORKSPACE}/$PROJECT_DIR branch_name=${GIT_BRANCH} upload
                             '''
                         }
                         archiveArtifacts artifacts: '**/*.rpm', fingerprint: true
