@@ -3,8 +3,6 @@ PKGNAME=argo-ams-library
 branch_name ?= default
 workspace ?= default
 secretkey ?= default
-# GIT_COMMIT_DATE := $(shell date +%Y%m%d%H%M%S)
-# GIT_COMMIT_HASH := $(shell git rev-parse HEAD | cut -c1-7)
 git_commit_date ?= default
 git_commit_hash ?= default
 ID := $(shell grep '^ID=' /etc/os-release | awk -F= '{print $$2}' | tr -d '"')
