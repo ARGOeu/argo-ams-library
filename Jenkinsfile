@@ -16,7 +16,7 @@ pipeline {
                 stage ('Test Rocky 8') {
                     agent {
                         docker {
-                            image 'localhost:5000/rocky-8:latest'
+                            image 'argo.registry:5000/epel-8-ams'
                             args '-u jenkins:jenkins'
                         }
                     }
@@ -36,7 +36,7 @@ pipeline {
                 stage ('Test Rocky 9') {
                     agent {
                         docker {
-                            image 'localhost:5000/rocky-9:latest'
+                            image 'argo.registry:5000/epel-9-ams'
                             args '-u jenkins:jenkins'
                         }
                     }
@@ -60,7 +60,7 @@ pipeline {
                 stage ('Build Rocky 8') {
                     agent {
                         docker {
-                            image 'localhost:5000/rocky-8:latest'
+                            image 'argo.registry:5000/epel-8-ams'
                             args '-u jenkins:jenkins'
                         }
                     }
@@ -86,7 +86,7 @@ pipeline {
                 stage ('Build Rocky 9') {
                     agent {
                         docker {
-                            image 'localhost:5000/rocky-9:latest'
+                            image 'argo.registry:5000/epel-9-ams'
                             args '-u jenkins:jenkins'
                         }
                     }
@@ -111,55 +111,55 @@ pipeline {
                 }
             }
         }
-        // stage ('Upload to PyPI'){
-        //     when {
-        //         branch 'master'
-        //     }
-        //     agent {
-        //         docker {
-        //             image 'argo.registry:5000/python3'
-        //         }
-        //     }
-        //     steps {
-        //         echo 'Build python package'
-        //         withCredentials(bindings: [usernamePassword(credentialsId: 'pypi-token', usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD')]) {
-        //             sh '''
-        //                 cd ${WORKSPACE}/$PROJECT_DIR
-        //                 pipenv install --dev
-        //                 pipenv run python setup.py sdist bdist_wheel
-        //                 pipenv run python -m twine upload -u $USERNAME -p $PASSWORD dist/*
-        //             '''
-        //         }
-        //     }
-        //     post {
-        //         always {
-        //             cleanWs()
-        //         }
-        //     }
-        // }
+        stage ('Upload to PyPI'){
+            when {
+                branch 'master'
+            }
+            agent {
+                docker {
+                    image 'argo.registry:5000/python3'
+                }
+            }
+            steps {
+                echo 'Build python package'
+                withCredentials(bindings: [usernamePassword(credentialsId: 'pypi-token', usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD')]) {
+                    sh '''
+                        cd ${WORKSPACE}/$PROJECT_DIR
+                        pipenv install --dev
+                        pipenv run python setup.py sdist bdist_wheel
+                        pipenv run python -m twine upload -u $USERNAME -p $PASSWORD dist/*
+                    '''
+                }
+            }
+            post {
+                always {
+                    cleanWs()
+                }
+            }
+        }
     }
-    // post {
-    //     always {
-    //         cleanWs()
-    //     }
-    //     success {
-    //         script{
-    //             if ( env.BRANCH_NAME == 'devel' ) {
-    //                 build job: '/ARGO/argodoc/devel', propagate: false
-    //             } else if ( env.BRANCH_NAME == 'master' ) {
-    //                 build job: '/ARGO/argodoc/master', propagate: false
-    //             }
-    //             if ( env.BRANCH_NAME == 'master' || env.BRANCH_NAME == 'devel' ) {
-    //                 slackSend( message: ":rocket: New version for <$BUILD_URL|$PROJECT_DIR>:$BRANCH_NAME Job: $JOB_NAME !")
-    //             }
-    //         }
-    //     }
-    //     failure {
-    //         script{
-    //             if ( env.BRANCH_NAME == 'master' || env.BRANCH_NAME == 'devel' ) {
-    //                 slackSend( message: ":rain_cloud: Build Failed for <$BUILD_URL|$PROJECT_DIR>:$BRANCH_NAME Job: $JOB_NAME")
-    //             }
-    //         }
-    //     }
-    // }
+    post {
+        always {
+            cleanWs()
+        }
+        success {
+            script{
+                if ( env.BRANCH_NAME == 'devel' ) {
+                    build job: '/ARGO/argodoc/devel', propagate: false
+                } else if ( env.BRANCH_NAME == 'master' ) {
+                    build job: '/ARGO/argodoc/master', propagate: false
+                }
+                if ( env.BRANCH_NAME == 'master' || env.BRANCH_NAME == 'devel' ) {
+                    slackSend( message: ":rocket: New version for <$BUILD_URL|$PROJECT_DIR>:$BRANCH_NAME Job: $JOB_NAME !")
+                }
+            }
+        }
+        failure {
+            script{
+                if ( env.BRANCH_NAME == 'master' || env.BRANCH_NAME == 'devel' ) {
+                    slackSend( message: ":rain_cloud: Build Failed for <$BUILD_URL|$PROJECT_DIR>:$BRANCH_NAME Job: $JOB_NAME")
+                }
+            }
+        }
+    }
 }
