@@ -1,5 +1,6 @@
 %global underscore() %(echo %1 | sed 's/-/_/g')
 
+%global python3_pkgversion_39 3.9
 
 %global sum A simple python library for interacting with the ARGO Messaging Service
 %global desc A simple python library for interacting with the ARGO Messaging Service
@@ -70,16 +71,14 @@ rm -rf %{buildroot}
 %else
 %files -n python2-%{name} -f INSTALLED_FILES_PY2
 %endif
-%doc examples/ README.md
 %defattr(-,root,root,-)
 %{python_sitelib}/*
+%doc examples/ README.md
+%endif
 
 
 
-%else
-
-
-
+%if 0%{?el8}
 %package -n python%{python3_pkgversion}-%{name}
 Summary: %{sum}
 BuildRequires: python3-devel    python3-setuptools
@@ -89,6 +88,15 @@ AutoReq: no
 %{desc}
 %{?python_provide:%python_provide python3-%{name}}
 
+%package -n python%{python3_pkgversion_39}-%{name}
+Summary: %{sum}
+BuildRequires: python39-devel    python39-setuptools
+Requires:      python39-requests
+AutoReq: no
+%description -n python%{python3_pkgversion_39}-%{name}
+%{desc}
+%{?python_provide:%python_provide python%{python3_pkgversion_39}-%{name}}
+
 
 %prep
 %setup -q
@@ -96,11 +104,13 @@ AutoReq: no
 
 %build
 %{py3_build}
+python3.9 setup.py build
 
 
 %install
 rm -rf %{buildroot}
 %{py3_install "--record=INSTALLED_FILES_PY3" }
+python3.9 setup.py install --root=%{buildroot} --record=INSTALLED_FILES_PY3_39
 
 
 %files -n python%{python3_pkgversion}-%{name} -f INSTALLED_FILES_PY3
@@ -109,8 +119,11 @@ rm -rf %{buildroot}
 %{python3_sitelib}/*
 %doc examples/ README.md
 
-
-
+%files -n python%{python3_pkgversion_39}-%{name} -f INSTALLED_FILES_PY3_39
+%doc examples/ README.md
+%defattr(-,root,root,-)
+/usr/lib/python3.9/site-packages/*
+%doc examples/ README.md
 %endif
 
 
