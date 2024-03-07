@@ -1,5 +1,6 @@
 %global underscore() %(echo %1 | sed 's/-/_/g')
 
+
 %global sum A simple python library for interacting with the ARGO Messaging Service
 %global desc A simple python library for interacting with the ARGO Messaging Service
 
@@ -21,6 +22,8 @@ BuildArch:      noarch
 %{desc}
 
 
+
+%if 0%{?el7}
 %package -n python-%{name}
 Obsoletes:     argo-ams-library
 Provides:      argo-ams-library
@@ -35,8 +38,8 @@ AutoReq: no
 
 %package -n python%{python3_pkgversion}-%{name}
 Summary: %{sum}
-BuildRequires: python36-devel    python36-setuptools
-Requires:      python36-requests
+BuildRequires: python3-devel    python3-setuptools
+Requires:      python3-requests
 AutoReq: no
 %description -n python%{python3_pkgversion}-%{name}
 %{desc}
@@ -72,7 +75,49 @@ rm -rf %{buildroot}
 %{python_sitelib}/*
 
 
+
+%else
+
+
+
+%package -n python%{python3_pkgversion}-%{name}
+Summary: %{sum}
+BuildRequires: python3-devel    python3-setuptools
+Requires:      python3-requests
+AutoReq: no
+%description -n python%{python3_pkgversion}-%{name}
+%{desc}
+%{?python_provide:%python_provide python3-%{name}}
+
+
+%prep
+%setup -q
+
+
+%build
+%{py3_build}
+
+
+%install
+rm -rf %{buildroot}
+%{py3_install "--record=INSTALLED_FILES_PY3" }
+
+
+%files -n python%{python3_pkgversion}-%{name} -f INSTALLED_FILES_PY3
+%doc examples/ README.md
+%defattr(-,root,root,-)
+%{python3_sitelib}/*
+%doc examples/ README.md
+
+
+
+%endif
+
+
+
 %changelog
+* Thu Mar 7 2024 Daniel Vrcic <dvrcic@srce.hr> - 0.6.2-1%{?dist}
+- refine spec for Rocky 8 and Rocky9 python3 package build
 * Mon Feb 6 2023 agelostsal <agelos.tsal@gmail.com> - 0.6.1-1%{?dist}
 - AM-314 Add projects:createUser functionality to ams library
 * Thu Nov 3 2022 Daniel Vrcic <dvrcic@srce.hr>, agelostsal <agelos.tsal@gmail.com> - 0.6.0-1%{?dist}
