@@ -84,12 +84,6 @@ pipeline {
                             }
                         }
                         stage ('Build Rocky 8') {
-                            agent {
-                                docker {
-                                    image 'argo.registry:5000/epel-8-ams'
-                                    args '-u jenkins:jenkins'
-                                }
-                            }
                             steps {
                                 echo 'Building Rocky 8 RPM...'
                                 withCredentials(bindings: [sshUserPrivateKey(credentialsId: 'jenkins-rpm-repo', usernameVariable: 'REPOUSER', \
