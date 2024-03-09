@@ -19,7 +19,7 @@ pipeline {
                 }
             }
             steps {
-                echo 'Executing unit tests...'
+                echo 'Executing unit tests @ Centos 7...'
                 sh '''
                     cd ${WORKSPACE}/$PROJECT_DIR
                     rm -f .python-version &>/dev/null
@@ -44,7 +44,7 @@ pipeline {
                 }
             }
             steps {
-                echo 'Building Rpm...'
+                echo 'Building Centos 7 RPM...'
                 withCredentials(bindings: [sshUserPrivateKey(credentialsId: 'jenkins-rpm-repo', usernameVariable: 'REPOUSER', \
                                                             keyFileVariable: 'REPOKEY')]) {
                     sh "/home/jenkins/build-rpm.sh -w ${WORKSPACE} -b ${BRANCH_NAME} -d centos7 -p ${PROJECT_DIR} -s ${REPOKEY}"
@@ -75,7 +75,7 @@ pipeline {
                     echo Found Python versions $ALLPYVERS
                     pyenv local $ALLPYVERS
                     export TOX_SKIP_ENV="py27.*"
-                    tox
+                    tox -p 2
                     coverage xml --omit=*usr* --omit=*.tox*
                 '''
                 cobertura coberturaReportFile: '**/coverage.xml'
