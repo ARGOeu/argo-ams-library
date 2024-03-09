@@ -11,57 +11,135 @@ pipeline {
 
     }
     stages {
-        stage ('Test'){
-            parallel {
-                stage ('Test Centos 7') {
-                    agent {
-                        docker {
-                            image 'argo.registry:5000/epel-7-ams'
-                            args '-u jenkins:jenkins'
-                        }
-                    }
-                    steps {
-                        echo 'Building Rpm...'
-                        sh '''
-                            cd ${WORKSPACE}/$PROJECT_DIR
-                            rm -f .python-version &>/dev/null
-                            source $HOME/pyenv.sh
-                            pyenv versions
-                            PY310V=$(pyenv versions | grep ams-py310)
-                            pyenv local 3.7.17 3.8.18 3.9.18 ${PY310V// /}
-                            tox
-                            coverage xml --omit=*usr* --omit=*.tox*
-                        '''
-                        cobertura coberturaReportFile: '**/coverage.xml'
-                    }
-                }
-            }
-        }
-        stage ('Build'){
-            parallel {
-                stage ('Build Centos 7') {
-                    agent {
-                        docker {
-                            image 'argo.registry:5000/epel-7-ams'
-                            args '-u jenkins:jenkins'
-                        }
-                    }
-                    steps {
-                        echo 'Building Rpm...'
-                        withCredentials(bindings: [sshUserPrivateKey(credentialsId: 'jenkins-rpm-repo', usernameVariable: 'REPOUSER', \
-                                                                    keyFileVariable: 'REPOKEY')]) {
-                            sh "/home/jenkins/build-rpm.sh -w ${WORKSPACE} -b ${BRANCH_NAME} -d centos7 -p ${PROJECT_DIR} -s ${REPOKEY}"
-                        }
-                        archiveArtifacts artifacts: '**/*.rpm', fingerprint: true
-                    }
-                    post {
-                        always {
-                            cleanWs()
-                        }
-                    }
-                }
-            }
-        }
+		stage ('Test Centos 7') {
+			agent {
+				docker {
+					image 'argo.registry:5000/epel-7-ams'
+					args '-u jenkins:jenkins'
+				}
+			}
+			steps {
+				echo 'Executing unit tests...'
+				sh '''
+					cd ${WORKSPACE}/$PROJECT_DIR
+					rm -f .python-version &>/dev/null
+					source $HOME/pyenv.sh
+					pyenv versions
+					PY310V=$(pyenv versions | grep ams-py310)
+					pyenv local 3.7.17 3.8.18 3.9.18 ${PY310V// /}
+					tox
+					coverage xml --omit=*usr* --omit=*.tox*
+				'''
+				cobertura coberturaReportFile: '**/coverage.xml'
+			}
+		}
+		stage ('Build Centos 7') {
+			agent {
+				docker {
+					image 'argo.registry:5000/epel-7-ams'
+					args '-u jenkins:jenkins'
+				}
+			}
+			steps {
+				echo 'Building Rpm...'
+				withCredentials(bindings: [sshUserPrivateKey(credentialsId: 'jenkins-rpm-repo', usernameVariable: 'REPOUSER', \
+															keyFileVariable: 'REPOKEY')]) {
+					sh "/home/jenkins/build-rpm.sh -w ${WORKSPACE} -b ${BRANCH_NAME} -d centos7 -p ${PROJECT_DIR} -s ${REPOKEY}"
+				}
+				archiveArtifacts artifacts: '**/*.rpm', fingerprint: true
+			}
+			post {
+				always {
+					cleanWs()
+				}
+			}
+		}
+		stage ('Test Rocky 8') {
+			agent {
+				docker {
+					image 'argo.registry:5000/epel-8-ams'
+					args '-u jenkins:jenkins'
+				}
+			}
+			steps {
+				echo 'Executing unit tests...'
+				sh '''
+					cd ${WORKSPACE}/$PROJECT_DIR
+					rm -f .python-version &>/dev/null
+					source $HOME/pyenv.sh
+					ALLPYVERS=$(pyenv versions | grep '^[ ]*[0-9]' | tr '\n' ' ')
+                    echo Found Python versions $ALLPYVERS
+					pyenv local $ALLPYVERS
+					tox
+					coverage xml --omit=*usr* --omit=*.tox*
+				'''
+				cobertura coberturaReportFile: '**/coverage.xml'
+			}
+		}
+		stage ('Build Rocky 8') {
+			agent {
+				docker {
+					image 'argo.registry:5000/epel-8-ams'
+					args '-u jenkins:jenkins'
+				}
+			}
+			steps {
+				echo 'Building Rpm...'
+				withCredentials(bindings: [sshUserPrivateKey(credentialsId: 'jenkins-rpm-repo', usernameVariable: 'REPOUSER', \
+															keyFileVariable: 'REPOKEY')]) {
+					sh "/home/jenkins/build-rpm.sh -w ${WORKSPACE} -b ${BRANCH_NAME} -d rocky8 -p ${PROJECT_DIR} -s ${REPOKEY}"
+				}
+				archiveArtifacts artifacts: '**/*.rpm', fingerprint: true
+			}
+			post {
+				always {
+					cleanWs()
+				}
+			}
+		}
+		stage ('Test Rocky 9') {
+			agent {
+				docker {
+					image 'argo.registry:5000/epel-9-ams'
+					args '-u jenkins:jenkins'
+				}
+			}
+			steps {
+				echo 'Executing unit tests...'
+				sh '''
+					cd ${WORKSPACE}/$PROJECT_DIR
+					rm -f .python-version &>/dev/null
+					source $HOME/pyenv.sh
+					ALLPYVERS=$(pyenv versions | grep '^[ ]*[0-9]' | tr '\n' ' ')
+                    echo Found Python versions $ALLPYVERS
+					pyenv local $ALLPYVERS
+					tox
+					coverage xml --omit=*usr* --omit=*.tox*
+				'''
+				cobertura coberturaReportFile: '**/coverage.xml'
+			}
+		}
+		stage ('Build Rocky 9') {
+			agent {
+				docker {
+					image 'argo.registry:5000/epel-9-ams'
+					args '-u jenkins:jenkins'
+				}
+			}
+			steps {
+				echo 'Building Rpm...'
+				withCredentials(bindings: [sshUserPrivateKey(credentialsId: 'jenkins-rpm-repo', usernameVariable: 'REPOUSER', \
+															keyFileVariable: 'REPOKEY')]) {
+					sh "/home/jenkins/build-rpm.sh -w ${WORKSPACE} -b ${BRANCH_NAME} -d rocky9 -p ${PROJECT_DIR} -s ${REPOKEY}"
+				}
+				archiveArtifacts artifacts: '**/*.rpm', fingerprint: true
+			}
+			post {
+				always {
+					cleanWs()
+				}
+			}
+		}
         stage ('Upload to PyPI'){
             when {
                 branch 'master'
