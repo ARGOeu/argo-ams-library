@@ -28,7 +28,7 @@ pipeline {
 					PY310V=$(pyenv versions | grep ams-py310)
                     echo Found Python versions $ALLPYVERS $PY310V
 					pyenv local $ALLPYVERS ${PY310V// /}
-					tox
+					tox -p all
 					coverage xml --omit=*usr* --omit=*.tox*
 				'''
 				cobertura coberturaReportFile: '**/coverage.xml'
@@ -71,7 +71,7 @@ pipeline {
 					ALLPYVERS=$(pyenv versions | grep '^[ ]*[0-9]' | tr '\n' ' ')
                     echo Found Python versions $ALLPYVERS
 					pyenv local $ALLPYVERS
-					tox
+					tox -p all
 					coverage xml --omit=*usr* --omit=*.tox*
 				'''
 				cobertura coberturaReportFile: '**/coverage.xml'
@@ -114,7 +114,7 @@ pipeline {
 					ALLPYVERS=$(pyenv versions | grep '^[ ]*[0-9]' | tr '\n' ' ')
                     echo Found Python versions $ALLPYVERS
 					pyenv local $ALLPYVERS
-					tox
+					tox -p all
 					coverage xml --omit=*usr* --omit=*.tox*
 				'''
 				cobertura coberturaReportFile: '**/coverage.xml'
