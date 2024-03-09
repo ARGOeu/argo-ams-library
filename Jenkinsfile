@@ -28,6 +28,7 @@ pipeline {
 					PY310V=$(pyenv versions | grep ams-py310)
                     echo Found Python versions $ALLPYVERS $PY310V
 					pyenv local $ALLPYVERS ${PY310V// /}
+                    export TOX_SKIP_ENV="py3[7,8,9,10].*"
 					tox -p all
 					coverage xml --omit=*usr* --omit=*.tox*
 				'''
@@ -63,7 +64,7 @@ pipeline {
 				}
 			}
 			steps {
-				echo 'Executing unit tests...'
+				echo 'Executing unit tests @ Rocky 8...'
 				sh '''
 					cd ${WORKSPACE}/$PROJECT_DIR
 					rm -f .python-version &>/dev/null
@@ -71,7 +72,8 @@ pipeline {
 					ALLPYVERS=$(pyenv versions | grep '^[ ]*[0-9]' | tr '\n' ' ')
                     echo Found Python versions $ALLPYVERS
 					pyenv local $ALLPYVERS
-					TOX_SKIP_ENV="py27.*" tox -p all
+                    export TOX_SKIP_ENV="py27.*"
+					tox -p all
 					coverage xml --omit=*usr* --omit=*.tox*
 				'''
 				cobertura coberturaReportFile: '**/coverage.xml'
@@ -85,7 +87,7 @@ pipeline {
 				}
 			}
 			steps {
-				echo 'Building Rpm...'
+				echo 'Building Rocky 8 RPM...'
 				withCredentials(bindings: [sshUserPrivateKey(credentialsId: 'jenkins-rpm-repo', usernameVariable: 'REPOUSER', \
 															keyFileVariable: 'REPOKEY')]) {
 					sh "/home/jenkins/build-rpm.sh -w ${WORKSPACE} -b ${BRANCH_NAME} -d rocky8 -p ${PROJECT_DIR} -s ${REPOKEY}"
@@ -106,7 +108,7 @@ pipeline {
 				}
 			}
 			steps {
-				echo 'Executing unit tests...'
+				echo 'Executing unit tests @ Rocky 9...'
 				sh '''
 					cd ${WORKSPACE}/$PROJECT_DIR
 					rm -f .python-version &>/dev/null
@@ -114,7 +116,8 @@ pipeline {
 					ALLPYVERS=$(pyenv versions | grep '^[ ]*[0-9]' | tr '\n' ' ')
                     echo Found Python versions $ALLPYVERS
 					pyenv local $ALLPYVERS
-					TOX_SKIP_ENV="py27.*" tox -p all
+					export TOX_SKIP_ENV="py27.*"
+                    tox -p all
 					coverage xml --omit=*usr* --omit=*.tox*
 				'''
 				cobertura coberturaReportFile: '**/coverage.xml'
@@ -128,7 +131,7 @@ pipeline {
 				}
 			}
 			steps {
-				echo 'Building Rpm...'
+				echo 'Building Rocky 9 RPM...'
 				withCredentials(bindings: [sshUserPrivateKey(credentialsId: 'jenkins-rpm-repo', usernameVariable: 'REPOUSER', \
 															keyFileVariable: 'REPOKEY')]) {
 					sh "/home/jenkins/build-rpm.sh -w ${WORKSPACE} -b ${BRANCH_NAME} -d rocky9 -p ${PROJECT_DIR} -s ${REPOKEY}"
@@ -175,9 +178,9 @@ pipeline {
         success {
             script{
                 if ( env.BRANCH_NAME == 'devel' ) {
-                    build job: '/ARGO/argodoc/devel', propagate: false
+                    build job: '/ARGO/argo-ams-library/devel', propagate: false
                 } else if ( env.BRANCH_NAME == 'master' ) {
-                    build job: '/ARGO/argodoc/master', propagate: false
+                    build job: '/ARGO/argo-ams-library/master', propagate: false
                 }
                 if ( env.BRANCH_NAME == 'master' || env.BRANCH_NAME == 'devel' ) {
                     slackSend( message: ":rocket: New version for <$BUILD_URL|$PROJECT_DIR>:$BRANCH_NAME Job: $JOB_NAME !")
