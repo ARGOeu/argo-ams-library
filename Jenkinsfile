@@ -77,7 +77,7 @@ pipeline {
                                     echo Found Python versions $ALLPYVERS
                                     pyenv local $ALLPYVERS
                                     export TOX_SKIP_ENV="py27.*"
-                                    tox -p 2
+                                    tox -p all
                                     coverage xml --omit=*usr* --omit=*.tox*
                                 '''
                                 cobertura coberturaReportFile: '**/coverage.xml'
