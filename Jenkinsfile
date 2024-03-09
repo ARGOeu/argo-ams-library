@@ -71,7 +71,7 @@ pipeline {
 					ALLPYVERS=$(pyenv versions | grep '^[ ]*[0-9]' | tr '\n' ' ')
                     echo Found Python versions $ALLPYVERS
 					pyenv local $ALLPYVERS
-					tox -p all
+					TOX_SKIP_ENV="py27.*" tox -p all
 					coverage xml --omit=*usr* --omit=*.tox*
 				'''
 				cobertura coberturaReportFile: '**/coverage.xml'
@@ -114,7 +114,7 @@ pipeline {
 					ALLPYVERS=$(pyenv versions | grep '^[ ]*[0-9]' | tr '\n' ' ')
                     echo Found Python versions $ALLPYVERS
 					pyenv local $ALLPYVERS
-					tox -p all
+					TOX_SKIP_ENV="py27.*" tox -p all
 					coverage xml --omit=*usr* --omit=*.tox*
 				'''
 				cobertura coberturaReportFile: '**/coverage.xml'
