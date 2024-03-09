@@ -24,9 +24,10 @@ pipeline {
 					cd ${WORKSPACE}/$PROJECT_DIR
 					rm -f .python-version &>/dev/null
 					source $HOME/pyenv.sh
-					pyenv versions
+					ALLPYVERS=$(pyenv versions | grep '^[ ]*[0-9]' | tr '\n' ' ')
 					PY310V=$(pyenv versions | grep ams-py310)
-					pyenv local 3.7.17 3.8.18 3.9.18 ${PY310V// /}
+                    echo Found Python versions $ALLPYVERS $PY310V
+					pyenv local $ALLPYVERS ${PY310V// /}
 					tox
 					coverage xml --omit=*usr* --omit=*.tox*
 				'''
