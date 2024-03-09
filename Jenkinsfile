@@ -31,7 +31,6 @@ pipeline {
                     pyenv local $ALLPYVERS ${PY310V// /}
                     export TOX_SKIP_ENV="py3[7,8,9,10].*"
                     tox -p all
-                    coverage combine
                     coverage xml --omit=*usr* --omit=*.tox*
                 '''
                 cobertura coberturaReportFile: '**/coverage.xml'
@@ -77,7 +76,6 @@ pipeline {
                     pyenv local $ALLPYVERS
                     export TOX_SKIP_ENV="py27.*"
                     tox -p all
-                    coverage combine
                     coverage xml --omit=*usr* --omit=*.tox*
                 '''
                 cobertura coberturaReportFile: '**/coverage.xml'
@@ -123,7 +121,6 @@ pipeline {
                     pyenv local $ALLPYVERS
                     export TOX_SKIP_ENV="py27.*|py36.*"
                     tox -p all
-                    coverage combine
                     coverage xml --omit=*usr* --omit=*.tox*
                 '''
                 cobertura coberturaReportFile: '**/coverage.xml'
