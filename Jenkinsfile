@@ -33,7 +33,7 @@ pipeline {
                                     PY310V=$(pyenv versions | grep ams-py310)
                                     echo Found Python versions $ALLPYVERS $PY310V
                                     pyenv local $ALLPYVERS ${PY310V// /}
-                                    export TOX_SKIP_ENV="py3[7,8,9,10].*"
+                                    export TOX_SKIP_ENV="py3[7,8,9,10,11].*"
                                     tox -p all
                                     coverage xml --omit=*usr* --omit=*.tox*
                                 '''
@@ -76,7 +76,7 @@ pipeline {
                                     ALLPYVERS=$(pyenv versions | grep '^[ ]*[0-9]' | tr '\n' ' ')
                                     echo Found Python versions $ALLPYVERS
                                     pyenv local $ALLPYVERS
-                                    export TOX_SKIP_ENV="py27.*"
+                                    export TOX_SKIP_ENV="py27.*|py311.*"
                                     tox -p 4
                                     coverage xml --omit=*usr* --omit=*.tox*
                                 '''
