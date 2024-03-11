@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.6.2] - 2024-03-11
+
+### Added
+
+* ARGO-4425 Rocky 8 and 9 RPMs for argo-ams-library
+
 ## [0.6.1] - 2023-02-06
 
 ### Added
