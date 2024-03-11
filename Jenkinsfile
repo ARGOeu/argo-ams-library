@@ -49,11 +49,6 @@ pipeline {
                                 }
                                 archiveArtifacts artifacts: '**/*.rpm', fingerprint: true
                             }
-                            post {
-                                always {
-                                    cleanWs()
-                                }
-                            }
                         }
                     }
                 }
@@ -91,11 +86,6 @@ pipeline {
                                     sh "/home/jenkins/build-rpm.sh -w ${WORKSPACE} -b ${BRANCH_NAME} -d rocky8 -p ${PROJECT_DIR} -s ${REPOKEY}"
                                 }
                                 archiveArtifacts artifacts: '**/*.rpm', fingerprint: true
-                            }
-                            post {
-                                always {
-                                    cleanWs()
-                                }
                             }
                         }
                     }
@@ -135,11 +125,6 @@ pipeline {
                                 }
                                 archiveArtifacts artifacts: '**/*.rpm', fingerprint: true
                             }
-                            post {
-                                always {
-                                    cleanWs()
-                                }
-                            }
                         }
                     }
                 }
@@ -163,11 +148,6 @@ pipeline {
                         pipenv run python setup.py sdist bdist_wheel
                         pipenv run python -m twine upload -u $USERNAME -p $PASSWORD dist/*
                     '''
-                }
-            }
-            post {
-                always {
-                    cleanWs()
                 }
             }
         }
