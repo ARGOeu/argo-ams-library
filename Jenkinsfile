@@ -176,24 +176,5 @@ pipeline {
         always {
             cleanWs()
         }
-        success {
-            script{
-                if ( env.BRANCH_NAME == 'devel' ) {
-                    build job: '/ARGO/argo-ams-library/devel', propagate: false
-                } else if ( env.BRANCH_NAME == 'master' ) {
-                    build job: '/ARGO/argo-ams-library/master', propagate: false
-                }
-                if ( env.BRANCH_NAME == 'master' || env.BRANCH_NAME == 'devel' ) {
-                    slackSend( message: ":rocket: New version for <$BUILD_URL|$PROJECT_DIR>:$BRANCH_NAME Job: $JOB_NAME !")
-                }
-            }
-        }
-        failure {
-            script{
-                if ( env.BRANCH_NAME == 'master' || env.BRANCH_NAME == 'devel' ) {
-                    slackSend( message: ":rain_cloud: Build Failed for <$BUILD_URL|$PROJECT_DIR>:$BRANCH_NAME Job: $JOB_NAME")
-                }
-            }
-        }
     }
 }
