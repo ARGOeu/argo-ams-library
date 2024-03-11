@@ -2,7 +2,7 @@
 
 <img src="https://jenkins.argo.grnet.gr/static/3c75a153/images/headshot.png" alt="Jenkins" width="25"/> [![Build Status](https://jenkins.argo.grnet.gr/job/argo-ams-library_devel/badge/icon)](https://jenkins.argo.grnet.gr/job/argo-ams-library_devel)
 
-A simple python library for interacting with the ARGO Messaging Service. 
+A simple python library for interacting with the ARGO Messaging Service.
 
 The Messaging Services is implemented as a Publish/Subscribe Service. Instead of focusing on a single Messaging API specification for handling the logic of publishing/subscribing to the broker network the API focuses on creating nodes of Publishers and Subscribers as a Service.
 
@@ -10,22 +10,24 @@ In the Publish/Subscribe paradigm, Publishers are users/systems that can send me
 
 You may find more information about [the ARGO Messaging Service documentation](http://argoeu.github.io/messaging/v1/)
 
-## Library installation 
+## Library installation
 
-Library is tested and should work with Python versions 2.6, 2.7, 3.4 and 3.6 running on CentOS 6 and CentOS 7 releases.
+Library is tested and should work with Python versions 2.7, 3.6, 3.7, 3.8, 3.9, 3.10, 3.11 running on CentOS 7, Rocky 8 and Rocky 9 releases.
 
 RPM packages are prepared for both CentOS releases and you may find it and download it from ARGO Repository. PyPI packages are prepared as well.
 
 RPM production packages:
 
-http://rpm-repo.argo.grnet.gr/ARGO/prod/centos6/
 http://rpm-repo.argo.grnet.gr/ARGO/prod/centos7/
+http://rpm-repo.argo.grnet.gr/ARGO/prod/rocky8/
+http://rpm-repo.argo.grnet.gr/ARGO/prod/rocky9/
 
 RPM devel packages:
 
-http://rpm-repo.argo.grnet.gr/ARGO/devel/centos6/
 http://rpm-repo.argo.grnet.gr/ARGO/devel/centos7/
- 
+http://rpm-repo.argo.grnet.gr/ARGO/devel/rocky8/
+http://rpm-repo.argo.grnet.gr/ARGO/devel/rocky9/
+
 PyPI package:
 
 https://pypi.org/project/argo-ams-library/
@@ -59,33 +61,33 @@ In the folder `examples`, you may find examples of using the library:
 ### Publish messages
 
 This example explains how to publish messages in a topic with the use of the library. Topics are resources that can hold messages. Publishers (users/systems) can create topics on demand and name them (Usually with names that make sense and express the class of messages delivered in the topic). A topic name must be scoped to a project.
- 
+
 You may find more information about [Topics in the ARGO Messaging Service documentation](http://argoeu.github.io/messaging/v1/api_topics/)
- 
+
 ```
-publish.py  --host=[the FQDN of AMS Service] 
---token=[the user token] 
---project=[the name of your project registered in AMS Service] 
+publish.py  --host=[the FQDN of AMS Service]
+--token=[the user token]
+--project=[the name of your project registered in AMS Service]
 --topic=[the topic to publish your messages]
 ```
- 
-### Consume messages in pull mode 
- 
+
+### Consume messages in pull mode
+
 This example explains how to consume messages from a predefined subscription with the use of the library. A subscription is a named resource representing the stream of messages from a single, specific topic, to be delivered to the subscribing application. A subscription name  must be scoped to a project. In pull delivery, your subscriber application initiates requests to the Pub/Sub server to retrieve messages. When you create a subscription, the system establishes a sync point. That is, your subscriber is guaranteed to receive any message published after this point. Messages published before the sync point may not be delivered.
- 
+
 You may find more information about [Subscriptions in the ARGO Messaging Service documentation](http://argoeu.github.io/messaging/v1/api_subs/)
- 
+
 ```
-consume-pull.py  --host=[the FQDN of AMS Service] 
---token=[the user token] 
---project=[the name of your project registered in AMS Service] 
---topic=[the topic from where the messages are delivered ] 
---subscription=[the subscription name to pull the messages]  
+consume-pull.py  --host=[the FQDN of AMS Service]
+--token=[the user token]
+--project=[the name of your project registered in AMS Service]
+--topic=[the topic from where the messages are delivered ]
+--subscription=[the subscription name to pull the messages]
 --nummsgs=[the num of messages to consume]
 
 ```
 
-### Retry 
+### Retry
 
 Library has self-implemented HTTP request retry ability to seamlesssly interact with the ARGO Messaging service. Specifically, requests will be retried in case of:
 * timeouts from AMS (HTTP `408`) or load balancer (HTTP `408` and `504`)
