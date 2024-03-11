@@ -49,11 +49,6 @@ pipeline {
                                 }
                                 archiveArtifacts artifacts: '**/*.rpm', fingerprint: true
                             }
-                            post {
-                                always {
-                                    cleanWs()
-                                }
-                            }
                         }
                     }
                 }
@@ -91,11 +86,6 @@ pipeline {
                                     sh "/home/jenkins/build-rpm.sh -w ${WORKSPACE} -b ${BRANCH_NAME} -d rocky8 -p ${PROJECT_DIR} -s ${REPOKEY}"
                                 }
                                 archiveArtifacts artifacts: '**/*.rpm', fingerprint: true
-                            }
-                            post {
-                                always {
-                                    cleanWs()
-                                }
                             }
                         }
                     }
@@ -135,11 +125,6 @@ pipeline {
                                 }
                                 archiveArtifacts artifacts: '**/*.rpm', fingerprint: true
                             }
-                            post {
-                                always {
-                                    cleanWs()
-                                }
-                            }
                         }
                     }
                 }
@@ -165,35 +150,12 @@ pipeline {
                     '''
                 }
             }
-            post {
-                always {
-                    cleanWs()
-                }
-            }
         }
     }
     post {
         always {
+            echo 'Cleaning workspace and exiting'
             cleanWs()
-        }
-        success {
-            script{
-                if ( env.BRANCH_NAME == 'devel' ) {
-                    build job: '/ARGO/argo-ams-library/devel', propagate: false
-                } else if ( env.BRANCH_NAME == 'master' ) {
-                    build job: '/ARGO/argo-ams-library/master', propagate: false
-                }
-                if ( env.BRANCH_NAME == 'master' || env.BRANCH_NAME == 'devel' ) {
-                    slackSend( message: ":rocket: New version for <$BUILD_URL|$PROJECT_DIR>:$BRANCH_NAME Job: $JOB_NAME !")
-                }
-            }
-        }
-        failure {
-            script{
-                if ( env.BRANCH_NAME == 'master' || env.BRANCH_NAME == 'devel' ) {
-                    slackSend( message: ":rain_cloud: Build Failed for <$BUILD_URL|$PROJECT_DIR>:$BRANCH_NAME Job: $JOB_NAME")
-                }
-            }
         }
     }
 }
