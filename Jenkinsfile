@@ -153,7 +153,14 @@ pipeline {
         }
     }
     post {
+        success {
+            steps {
+                echo 'Generating report'
+                cobertura coberturaReportFile: '**/coverage.xml'
+            }
+        }
         always {
+            echo 'Cleaning workspace and exiting'
             cleanWs()
         }
     }
