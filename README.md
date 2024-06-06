@@ -14,19 +14,19 @@ You may find more information about [the ARGO Messaging Service documentation](h
 
 Library is tested and should work with Python versions 2.7, 3.6, 3.7, 3.8, 3.9, 3.10, 3.11 running on CentOS 7, Rocky 8 and Rocky 9 releases.
 
-RPM packages are prepared for both CentOS releases and you may find it and download it from ARGO Repository. PyPI packages are prepared as well.
+RPM packages are prepared for CentOS and Rocky releases and you may find it and download it from ARGO Repository. PyPI packages are prepared as well.
 
 RPM production packages:
 
-http://rpm-repo.argo.grnet.gr/ARGO/prod/centos7/
-http://rpm-repo.argo.grnet.gr/ARGO/prod/rocky8/
-http://rpm-repo.argo.grnet.gr/ARGO/prod/rocky9/
+* http://rpm-repo.argo.grnet.gr/ARGO/prod/centos7/
+* http://rpm-repo.argo.grnet.gr/ARGO/prod/rocky8/
+* http://rpm-repo.argo.grnet.gr/ARGO/prod/rocky9/
 
 RPM devel packages:
 
-http://rpm-repo.argo.grnet.gr/ARGO/devel/centos7/
-http://rpm-repo.argo.grnet.gr/ARGO/devel/rocky8/
-http://rpm-repo.argo.grnet.gr/ARGO/devel/rocky9/
+* http://rpm-repo.argo.grnet.gr/ARGO/devel/centos7/
+* http://rpm-repo.argo.grnet.gr/ARGO/devel/rocky8/
+* http://rpm-repo.argo.grnet.gr/ARGO/devel/rocky9/
 
 PyPI package:
 
