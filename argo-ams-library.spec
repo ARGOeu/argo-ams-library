@@ -24,54 +24,6 @@ BuildArch:      noarch
 %{desc}
 
 
-%if 0%{?el7}
-%package -n python-%{name}
-Obsoletes:     argo-ams-library
-Provides:      argo-ams-library
-Summary:       %{sum}
-BuildRequires: python-devel     python-setuptools
-Requires:      python-requests
-AutoReq: no
-%description -n python-%{name}
-%{desc}
-%{?python_provide:%python_provide python-%{name}}
-
-%package -n python%{python3_pkgversion}-%{name}
-Summary: %{sum}
-BuildRequires: python3-devel    python3-setuptools
-Requires:      python3-requests
-AutoReq: no
-%description -n python%{python3_pkgversion}-%{name}
-%{desc}
-%{?python_provide:%python_provide python3-%{name}}
-
-%prep
-%setup -q
-
-%build
-%{py_build}
-%{py3_build}
-
-%install
-rm -rf %{buildroot}
-%{py_install "--record=INSTALLED_FILES_PY2" }
-%{py3_install "--record=INSTALLED_FILES_PY3" }
-
-%files -n python%{python3_pkgversion}-%{name} -f INSTALLED_FILES_PY3
-%doc examples/ README.md
-%defattr(-,root,root,-)
-%{python3_sitelib}/*
-%if 0%{?el7}
-%files -n python-%{name} -f INSTALLED_FILES_PY2
-%else
-%files -n python2-%{name} -f INSTALLED_FILES_PY2
-%endif
-%defattr(-,root,root,-)
-%{python_sitelib}/*
-%doc examples/ README.md
-%endif
-
-
 %if 0%{?el8}
 %package -n python%{python3_pkgversion}-%{name}
 Summary: %{sum}
