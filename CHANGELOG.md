@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.6.3] - 2025-07-03
+
+### Remove
+
+* ARGO-5052 Remove Centos 7 testing and building steps in argo-ams-library
+
 ## [0.6.2] - 2024-03-11
 
 ### Added

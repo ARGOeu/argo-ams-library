@@ -9,7 +9,7 @@
 
 Name:           argo-ams-library
 Summary:        %{sum}
-Version:        0.6.2
+Version:        0.6.3
 Release:        1%{?dist}
 
 Group:          Development/Libraries
@@ -115,6 +115,8 @@ python3.11 setup.py install --root=%{buildroot} --record=INSTALLED_FILES_PY3_311
 
 
 %changelog
+* Thu Jul 3 2025 Daniel Vrcic <dvrcic@srce.hr> - 0.6.3-1%{?dist}
+- remove Centos 7 RPM building steps
 * Thu Mar 7 2024 Daniel Vrcic <dvrcic@srce.hr> - 0.6.2-1%{?dist}
 - refine spec for Rocky 8 and Rocky 9 python3 package build
 * Mon Feb 6 2023 agelostsal <agelos.tsal@gmail.com> - 0.6.1-1%{?dist}
