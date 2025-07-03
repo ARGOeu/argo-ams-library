@@ -13,45 +13,6 @@ pipeline {
     stages {
         stage ('Testing and building...') {
             parallel {
-                stage('Centos 7') {
-                    agent {
-                        docker {
-                            image 'argo.registry:5000/epel-7-ams'
-                            args '-u jenkins:jenkins'
-                        }
-                    }
-                    stages {
-                        stage ('Test Centos 7') {
-                            steps {
-                                echo 'Executing unit tests @ Centos 7...'
-                                sh '''
-                                    cd ${WORKSPACE}/$PROJECT_DIR
-                                    rm -f .python-version &>/dev/null
-                                    rm -rf .coverage* .tox/ coverage.xml &> /dev/null
-                                    source $HOME/pyenv.sh
-                                    ALLPYVERS=$(pyenv versions | grep '^[ ]*[0-9]' | tr '\n' ' ')
-                                    PY310V=$(pyenv versions | grep ams-py310)
-                                    echo Found Python versions $ALLPYVERS $PY310V
-                                    pyenv local $ALLPYVERS ${PY310V// /}
-                                    export TOX_SKIP_ENV="py3[7,8,9,10,11].*"
-                                    tox -p all
-                                    coverage xml --omit=*usr* --omit=*.tox*
-                                '''
-                                cobertura coberturaReportFile: '**/coverage.xml'
-                            }
-                        }
-                        stage ('Build Centos 7') {
-                            steps {
-                                echo 'Building Centos 7 RPM...'
-                                withCredentials(bindings: [sshUserPrivateKey(credentialsId: 'jenkins-rpm-repo', usernameVariable: 'REPOUSER', \
-                                                                            keyFileVariable: 'REPOKEY')]) {
-                                    sh "/home/jenkins/build-rpm.sh -w ${WORKSPACE} -b ${BRANCH_NAME} -d centos7 -p ${PROJECT_DIR} -s ${REPOKEY}"
-                                }
-                                archiveArtifacts artifacts: '**/*.rpm', fingerprint: true
-                            }
-                        }
-                    }
-                }
                 stage('Rocky 8') {
                     agent {
                         docker {
