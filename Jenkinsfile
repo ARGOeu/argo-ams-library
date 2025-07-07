@@ -13,44 +13,6 @@ pipeline {
     stages {
         stage ('Testing and building...') {
             parallel {
-                stage('Rocky 8') {
-                    agent {
-                        docker {
-                            image 'argo.registry:5000/epel-8-ams'
-                            args '-u jenkins:jenkins'
-                        }
-                    }
-                    stages {
-                        stage ('Test Rocky 8') {
-                            steps {
-                                echo 'Executing unit tests @ Rocky 8...'
-                                sh '''
-                                    cd ${WORKSPACE}/$PROJECT_DIR
-                                    rm -f .python-version &>/dev/null
-                                    rm -rf .coverage* .tox/ coverage.xml &> /dev/null
-                                    source $HOME/pyenv.sh
-                                    ALLPYVERS=$(pyenv versions | grep '^[ ]*[0-9]' | tr '\n' ' ')
-                                    echo Found Python versions $ALLPYVERS
-                                    pyenv local $ALLPYVERS
-                                    export TOX_SKIP_ENV="py27.*|py311.*|py37.*"
-                                    tox -p 4
-                                    coverage xml --omit=*usr* --omit=*.tox*
-                                '''
-                                cobertura coberturaReportFile: '**/coverage.xml'
-                            }
-                        }
-                        stage ('Build Rocky 8') {
-                            steps {
-                                echo 'Building Rocky 8 RPM...'
-                                withCredentials(bindings: [sshUserPrivateKey(credentialsId: 'jenkins-rpm-repo', usernameVariable: 'REPOUSER', \
-                                                                            keyFileVariable: 'REPOKEY')]) {
-                                    sh "/home/jenkins/build-rpm.sh -w ${WORKSPACE} -b ${BRANCH_NAME} -d rocky8 -p ${PROJECT_DIR} -s ${REPOKEY}"
-                                }
-                                archiveArtifacts artifacts: '**/*.rpm', fingerprint: true
-                            }
-                        }
-                    }
-                }
                 stage('Rocky 9') {
                     agent {
                         docker {
