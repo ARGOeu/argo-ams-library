@@ -1,6 +1,6 @@
 # argo-ams-library
 
-<img src="https://jenkins.einfra.grnet.gr/static/3c75a153/images/headshot.png" alt="Jenkins" width="25"/> [![Build Status](https://jenkins.einfra.grnet.gr/job/argo-ams-library_devel/badge/icon)](https://jenkins.einfra.grnet.gr/job/argo-ams-library_devel)
+[![Build Status](https://jenkins.einfra.grnet.gr/buildStatus/icon?job=ARGO%2Fargo-ams-library%2Fmaster)](https://jenkins.einfra.grnet.gr/job/ARGO/job/argo-ams-library/job/master/)
 
 A simple python library for interacting with the ARGO Messaging Service.
 
